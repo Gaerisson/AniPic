@@ -1,0 +1,12 @@
+# docker compose -f compose.yml -f compose.import.yml up -d
+services:
+  anipic:
+    environment:
+      IMPORT_DIR: /imports
+    volumes:
+      - type: bind
+        source: "${ANIPIC_IMPORT_PATH:?Définir ANIPIC_IMPORT_PATH vers vos exports Lightroom/Photoshop}"
+        target: /imports
+        read_only: true
+        bind:
+          create_host_path: false

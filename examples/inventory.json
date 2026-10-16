@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "scope": "spa:moree",
+  "complete": false,
+  "animals": [
+    {
+      "sourceId": "spa:12345",
+      "name": "Nala",
+      "species": "dog",
+      "sex": "female",
+      "birthDate": "2022-04-15",
+      "description": "Exemple fictif, à remplacer par les informations du refuge.",
+      "breed": "Croisé",
+      "compatibility": {
+        "chat": "à tester",
+        "chien": "oui",
+        "enfant": "à tester"
+      },
+      "tags": [],
+      "status": "available"
+    },
+    {
+      "sourceId": "spa:67890",
+      "name": "Nala",
+      "species": "cat",
+      "sex": "female",
+      "description": "Un autre animal portant le même prénom.",
+      "tags": []
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+name: anipic
+services:
+  anipic:
+    build: .
+    image: anipic:3.2.0
+    container_name: anipic
+    init: true
+    restart: unless-stopped
+    user: "${ANIPIC_UID:-1000}:${ANIPIC_GID:-1000}"
+    ports:
+      - "${ANIPIC_BIND_IP:-127.0.0.1}:${ANIPIC_PORT:-8088}:3000"
+    environment:
+      APP_ORIGIN: "${APP_ORIGIN:-http://localhost:8088}"
+      COOKIE_SECURE: "${COOKIE_SECURE:-false}"
+      TRUST_PROXY: "${TRUST_PROXY:-false}"
+      VISITOR_COUNTRY_HEADER: "${VISITOR_COUNTRY_HEADER:-}"
+      PROXY_TRUSTED_IPS: "${PROXY_TRUSTED_IPS:-127.0.0.1,::1}"
+      SOURCE_ALLOWED_HOSTS: "${SOURCE_ALLOWED_HOSTS:-www.la-spa.fr,la-spa.fr,api-spa.gaerisson-softs.fr,srv.gaerisson-softs.fr}"
+      MAX_UPLOAD_MB: "${MAX_UPLOAD_MB:-25}"
+      CACHE_MB: "${CACHE_MB:-512}"
+      DEMO_MODE: "false"
+      VIDEO_RENDER_ENABLED: "${VIDEO_RENDER_ENABLED:-true}"
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      GEMINI_MODEL: "${GEMINI_MODEL:-gemini-3.5-flash-lite}"
+      TOKENHARBOR_API_KEY: "${TOKENHARBOR_API_KEY:-}"
+      TOKENHARBOR_MODEL: "${TOKENHARBOR_MODEL:-}"
+      CANVA_CLIENT_ID: "${CANVA_CLIENT_ID:-}"
+      CANVA_CLIENT_SECRET: "${CANVA_CLIENT_SECRET:-}"
+      CANVA_TOKEN_KEY: "${CANVA_TOKEN_KEY:-}"
+      CANVA_REDIRECT_URI: "${CANVA_REDIRECT_URI:-}"
+      MISTRAL_API_KEY: "${MISTRAL_API_KEY:-}"
+      MISTRAL_TTS_MODEL: "${MISTRAL_TTS_MODEL:-voxtral-mini-tts-2603}"
+      MISTRAL_STT_MODEL: "${MISTRAL_STT_MODEL:-voxtral-mini-latest}"
+      MISTRAL_TTS_VOICE_ID: "${MISTRAL_TTS_VOICE_ID:-}"
+      REQUIRE_STORAGE_MARKER: "true"
+      TZ: Europe/Paris
+    volumes:
+      - anipic_db:/data
+      - anipic_cache:/cache
+      - type: bind
+        source: "${ANIPIC_MEDIA_PATH:?Définir ANIPIC_MEDIA_PATH vers les photos sur le NAS}"
+        target: /media
+        bind:
+          create_host_path: false
+      - type: bind
+        source: "${ANIPIC_BACKUP_PATH:?Définir ANIPIC_BACKUP_PATH vers les sauvegardes sur le NAS}"
+        target: /backups
+        bind:
+          create_host_path: false
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: "${ANIPIC_MEMORY_LIMIT:-2g}"
+    cpus: 2
+    stop_grace_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+volumes:
+  anipic_db:
+  anipic_cache:

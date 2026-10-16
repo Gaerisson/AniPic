@@ -1,0 +1,16 @@
+node_modules
+dist
+data
+media
+cache
+backups
+.git
+.env
+demo
+.demo
+video-bundle
+browser-path.txt
+test
+smoke-output
+*.zip
+*.tar.gz

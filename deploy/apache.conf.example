@@ -1,0 +1,13 @@
+# Modules nécessaires : proxy proxy_http headers ssl (si HTTPS géré ici).
+# Adapter ServerName, certificat et chemin de clé; garder APP_ORIGIN identique.
+<VirtualHost *:443>
+    ServerName anipic.example.fr
+    SSLEngine on
+    SSLCertificateFile /etc/letsencrypt/live/anipic.example.fr/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/anipic.example.fr/privkey.pem
+    ProxyPreserveHost On
+    ProxyPass / http://127.0.0.1:8088/
+    ProxyPassReverse / http://127.0.0.1:8088/
+    RequestHeader set X-Forwarded-Proto "https"
+    LimitRequestBody 838860800
+</VirtualHost>

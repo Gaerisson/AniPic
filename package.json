@@ -1,0 +1,66 @@
+{
+  "name": "anipic",
+  "version": "3.2.0",
+  "private": true,
+  "type": "module",
+  "description": "PhotothÃ¨que autonome pour les refuges",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env scripts/dev.mjs",
+    "build": "vite build",
+    "start": "node --env-file-if-exists=.env server/index.mjs",
+    "setup": "node --env-file-if-exists=.env scripts/setup.mjs",
+    "demo": "node scripts/seed.mjs",
+    "preview": "node scripts/preview.mjs",
+    "video:build": "node scripts/build-video.mjs",
+    "video:browser": "node scripts/video-browser.mjs",
+    "import:legacy": "node --env-file-if-exists=.env scripts/import-legacy.mjs",
+    "backup": "node --env-file-if-exists=.env scripts/backup.mjs",
+    "restore": "node --env-file-if-exists=.env scripts/restore.mjs",
+    "test": "node --test --test-concurrency=1 test/*.test.mjs",
+    "video:story": "node --env-file-if-exists=.env scripts/render-story.mjs",
+    "video:trailer": "node --env-file-if-exists=.env scripts/render-trailer.mjs"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/helmet": "^13.0.2",
+    "@fastify/multipart": "^9.3.0",
+    "@fastify/rate-limit": "^10.3.0",
+    "@fastify/static": "^10.1.6",
+    "@remotion/bundler": "4.0.535",
+    "@remotion/player": "4.0.535",
+    "@remotion/renderer": "4.0.535",
+    "cheerio": "^1.1.2",
+    "dbip-city-lite": "^1.0.18",
+    "fastify": "^5.6.0",
+    "flag-icons": "^7.6.0",
+    "lucide-react": "^0.468.0",
+    "mediabunny": "^1.61.4",
+    "mmdb-lib": "^3.0.3",
+    "pdf-lib": "^1.17.1",
+    "pptxgenjs": "4.0.1",
+    "qrcode": "^1.5.4",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "remotion": "4.0.535",
+    "robots-parser": "^3.0.1",
+    "sharp": "^0.35.5",
+    "tar": "^7.5.1",
+    "yauzl": "^3.2.0",
+    "yazl": "3.3.1",
+    "zod": "^4.1.12"
+  },
+  "overrides": {
+    "image-size": "2.0.4",
+    "tapable": "2.3.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@vitejs/plugin-react": "^5.0.4",
+    "prettier": "^3.9.10",
+    "tailwindcss": "^4.3.3",
+    "vite": "^7.1.10"
+  }
+}

@@ -1,0 +1,12 @@
+# Optional override: docker compose -f compose.yml -f compose.c8.yml up -d
+services:
+  anipic:
+    environment:
+      BROADCAST_DIR: /broadcasts
+    volumes:
+      - type: bind
+        source: "${ANIPIC_C8_PATH:?Définir ANIPIC_C8_PATH vers les émissions sur le NAS}"
+        target: /broadcasts
+        read_only: true
+        bind:
+          create_host_path: false
