@@ -24,7 +24,7 @@ COPY --chown=node:node server ./server
 COPY --chown=node:node shared ./shared
 COPY --chown=node:node scripts ./scripts
 COPY --chown=node:node video ./video
-RUN mkdir /data /media /cache /backups && chown node:node /data /media /cache /backups
+RUN mkdir -p /data /media /cache /backups && chown node:node /data /media /cache /backups
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 CMD node -e "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
