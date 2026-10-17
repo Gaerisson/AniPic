@@ -1,3 +1,6 @@
+import { UserPicture } from "./user-avatar.jsx";
+import { ArchiveCompression } from "./archive-storage.jsx";
+import { OperationSummary } from "./operation-summary.jsx";
 import {
   useState,
   useEffect,
@@ -109,7 +112,9 @@ export function Admin({
           job.state === "done"
             ? job.kind === "backup"
               ? "Sauvegarde terminée et vérifiée."
-              : "Synchronisation terminée."
+              : job.kind === "archive_compress"
+                ? "Compression des archives terminée."
+                : "Synchronisation terminée."
             : job.detail,
           job.state === "done" ? "success" : "error",
         );
@@ -281,6 +286,11 @@ function Dashboard({ data, overview, open }) {
             <div>
               <span className="eyebrow">LES NOUVEAUX REGARDS</span>
               <h2>La photothèque grandit.</h2>
+              <small>
+                {overview.stats.localPhotos ?? overview.stats.photos} photos
+                locales · {overview.stats.spaPhotoReferences ?? 0} fiches avec
+                photo SPA de référence
+              </small>
             </div>
             <span className="tag sage">Activité réelle</span>
           </div>
@@ -313,7 +323,7 @@ function Dashboard({ data, overview, open }) {
           </div>
           <div className="panel-foot">
             <Camera size={16} />
-            Nombre de photos ajoutées par jour
+            Photos locales importées par jour · images SPA exclues
           </div>
         </section>
         <section className="panel">
@@ -462,6 +472,7 @@ function Storage({ data, notify, reload }) {
   return (
     <>
       <StorageChecks notify={notify} />
+      <ArchiveCompression notify={notify} reload={reload} />
       <div className="storage-layout">
         <section className="panel storage-main">
           <div className="panel-heading">
@@ -664,6 +675,11 @@ function Backups({ data, run }) {
                     })}
                   </strong>
                   <small>{b.filename}</small>
+                  {!!b.protected && (
+                    <small className="tag">
+                      Protégée · originaux avant compression
+                    </small>
+                  )}
                   <code title={b.checksum}>
                     SHA-256 · {b.checksum.slice(0, 24)}…
                   </code>
@@ -757,7 +773,10 @@ function JobHistory({ jobs }) {
                     : j.detail || "Traitement en cours…"}
                 </small>
               </div>
-              <time>{date(j.created_at)}</time>
+              <OperationSummary detail={j.detail} />
+              <time dateTime={j.created_at}>
+                {new Date(j.created_at).toLocaleString("fr-FR")}
+              </time>
             </div>
           ))}
         </div>
@@ -991,13 +1010,19 @@ function Team({ data, notify, reload, user }) {
         <div className="team-list">
           {data.users.map((u) => (
             <div key={u.id}>
-              <span className="avatar">{u.name.slice(0, 2).toUpperCase()}</span>
+              <UserPicture user={u} />
               <span>
                 <strong>
                   {u.name}
                   {u.id === user.id && <span className="tag sage">Vous</span>}
                 </strong>
                 <small>Depuis le {date(u.created_at)}</small>
+                <small>
+                  Dernière connexion :{" "}
+                  {u.last_login_at
+                    ? new Date(u.last_login_at).toLocaleString("fr-FR")
+                    : "Pas encore de connexion enregistrée"}
+                </small>
               </span>
               <select
                 value={u.role}

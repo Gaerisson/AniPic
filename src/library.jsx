@@ -1,3 +1,4 @@
+import { PhotoTrash } from "./photo-trash.jsx";
 import { normalizeCompatibility } from "../shared/compatibility-text.mjs";
 import { NavLink } from "./nav-link.jsx";
 import { PhotoUpdate } from "./photo-update.jsx";
@@ -219,6 +220,9 @@ export function Library({
           overview={overview}
           ui={ui}
         />
+      )}
+      {page === "archives" && canEdit && (
+        <PhotoTrash notify={notify} reload={reload} />
       )}
       {page === "archives" && (
         <section aria-label="Dossiers d’archives">

@@ -16,22 +16,7 @@ const steps = [
   [npm, ["test"]],
   [npm, ["run", "build"]],
   [npm, ["run", "video:build"]],
-  ["docker", ["compose", "-f", "compose.yml", "config", "--quiet"]],
-  [
-    "docker",
-    [
-      "compose",
-      "-f",
-      "compose.yml",
-      "-f",
-      "compose.c8.yml",
-      "-f",
-      "compose.import.yml",
-      "config",
-      "--quiet",
-    ],
-  ],
-  ["docker", ["compose", "-f", "portainer-stack.yml", "config", "--quiet"]],
+  [process.execPath, ["scripts/check-deploy-config.mjs"]],
   ["docker", ["build", "--pull", "-t", "anipic:release-check", "."]],
   [
     "docker",

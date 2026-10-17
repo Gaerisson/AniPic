@@ -1,4 +1,4 @@
-# Déploiement AniPic 3.3.0
+# Déploiement AniPic 3.4.0
 
 ## Installer sur Debian avec Docker
 
@@ -33,10 +33,10 @@ sudo node scripts/prepare-storage.mjs --mount /mnt/nas --root /mnt/nas/anipic --
 Node.js 24 est nécessaire pour ce script. Sans Node sur l’hôte, construire d’abord l’image puis utiliser son runtime, en montant le parent NAS existant :
 
 ```sh
-docker build -t anipic:3.3.0 .
+docker build -t anipic:3.4.0 .
 docker run --rm --read-only --user 1000:1000 \
   --mount type=bind,src=/mnt/nas,dst=/mnt/nas \
-  --entrypoint node anipic:3.3.0 scripts/prepare-storage.mjs \
+  --entrypoint node anipic:3.4.0 scripts/prepare-storage.mjs \
   --mount /mnt/nas --root /mnt/nas/anipic --uid 1000 --gid 1000 --with-c8 --with-import
 ```
 
@@ -50,13 +50,30 @@ Cette préparation est couverte par des simulations de montage absent, permissio
 
 ## Portainer et Apache
 
-Construire l’image sur le moteur Docker géré par Portainer :
+AniPic utilise une image **locale** `anipic:3.4.0`. Aucune image de ce nom n’est publiée sur Docker Hub. Le code sur GitHub et une image téléchargeable dans un registre sont deux livraisons distinctes.
+
+### Stack Git sur Docker Standalone
+
+Dans les réglages de la stack **existante**, utiliser `compose.yml` comme chemin Compose, avec les mêmes extensions C8/Import qu’avant. Ce fichier contient `build: .` et `pull_policy: build` : Compose construit l’image depuis le Dockerfile du dépôt et la reconstruit au redéploiement, au lieu de chercher une image AniPic dans un registre.
+
+Récupérer le commit contenant le correctif dans GitHub, puis **Pull and redeploy → Re-pull image and redeploy : désactivé → Update**. Pour GitOps, laisser aussi **Re-pull image** désactivé dans les réglages automatiques. Récupérer le dépôt Git reste nécessaire ; l’option désactivée concerne uniquement le téléchargement d’images Docker.
+
+Ne pas utiliser `portainer-stack.yml` pour une compilation automatique depuis Git : ce fichier ne contient pas de contexte de build. Ne pas ajouter `build: .` dans un simple éditeur Portainer sans fournir les sources du projet.
+
+### Stack avec image préconstruite / éditeur Portainer
+
+Après avoir récupéré les nouveaux fichiers du projet, construire l’image sur **le moteur Docker utilisé par Portainer**, depuis le répertoire contenant le Dockerfile :
 
 ```sh
-docker build -t anipic:3.3.0 .
+docker build -t anipic:3.4.0 .
+docker image inspect anipic:3.4.0 --format '{{.Id}}'
 ```
 
-Créer une stack avec `portainer-stack.yml` et définir ses variables d’environnement. Son image est locale (`pull_policy: never`). Pour un moteur distant, publier l’image dans votre registre et adapter le nom et la politique de téléchargement.
+Redéployer ensuite la stack existante avec `portainer-stack.yml`, en conservant **Re-pull image désactivé**. Ce fichier garde `pull_policy: never` et exige que l’image existe déjà sur ce moteur. Si Portainer ne construit pas depuis Git, cette procédure permet de préparer l’image sur l’hôte puis de la déployer. Swarm nécessite aussi une image déjà construite, accessible à chacun des nœuds concernés ; un build Compose n’est pas un mécanisme de déploiement Swarm.
+
+Dans les deux cas, conserver le nom de stack/projet, les variables et tous les volumes/montages existants. Ne pas supprimer la stack ni recréer ses volumes pour résoudre une erreur de pull. Un registre privé/public est une autre méthode de livraison : il nécessite de publier réellement l’image sous une adresse de registre avant de changer `image:` et d’activer le téléchargement.
+
+Références : [mise à jour Portainer](https://docs.portainer.io/user/docker/stacks/edit), [politique de construction Docker Compose](https://docs.docker.com/reference/compose-file/services/#pull_policy).
 
 L’écoute est sur `127.0.0.1:8088` par défaut, adaptée à Apache installé sur le même hôte. Pour un accès LAN direct, renseigner `ANIPIC_BIND_IP=0.0.0.0` et `APP_ORIGIN=http://IP_DU_SERVEUR:8088`. Pour HTTPS derrière Apache, utiliser `COOKIE_SECURE=true` et adapter `deploy/apache.conf.example`.
 

@@ -1,3 +1,4 @@
+import { beginMediaWrite } from "./media-maintenance.mjs";
 import { animalQrAddress, qrData } from "./qr.mjs";
 import { sourcePhotoBuffer } from "./source-photo.mjs";
 import { publicSpaImage } from "./animal-facts.mjs";
@@ -34,6 +35,26 @@ export const Film = z
     annualMessageSubtitle: z.string().max(180).default(""),
     annualSidePhotos: z.boolean().default(true),
     annualStats: z.boolean().default(true),
+    logoAnimation: z
+      .enum(["fade", "mosaic", "sweep", "bloom", "prism"])
+      .default("fade"),
+    particleStyle: z
+      .enum([
+        "auto",
+        "dust",
+        "bokeh",
+        "snow",
+        "paws",
+        "confetti",
+        "stars",
+        "none",
+      ])
+      .default("auto"),
+    particleDensity: z.number().int().min(0).max(100).default(35),
+    particleSpeed: z.number().int().min(0).max(100).default(40),
+    backgroundTheme: z
+      .enum(["auto", "classic", "halloween", "christmas", "easter", "summer"])
+      .default("classic"),
     aspect: z.enum(["landscape", "portrait", "square"]).default("landscape"),
     resolution: z.enum(["720", "1080"]).default("720"),
     look: z
@@ -199,6 +220,7 @@ export async function mediaMetadata(filename, kind) {
 export async function ingestAsset(db, c, readable, filename, kind, userId) {
   assertStorage(c);
   if (!["audio", "video"].includes(kind)) throw fail("Type de média invalide.");
+  const finishWrite = beginMediaWrite(c);
   const tmp = path.join(c.mediaDir, ".asset-" + id());
   const hash = createHash("sha256");
   let bytes = 0;
@@ -208,15 +230,24 @@ export async function ingestAsset(db, c, readable, filename, kind, userId) {
       new Transform({
         transform(chunk, encoding, cb) {
           bytes += chunk.length;
-          if (bytes > 100 * 1024 ** 2)
-            return cb(fail("Média limité à 100 Mo.", 413));
+          if (bytes > (c.maxMediaBytes || 512 * 1024 ** 2))
+            return cb(
+              fail(
+                `Média limité à ${Math.round((c.maxMediaBytes || 512 * 1024 ** 2) / 1024 ** 2)} Mo. Réglez MAX_MEDIA_MB sur le serveur pour augmenter cette limite.`,
+                413,
+              ),
+            );
           hash.update(chunk);
           cb(null, chunk);
         },
       }),
       createWriteStream(tmp, { flags: "wx", mode: 0o600 }),
     );
-    if (readable.truncated) throw fail("Média limité à 100 Mo.", 413);
+    if (readable.truncated)
+      throw fail(
+        `Média limité à ${Math.round((c.maxMediaBytes || 512 * 1024 ** 2) / 1024 ** 2)} Mo. Réglez MAX_MEDIA_MB sur le serveur pour augmenter cette limite.`,
+        413,
+      );
     const meta = await mediaMetadata(tmp, kind);
     const digest = hash.digest("hex");
     const target = path.join(c.mediaDir, digest);
@@ -254,6 +285,7 @@ export async function ingestAsset(db, c, readable, filename, kind, userId) {
     return { id: assetId, kind, ...meta, size: bytes };
   } finally {
     await fs.unlink(tmp).catch(() => {});
+    finishWrite();
   }
 }
 export function resolveFilm(db, c, input, assetURL) {
@@ -625,7 +657,11 @@ export async function registerVideo(app, { db, c, authorized, job }) {
     async (req, reply) => {
       const kind = z.enum(["video", "audio"]).parse(req.query.kind);
       const part = await req.file({
-        limits: { fileSize: 100 * 1024 ** 2, files: 1, fields: 0 },
+        limits: {
+          fileSize: c.maxMediaBytes || 512 * 1024 ** 2,
+          files: 1,
+          fields: 0,
+        },
       });
       if (!part) throw fail("Fichier absent.");
       const result = await ingestAsset(

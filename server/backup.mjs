@@ -83,7 +83,9 @@ export async function createBackup(db, c) {
 }
 export async function pruneBackups(db, c, keep) {
   const rows = db
-    .prepare("SELECT * FROM backups ORDER BY created_at DESC")
+    .prepare(
+      "SELECT * FROM backups WHERE id NOT IN (SELECT backup_id FROM archive_compactions) ORDER BY created_at DESC",
+    )
     .all();
   for (const row of rows.slice(keep)) {
     await fs.unlink(path.join(c.backupDir, row.filename)).catch((e) => {
@@ -184,6 +186,12 @@ export async function restoreBackup(archive, destination) {
     )
       throw new Error("SQLite corrompu.");
     // Backups contain password hashes, but never restore active sessions.
+    if (
+      restored
+        .prepare("SELECT 1 FROM sqlite_master WHERE name='archive_compactions'")
+        .get()
+    )
+      restored.exec("DELETE FROM archive_compactions;");
     restored.exec("DELETE FROM sessions; DELETE FROM backups;");
     if (
       restored

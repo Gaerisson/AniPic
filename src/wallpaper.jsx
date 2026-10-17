@@ -1,3 +1,9 @@
+import {
+  visualThemes,
+  visualTheme,
+  particleStyles,
+} from "../shared/visual-themes.mjs";
+import { drawParticles } from "../shared/canvas-particles.mjs";
 import { DropArea } from "./upload-feedback.jsx";
 import { useEffect, useRef, useState } from "react";
 import { Download, ImagePlus, Monitor } from "lucide-react";
@@ -46,6 +52,11 @@ export default function Wallpaper({ user, overview, notify }) {
     [template, setTemplate] = useState("mosaic"),
     [color, setColor] = useState(overview?.interface.accentColor || "#e97435"),
     [title, setTitle] = useState(""),
+    [subtitle, setSubtitle] = useState(""),
+    [backgroundTheme, setBackgroundTheme] = useState("classic"),
+    [particleStyle, setParticleStyle] = useState("auto"),
+    [particleDensity, setParticleDensity] = useState(40),
+    [textColor, setTextColor] = useState("#fff7ee"),
     [logo, setLogo] = useState(true),
     [busy, setBusy] = useState(false),
     [ready, setReady] = useState(false),
@@ -104,13 +115,23 @@ export default function Wallpaper({ user, overview, notify }) {
         ].slice(0, 24);
       const images = await Promise.all(photos.map((p) => load(p)));
       if (!active) return;
-      ctx.fillStyle = "#14161c";
+      const palette = visualTheme(backgroundTheme);
+      ctx.fillStyle = palette.end;
       ctx.fillRect(0, 0, w, h);
       const glow = ctx.createRadialGradient(w * 0.2, 0, 0, w * 0.2, 0, w);
-      glow.addColorStop(0, color + "55");
+      glow.addColorStop(
+        0,
+        backgroundTheme === "classic" ? color + "66" : palette.start,
+      );
       glow.addColorStop(1, "#14161c00");
       ctx.fillStyle = glow;
       ctx.fillRect(0, 0, w, h);
+      drawParticles(ctx, w, h, {
+        style: particleStyle,
+        theme: palette.id,
+        density: particleDensity,
+        accent: palette.accent,
+      });
       const available = images.filter(Boolean),
         count = available.length,
         margin = w * 0.045,
@@ -232,7 +253,9 @@ export default function Wallpaper({ user, overview, notify }) {
         const ly = h * 0.94 - logoH;
         ctx.drawImage(mark, margin, ly, logoW, logoH);
       }
-      ctx.fillStyle = "#f7f3ee";
+      ctx.fillStyle = textColor;
+      ctx.shadowColor = "#0009";
+      ctx.shadowBlur = h * 0.012;
       ctx.font = `600 ${(h * fontScale) / 100}px Arial`;
       ctx.textAlign = "right";
       ctx.textAlign = titleX < 35 ? "left" : titleX > 65 ? "right" : "center";
@@ -242,6 +265,16 @@ export default function Wallpaper({ user, overview, notify }) {
         (h * titleY) / 100,
         w - margin * 2,
       );
+      if (subtitle) {
+        ctx.font = `400 ${(h * fontScale * 0.62) / 100}px Arial`;
+        ctx.fillText(
+          subtitle,
+          (w * titleX) / 100,
+          Math.min(h * 0.96, (h * titleY) / 100 + (h * fontScale * 0.9) / 100),
+          w - margin * 2,
+        );
+      }
+      ctx.shadowBlur = 0;
       ctx.textAlign = "left";
       ctx.fillStyle = "#d0c5ba";
       ctx.font = `${Math.max(11, h * 0.013)}px Arial`;
@@ -273,6 +306,11 @@ export default function Wallpaper({ user, overview, notify }) {
     template,
     color,
     title,
+    subtitle,
+    backgroundTheme,
+    particleStyle,
+    particleDensity,
+    textColor,
     logo,
     animals,
     titleX,
@@ -376,6 +414,43 @@ export default function Wallpaper({ user, overview, notify }) {
             </select>
           </label>
           <label>
+            Ambiance de saison
+            <select
+              value={backgroundTheme}
+              onChange={(e) => setBackgroundTheme(e.target.value)}
+            >
+              <option value="auto">Selon la date</option>
+              {Object.entries(visualThemes).map(([id, t]) => (
+                <option key={id} value={id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Effet de fond
+            <select
+              value={particleStyle}
+              onChange={(e) => setParticleStyle(e.target.value)}
+            >
+              {Object.entries(particleStyles).map(([id, n]) => (
+                <option key={id} value={id}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Densité des effets · {particleDensity}%
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={particleDensity}
+              onChange={(e) => setParticleDensity(+e.target.value)}
+            />
+          </label>
+          <label>
             Couleur
             <input
               type="color"
@@ -392,6 +467,35 @@ export default function Wallpaper({ user, overview, notify }) {
               onChange={(e) => setTitle(e.target.value)}
             />
           </label>
+          <label>
+            Sous-titre
+            <input
+              maxLength="120"
+              value={subtitle}
+              onChange={(e) => setSubtitle(e.target.value)}
+              placeholder="Une invitation, une date, un message…"
+            />
+          </label>
+          <label>
+            Couleur du texte
+            <input
+              type="color"
+              value={textColor}
+              onChange={(e) => setTextColor(e.target.value)}
+            />
+          </label>
+          <div className="annual-message-presets">
+            {[
+              "Joyeux Halloween",
+              "Joyeuses fêtes",
+              "Joyeuses Pâques",
+              "Rencontrez nos compagnons",
+            ].map((t) => (
+              <button key={t} onClick={() => setTitle(t)}>
+                {t}
+              </button>
+            ))}
+          </div>
           <details className="feature-details">
             <summary>Placement et tailles</summary>
             {[

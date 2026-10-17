@@ -1,3 +1,4 @@
+import { beginMediaWrite } from "./media-maintenance.mjs";
 import { createReadStream, createWriteStream } from "node:fs";
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -34,6 +35,7 @@ export async function ingest(
   inbox = null,
 ) {
   assertStorage(c);
+  const finishWrite = beginMediaWrite(c);
   const tmp = path.join(c.mediaDir, `.upload-${randomUUID()}`);
   const hash = createHash("sha256");
   let size = 0;
@@ -151,6 +153,7 @@ export async function ingest(
     return { id: photoId, duplicate: false };
   } finally {
     await fs.unlink(tmp).catch(() => {});
+    finishWrite();
   }
 }
 export async function directoryBytes(directory) {

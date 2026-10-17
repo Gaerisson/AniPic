@@ -43,7 +43,7 @@ export const fingerprintDistance = (a, b) =>
 function context(db, animal) {
   const photos = db
     .prepare(
-      "SELECT id,hash FROM photos WHERE animal_id=? AND archived_at IS NULL ORDER BY created_at DESC,id LIMIT 100",
+      "SELECT id,hash FROM photos WHERE animal_id=? AND deleted_at IS NULL AND archived_at IS NULL ORDER BY created_at DESC,id LIMIT 100",
     )
     .all(animal.id);
   const thumbnail = JSON.parse(animal.source_metadata || "{}").thumbnail || "";

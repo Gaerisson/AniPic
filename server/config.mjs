@@ -43,6 +43,7 @@ export function config(overrides = {}) {
     mistralSttModel: process.env.MISTRAL_STT_MODEL || "voxtral-mini-latest",
     ffmpegPath: process.env.FFMPEG_PATH || "",
     secureCookie: process.env.COOKIE_SECURE === "true",
+    maxMediaBytes: number("MAX_MEDIA_MB", 512, 1, 4096) * 1024 ** 2,
     maxUploadBytes: number("MAX_UPLOAD_MB", 25, 1, 100) * 1024 ** 2,
     initialCacheBytes: number("CACHE_MB", 512, 16, 16384) * 1024 ** 2,
     trustProxy:

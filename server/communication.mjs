@@ -324,7 +324,7 @@ export async function registerCommunication(app, { db, c, authorized }) {
       };
     const photo = db
       .prepare(
-        "SELECT * FROM photos WHERE id=? AND animal_id=? AND archived_at IS NULL",
+        "SELECT * FROM photos WHERE id=? AND animal_id=? AND deleted_at IS NULL AND archived_at IS NULL",
       )
       .get(UUID.parse(photoId), animal.id);
     if (!photo) throw fail("Choisissez une photo locale de cet animal.", 404);
@@ -357,7 +357,7 @@ export async function registerCommunication(app, { db, c, authorized }) {
           if (!animal) throw fail("Animal introuvable.", 404);
           let photo = db
             .prepare(
-              "SELECT * FROM photos WHERE animal_id=? AND archived_at IS NULL ORDER BY id=? DESC,created_at DESC LIMIT 1",
+              "SELECT * FROM photos WHERE animal_id=? AND deleted_at IS NULL AND archived_at IS NULL ORDER BY id=? DESC,created_at DESC LIMIT 1",
             )
             .get(id, animal.cover_id || "");
           if (!photo) {

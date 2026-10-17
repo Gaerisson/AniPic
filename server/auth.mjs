@@ -46,6 +46,7 @@ export function createSession(db, userId) {
     csrf,
     new Date(Date.now() + 12 * 3600_000).toISOString(),
   );
+  db.prepare("UPDATE users SET last_login_at=? WHERE id=?").run(now(), userId);
   return { token, csrf };
 }
 export function getSession(db, token) {
@@ -53,7 +54,7 @@ export function getSession(db, token) {
   return (
     db
       .prepare(
-        "SELECT u.id,u.name,u.role,s.csrf,s.token_hash FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>? AND u.active=1",
+        "SELECT u.id,u.name,u.role,s.csrf,s.token_hash,(SELECT hash FROM user_avatars WHERE user_id=u.id) avatarHash FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>? AND u.active=1",
       )
       .get(hashToken(token), now()) ?? null
   );

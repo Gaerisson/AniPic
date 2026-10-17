@@ -1,3 +1,8 @@
+import {
+  visualThemes,
+  particleStyles,
+  logoAnimations,
+} from "../shared/visual-themes.mjs";
 import { useEffect, useState } from "react";
 import {
   ArrowUp,
@@ -171,8 +176,38 @@ export function ShowOptions({
             value={p.logoAnimation}
             onChange={(e) => patch("logoAnimation", e.target.value)}
           >
-            <option value="fade">Fondu · photos dans le logo</option>
-            <option value="mosaic">Assemblage de la mosaïque</option>
+            {Object.entries(logoAnimations).map(([v, n]) => (
+              <option key={v} value={v}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Ambiance de fond
+          <select
+            value={p.backgroundTheme || "classic"}
+            onChange={(e) => patch("backgroundTheme", e.target.value)}
+          >
+            <option value="auto">Selon la saison</option>
+            {Object.entries(visualThemes).map(([v, t]) => (
+              <option key={v} value={v}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Effet de fond
+          <select
+            value={p.particleStyle || "auto"}
+            onChange={(e) => patch("particleStyle", e.target.value)}
+          >
+            {Object.entries(particleStyles).map(([v, n]) => (
+              <option key={v} value={v}>
+                {n}
+              </option>
+            ))}
           </select>
         </label>
         {number("particleDensity", "Particules en arrière-plan (%)", 0, 100)}

@@ -65,18 +65,16 @@ function ReadyShowPlayer({ show, full = false, seekFrame, synced = false }) {
       last = 0;
     clock.current = { frame: clock.current.frame, time: performance.now() };
     const tick = (now) => {
-      if (!paused && now - last >= 1000 / 24) {
+      if (!paused && now - last >= 1000 / 60 - 1) {
         last = now;
         const f =
           (clock.current.frame + ((now - clock.current.time) * 24) / 1000) %
           timeline.frames;
         setFrame(
-          Math.floor(
-            synced
-              ? (((Date.now() - (show.clockOffset || 0)) / 1000) * 24) %
-                  timeline.frames
-              : f,
-          ),
+          synced
+            ? (((Date.now() - (show.clockOffset || 0)) / 1000) * 24) %
+                timeline.frames
+            : f,
         );
       }
       raf = requestAnimationFrame(tick);

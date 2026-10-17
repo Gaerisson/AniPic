@@ -12,7 +12,7 @@ Anipic reprend le projet GPIC SPA pour organiser les photos des animaux, prépar
 
 **Projet vibecodé par [Gaerisson](https://github.com/Gaerisson/), avec Codex, assistant d’OpenAI.** L’idée, les besoins métier, les choix visuels et la direction du projet viennent de Gaerisson.
 
-[Release 3.3](RELEASE_v3.3.md) · [Installation Docker / Portainer](docs/DEPLOIEMENT.md) · [Journal des versions](CHANGELOG.md) · [Tests et validation](VALIDATION.md)
+[Release 3.4](RELEASE_v3.4.md) · [Installation Docker / Portainer](docs/DEPLOIEMENT.md) · [Journal des versions](CHANGELOG.md) · [Tests et validation](VALIDATION.md)
 
 ![La photothèque AniPic](public/presentation-v32/home.png)
 
@@ -26,7 +26,13 @@ Deux montages de **24,5 secondes**, 30 images/s : portraits en relief et présen
 
 [Composition et reproduction du montage](PRESENTATION.md).
 
-## Nouveautés 3.3
+## Nouveautés 3.4
+
+Assistant avec chat contextuel, erreurs IA visibles, distinction SPA/local et loader sur les affiches, ouverture du design Canva après import. TV plus fluide avec saisons, particules, horaires en grille et nouvelles animations du logo ; bannières à thème avec sous-titre. Miniatures C8, avatars et dernières connexions, journal horodaté et statistiques photo locales séparées des références SPA. Couvertures d’albums prises dans les sous-dossiers, corbeille des photos d’animaux et [compression NAS après sauvegarde vérifiée](docs/ARCHIVES.md).
+
+**`MAX_MEDIA_MB`** règle la limite audio/vidéo (512 Mo par défaut). Les fichiers Compose conservent les mêmes volumes et la compilation depuis Git.
+
+### Évolutions 3.3 conservées
 
 Préparation des photos SPA avant lecture, cache partagé entre miniatures et vidéos, bilan annuel avec portraits espacés et message « Bonne année… ». Albums photos/vidéos avec déplacement et corbeille, imports avec progression, journal et diagnostic NAS, correction Canva avec PIN global.
 
@@ -75,6 +81,8 @@ docker compose -f compose.yml exec -it anipic npm run setup
 ```
 
 Le conteneur utilise un compte non root et une racine en lecture seule. SQLite et le cache restent dans des volumes locaux ; les originaux et les sauvegardes peuvent être sur le NAS. Une instance utilise la base. [Guide complet, Portainer, Apache et C8](docs/DEPLOIEMENT.md).
+
+Pour une stack Git dans Portainer, sélectionner `compose.yml` et laisser **Re-pull image désactivé**. `portainer-stack.yml` sert aux images déjà construites sur le moteur Docker ; aucune image `anipic` n’est publiée sur Docker Hub. [Procédure de mise à jour](docs/DEPLOIEMENT.md#portainer-et-apache).
 
 ## Configurer les services
 

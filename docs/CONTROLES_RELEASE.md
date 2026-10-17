@@ -17,6 +17,8 @@ export ANIPIC_IMPORT_PATH=/mnt/nas/anipic/Import
 docker compose -f compose.yml config --quiet
 docker compose -f compose.yml -f compose.c8.yml -f compose.import.yml config --quiet
 docker compose -f portainer-stack.yml config --quiet
+# Vérifie aussi les politiques d’image et les protections des volumes :
+node scripts/check-deploy-config.mjs
 
 docker build --pull -t anipic:release-check .
 docker run --rm --tmpfs /tmp:size=768m --entrypoint node anipic:release-check scripts/docker-smoke.mjs
@@ -35,6 +37,8 @@ Modifier les dépendances directes avec npm sous Node 24, par exemple `npm insta
 `npm ci` refuse les manifestes incohérents ; ce refus doit faire échouer la CI. Pour `No matching version found`, relever le paquet et la plage, vérifier le registre configuré (`npm config get registry`) et ne pas corriger uniquement le numéro dans le lockfile. Sur une branche de réparation, garder une copie du lockfile, régénérer par npm sous Node 24, examiner le diff et tester une installation propre. Ne pas purger les données de l’application pour corriger des dépendances de build. Les caches npm et volumes SQLite/NAS ont des rôles indépendants.
 
 ## Dépannage Docker / Portainer
+
+- `pull access denied for anipic` / `Failed to pull images of the stack` : désactiver **Re-pull image**. `compose.yml` compile depuis Git avec `pull_policy: build` ; `portainer-stack.yml` utilise une image locale préconstruite avec `pull_policy: never`. Cette image n’est pas publiée sur Docker Hub. Avec le second fichier, la construire sur le moteur de Portainer (`docker build -t anipic:3.3.0 .`) avant de redéployer. Consulter les [deux procédures](DEPLOIEMENT.md#portainer-et-apache) et conserver le nom de stack et ses volumes. Un `docker login` ne crée pas une image absente du registre.
 
 - `mkdir: File exists` : les chemins d’images de base peuvent déjà exister. Le Dockerfile utilise `mkdir -p` pour `/data`, `/media`, `/cache` et `/backups`.
 - `bind source path does not exist` : Docker contrôle les chemins **sur l’hôte du moteur**, avant le démarrage d’AniPic. Exécuter la [préparation NAS](DEPLOIEMENT.md#préparer-le-stockage-nas) sur cet hôte, puis reporter les chemins absolus dans Portainer. L’application ne peut pas créer un bind mount qui l’empêche de démarrer.

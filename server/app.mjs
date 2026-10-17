@@ -1,3 +1,5 @@
+import { registerArchiveCompression } from "./archive-compression.mjs";
+import { mediaMaintenance } from "./media-maintenance.mjs";
 import { createHash } from "node:crypto";
 import { registerArchiveFolders } from "./archive-folders.mjs";
 import { recordError, registerJournal } from "./journal.mjs";
@@ -13,6 +15,7 @@ import Fastify from "fastify";
 import cookie from "@fastify/cookie";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
+import { registerUserAvatars } from "./user-avatars.mjs";
 import multipart from "@fastify/multipart";
 import serveStatic from "@fastify/static";
 import { z } from "zod";
@@ -93,7 +96,15 @@ const Settings = z.object({
   tokenharborModel: z.string().max(150).default(""),
 });
 const publicSession = (s) =>
-  s ? { id: s.id, name: s.name, role: s.role, csrf: s.csrf } : null;
+  s
+    ? {
+        id: s.id,
+        name: s.name,
+        role: s.role,
+        csrf: s.csrf,
+        ...(s.avatarHash ? { avatarHash: s.avatarHash } : {}),
+      }
+    : null;
 export async function createApp(overrides = {}) {
   const c = config(overrides);
   const db = openDb(c);
@@ -143,6 +154,13 @@ export async function createApp(overrides = {}) {
       reply.header("Cache-Control", "no-store");
   });
   app.addHook("onRequest", siteAccessHook(db, c));
+  app.addHook("preHandler", async (req, reply) => {
+    if (mediaMaintenance(c) && !["GET", "HEAD", "OPTIONS"].includes(req.method))
+      return reply.code(423).send({
+        error:
+          "Optimisation des archives en cours. Réessayez après la fin du traitement.",
+      });
+  });
   app.addHook("onResponse", async (req, reply) => {
     if (!req.url.startsWith("/api/") || req.url.startsWith("/api/health"))
       return;
@@ -188,24 +206,28 @@ export async function createApp(overrides = {}) {
     if (status >= 500) req.log.error(error);
     reply.code(status).send({
       error:
-        status >= 500
-          ? "Opération impossible. Vérifiez le journal du serveur."
-          : error instanceof z.ZodError
-            ? "Données invalides : " +
-              error.issues
-                .map((i) => i.path.join(".") + " " + i.message)
-                .join("; ")
-            : error.message,
+        error.publicMessage && /^AI_[A-Z_]+$/.test(error.code || "")
+          ? error.publicMessage
+          : status >= 500
+            ? "Opération impossible. Vérifiez le journal du serveur."
+            : error instanceof z.ZodError
+              ? "Données invalides : " +
+                error.issues
+                  .map((i) => i.path.join(".") + " " + i.message)
+                  .join("; ")
+              : error.message,
     });
   });
   await registerSiteAccess(app, { db, c, authorized });
   await registerArchiveFolders(app, { db });
   await registerJournal(app, { db, authorized });
+  await registerArchiveCompression(app, { db, c, authorized, job });
+  await registerUserAvatars(app, { db, authorized });
   await registerStorageHealth(app, { c, authorized });
   app.get("/api/health", async (req, reply) => {
     try {
       assertStorage(c);
-      return { ok: true, version: "3.3.0" };
+      return { ok: true, version: "3.4.0" };
     } catch {
       return reply
         .code(503)
@@ -242,7 +264,7 @@ export async function createApp(overrides = {}) {
       secure: false,
       maxAge: 43200,
     });
-    return { user: { ...user, csrf: session.csrf } };
+    return { user: publicSession(getSession(db, session.token)) };
   });
   app.post(
     "/api/login",
@@ -275,14 +297,7 @@ export async function createApp(overrides = {}) {
         maxAge: 43200,
       });
       audit(db, user, "login");
-      return {
-        user: {
-          id: user.id,
-          name: user.name,
-          role: user.role,
-          csrf: session.csrf,
-        },
-      };
+      return { user: publicSession(getSession(db, session.token)) };
     },
   );
   app.post(
@@ -296,7 +311,8 @@ export async function createApp(overrides = {}) {
       return { ok: true };
     },
   );
-  const photoCondition = (req) => (req.user ? "1=1" : "p.hidden=0");
+  const photoCondition = (req) =>
+    "p.deleted_at IS NULL AND (" + (req.user ? "1=1" : "p.hidden=0") + ")";
   function animalSummary(row, req) {
     const photos = db
       .prepare(
@@ -355,6 +371,14 @@ export async function createApp(overrides = {}) {
         : false,
     };
   }
+  app.get("/api/photo-trash", { preHandler: authorized() }, async (req) => {
+    const animalId = req.query.animalId ? UUID.parse(req.query.animalId) : "";
+    return db
+      .prepare(
+        "SELECT p.id,p.filename,p.deleted_at,a.name FROM photos p JOIN animals a ON a.id=p.animal_id WHERE p.deleted_at IS NOT NULL AND (?='' OR p.animal_id=?) ORDER BY p.deleted_at DESC LIMIT 300",
+      )
+      .all(animalId, animalId);
+  });
   app.get("/api/overview", async (req) => {
     const cfg = settings(db);
     const stats = db
@@ -395,6 +419,18 @@ export async function createApp(overrides = {}) {
       ),
       stats: {
         ...stats,
+        localPhotos: req.user
+          ? db
+              .prepare(
+                "SELECT (SELECT COUNT(*) FROM photos WHERE deleted_at IS NULL)+(SELECT COUNT(*) FROM album_photos WHERE deleted_at IS NULL) n",
+              )
+              .get().n
+          : photos,
+        spaPhotoReferences: db
+          .prepare(
+            "SELECT COUNT(*) n FROM animals WHERE json_extract(source_metadata,'$.thumbnail') IS NOT NULL",
+          )
+          .get().n,
         photos,
         needPhotos,
         openTasks: req.user
@@ -671,13 +707,16 @@ export async function createApp(overrides = {}) {
           hidden: z.boolean().optional(),
           archived: z.boolean().optional(),
           cover: z.boolean().optional(),
+          deleted: z.boolean().optional(),
         })
         .parse(req.body);
       const photo = db.prepare("SELECT * FROM photos WHERE id=?").get(photoId);
       if (!photo) return reply.code(404).send({ error: "Photo introuvable." });
       const revision = (p) =>
         createHash("sha256")
-          .update(JSON.stringify([p.caption, p.hidden, p.archived_at]))
+          .update(
+            JSON.stringify([p.caption, p.hidden, p.archived_at, p.deleted_at]),
+          )
           .digest("hex");
       if (
         req.headers["x-photo-version"] &&
@@ -688,6 +727,21 @@ export async function createApp(overrides = {}) {
             "Cette photo a été modifiée depuis. Actualisez avant d’annuler.",
         });
       transaction(db, () => {
+        if (input.deleted !== undefined) {
+          db.prepare("UPDATE photos SET deleted_at=? WHERE id=?").run(
+            input.deleted ? now() : null,
+            photoId,
+          );
+          if (input.deleted)
+            db.prepare("UPDATE animals SET cover_id=NULL WHERE cover_id=?").run(
+              photoId,
+            );
+        }
+        if (input.cover && (input.deleted || photo.deleted_at))
+          throw Object.assign(
+            Error("Restaurez la photo avant de la mettre en couverture."),
+            { statusCode: 400 },
+          );
         db.prepare(
           "UPDATE photos SET caption=?,hidden=?,archived_at=? WHERE id=?",
         ).run(
@@ -753,7 +807,7 @@ export async function createApp(overrides = {}) {
         "SELECT p.*,b.mime,b.size,b.width,b.height FROM photos p JOIN blobs b ON b.hash=p.hash WHERE p.id=?",
       )
       .get(photoId);
-    if (!p || (p.hidden && !req.user))
+    if (!p || ((p.hidden || p.deleted_at) && !req.user))
       return reply.code(404).send({ error: "Photo introuvable." });
     const original = req.query.original === "1" || req.query.full === "1";
     const width = Number(req.query.w || 640);
@@ -889,7 +943,11 @@ export async function createApp(overrides = {}) {
   );
   const running = new Set();
   async function job(kind, user, fn) {
-    if (running.has(kind))
+    if (
+      running.has(kind) ||
+      running.has("archive_compress") ||
+      (kind === "archive_compress" && running.size)
+    )
       throw Object.assign(new Error("Cette opération est déjà en cours."), {
         statusCode: 409,
       });
@@ -991,7 +1049,7 @@ export async function createApp(overrides = {}) {
     async () =>
       db
         .prepare(
-          "SELECT substr(created_at,1,10) day,COUNT(*) count FROM photos GROUP BY day ORDER BY day DESC LIMIT 14",
+          "SELECT substr(created_at,1,10) day,COUNT(*) count FROM (SELECT created_at FROM photos WHERE deleted_at IS NULL UNION ALL SELECT created_at FROM album_photos WHERE deleted_at IS NULL) GROUP BY day ORDER BY day DESC LIMIT 14",
         )
         .all(),
   );
@@ -999,7 +1057,11 @@ export async function createApp(overrides = {}) {
     "/api/admin/backups",
     { preHandler: authorized(["admin"]) },
     async () =>
-      db.prepare("SELECT * FROM backups ORDER BY created_at DESC").all(),
+      db
+        .prepare(
+          "SELECT b.*,EXISTS(SELECT 1 FROM archive_compactions c WHERE c.backup_id=b.id) protected FROM backups b ORDER BY b.created_at DESC",
+        )
+        .all(),
   );
   app.post(
     "/api/admin/backups",
@@ -1032,7 +1094,7 @@ export async function createApp(overrides = {}) {
   app.get("/api/admin/users", { preHandler: authorized(["admin"]) }, async () =>
     db
       .prepare(
-        "SELECT id,name,role,created_at,active FROM users ORDER BY created_at",
+        "SELECT u.id,u.name,u.role,u.created_at,u.active,u.last_login_at,(SELECT hash FROM user_avatars WHERE user_id=u.id) avatarHash FROM users u ORDER BY u.created_at",
       )
       .all(),
   );

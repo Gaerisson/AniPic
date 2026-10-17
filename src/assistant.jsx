@@ -1,4 +1,5 @@
 import { NavLink } from "./nav-link.jsx";
+import { AssistantChat } from "./assistant-chat.jsx";
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -60,6 +61,7 @@ export function QuickAssistant({
   readMessage,
 }) {
   const [opened, setOpened] = useState(false),
+    [mode, setMode] = useState("search"),
     [query, setQuery] = useState(""),
     [animals, setAnimals] = useState([]),
     [status, setStatus] = useState(null),
@@ -77,7 +79,7 @@ export function QuickAssistant({
       const r = launcher.current?.getBoundingClientRect();
       if (r) {
         const available = document.documentElement.clientWidth,
-          width = Math.min(410, available - 32);
+          width = Math.min(mode === "chat" ? 490 : 410, available - 32);
         setPosition({
           top: Math.max(16, Math.min(r.bottom + 12, innerHeight - 160)),
           right: Math.max(
@@ -102,7 +104,7 @@ export function QuickAssistant({
       document.removeEventListener("pointerdown", outside);
       window.removeEventListener("resize", place);
     };
-  }, [opened, hidden]);
+  }, [opened, hidden, mode]);
   useEffect(() => {
     const key = (e) => {
       if (!hidden && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
@@ -118,7 +120,11 @@ export function QuickAssistant({
     return () => document.removeEventListener("keydown", key);
   }, [hidden, opened]);
   useEffect(() => {
-    if (opened && !hidden) field.current?.focus();
+    if (opened && !hidden) {
+      if (mode === "chat")
+        panel.current?.querySelector(".chat-compose textarea")?.focus();
+      else field.current?.focus();
+    }
     if (opened && user)
       api("/team-ai/status")
         .then((s) => {
@@ -126,7 +132,7 @@ export function QuickAssistant({
           if (!s.gemini && s.tokenharbor) setProvider("tokenharbor");
         })
         .catch(() => {});
-  }, [opened, hidden, user?.id]);
+  }, [opened, hidden, user?.id, mode]);
   const q = normalizeCommand(query),
     words = q.split(/\s+/).filter((w) => w.length > 2),
     destinations = Object.entries(pages)
@@ -208,36 +214,76 @@ export function QuickAssistant({
   if (hidden) return null;
   return (
     <div className="quick-assistant">
-      {opened &&
-        createPortal(
-          <section
-            ref={panel}
-            className="assistant-panel"
-            style={{
-              top: position.top,
-              right: position.right,
-              width: position.width,
-              "--assistant-top": position.top + "px",
-            }}
-            role="dialog"
-            aria-label="Assistant Anipic"
-          >
-            <header>
-              <div className="assistant-identity">
-                <FoxAvatar decorative src={overview?.assistantAvatarUrl} />
-                <span>
-                  <strong>Assistant Anipic</strong>
-                  <small>Animaux, pages et outils</small>
-                </span>
-              </div>
+      {createPortal(
+        <section
+          hidden={!opened}
+          ref={panel}
+          className={`assistant-panel ${mode === "chat" ? "assistant-chat-panel" : ""}`}
+          style={{
+            top: position.top,
+            right: position.right,
+            width: position.width,
+            "--assistant-top": position.top + "px",
+          }}
+          role="dialog"
+          aria-label="Assistant Anipic"
+        >
+          <header>
+            <div className="assistant-identity">
+              <FoxAvatar decorative src={overview?.assistantAvatarUrl} />
+              <span>
+                <strong>Assistant Anipic</strong>
+                <small>Animaux, pages et outils</small>
+              </span>
+            </div>
+            <button
+              className="icon-button"
+              aria-label="Fermer l’assistant"
+              onClick={() => setOpened(false)}
+            >
+              <X size={18} />
+            </button>
+          </header>
+          {user && (
+            <div
+              className="assistant-mode"
+              role="tablist"
+              aria-label="Mode de l’assistant"
+            >
               <button
-                className="icon-button"
-                aria-label="Fermer l’assistant"
-                onClick={() => setOpened(false)}
+                role="tab"
+                aria-selected={mode === "search"}
+                onClick={() => setMode("search")}
               >
-                <X size={18} />
+                Rechercher
               </button>
-            </header>
+              <button
+                role="tab"
+                aria-selected={mode === "chat"}
+                onClick={() => setMode("chat")}
+              >
+                Discuter avec l’IA
+              </button>
+            </div>
+          )}
+          {user && (
+            <div className="assistant-chat-slot" hidden={mode !== "chat"}>
+              <AssistantChat
+                key={user.id}
+                user={user}
+                status={status}
+                provider={provider}
+                setProvider={setProvider}
+                onNavigate={(key, id) => {
+                  if (key === "animal") {
+                    setOpened(false);
+                    openModal({ type: "animal", id });
+                  } else destination(key);
+                }}
+              />
+            </div>
+          )}
+          <div className="assistant-search-slot" hidden={mode === "chat"}>
             <div className="assistant-search">
               <Search size={16} />
               <input
@@ -357,15 +403,16 @@ export function QuickAssistant({
                 )}
               </form>
             )}
-            <footer>
-              <span>Ctrl / ⌘ K</span>
-              <button onClick={() => destination("about")}>
-                À propos · Gaerisson
-              </button>
-            </footer>
-          </section>,
-          document.body,
-        )}
+          </div>
+          <footer>
+            <span>Ctrl / ⌘ K</span>
+            <button onClick={() => destination("about")}>
+              À propos · Gaerisson
+            </button>
+          </footer>
+        </section>,
+        document.body,
+      )}
       <button
         className={`assistant-launcher ${opened ? "opened" : ""}`}
         ref={launcher}
@@ -382,6 +429,19 @@ export function QuickAssistant({
           {/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘ K" : "Ctrl K"}
         </kbd>
       </button>
+      {user && (
+        <button
+          className="chat-launcher"
+          aria-label="Discuter avec le chatbot"
+          onClick={() => {
+            setMode("chat");
+            setOpened(true);
+          }}
+        >
+          <FoxAvatar decorative src={overview?.assistantAvatarUrl} />
+          <MessageCircle size={15} />
+        </button>
+      )}
     </div>
   );
 }
@@ -412,7 +472,7 @@ export function About({ overview, go, user, voice }) {
     <div className="about-page">
       <div className="page-heading">
         <h1>À propos</h1>
-        <span className="about-version">Version 3.3.0</span>
+        <span className="about-version">Version 3.4.0</span>
       </div>
       <section className="panel about-author">
         <FoxAvatar

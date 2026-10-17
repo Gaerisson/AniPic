@@ -266,6 +266,11 @@ export function AnnualMosaic({ film }) {
           duration={finishFrames / FPS}
           logoSrc={staticFile("spa-logo.png")}
           logoScale={portrait ? 0.91 : 0.86}
+          animation={film.logoAnimation || "fade"}
+          particleStyle={film.particleStyle || "auto"}
+          particleDensity={film.particleDensity ?? 35}
+          particleSpeed={film.particleSpeed ?? 40}
+          backgroundTheme={film.backgroundTheme || "classic"}
           title=""
           motion={film.motion !== "off"}
         />

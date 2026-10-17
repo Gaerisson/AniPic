@@ -1,4 +1,6 @@
 import React from "react";
+import { Particles } from "./Particles.jsx";
+import { visualTheme } from "./visual-themes.mjs";
 import { mosaicPoints } from "../video/spa-mosaic.mjs";
 const clamp = (v) => Math.max(0, Math.min(1, v));
 const ease = (v) => 1 - Math.pow(1 - clamp(v), 3);
@@ -18,23 +20,36 @@ export function PhotoConstellation({
   particleDensity = 35,
   particleSpeed = 40,
   logoScale = 1,
+  particleStyle = "auto",
+  backgroundTheme = "classic",
 }) {
   const t = frame / fps,
     portrait = h > w,
     u = Math.min(w, h) / 1080;
   const gather = motion ? ease((t - duration * 0.32) / (duration * 0.3)) : 1;
   const reveal = motion ? ease((t - duration * 0.69) / (duration * 0.2)) : 1;
-  const logoW = Math.min(w * 0.6, h * 0.62) * Math.max(.5,Math.min(1,logoScale)),
+  const logoW =
+      Math.min(w * 0.6, h * 0.62) * Math.max(0.5, Math.min(1, logoScale)),
     logoH = (logoW * 599) / 542;
   const ox = (w - logoW) / 2,
     oy = (h - logoH) / 2 + 10 * u,
     tile = logoW / 12.4;
-  if (animation === "fade") {
+  if (animation !== "mosaic") {
     const fade = motion ? ease(t / Math.min(1.1, duration * 0.19)) : 1,
       cells = 90,
-      level = Math.max(0, Math.min(85, photoBlend)) / 100,
-      particles = Math.round(particleDensity * 0.65),
-      speed = 0.12 + particleSpeed / 90;
+      level = Math.max(0, Math.min(85, photoBlend)) / 100;
+    const palette = visualTheme(backgroundTheme),
+      revealProgress = motion ? ease(t / Math.min(1.7, duration * 0.3)) : 1;
+    const transform =
+      animation === "bloom"
+        ? `scale(${0.84 + 0.16 * revealProgress})`
+        : animation === "prism"
+          ? `perspective(1800px) rotateY(${(1 - revealProgress) * 35}deg) scale(${0.93 + 0.07 * revealProgress})`
+          : undefined;
+    const clip =
+      animation === "sweep"
+        ? `inset(0 ${(1 - revealProgress) * 100}% 0 0)`
+        : undefined;
     return (
       <div
         style={{
@@ -42,101 +57,100 @@ export function PhotoConstellation({
           inset: 0,
           overflow: "hidden",
           isolation: "isolate",
-          background: "radial-gradient(ellipse at 50% 44%,#473023,#111317 72%)",
+          background: `radial-gradient(ellipse at 50% 44%,${palette.start},${palette.end} 80%)`,
         }}
       >
-        {Array.from({ length: particles }, (_, i) => (
-          <i
-            key={`particle-${i}`}
-            style={{
-              position: "absolute",
-              left: `${(i * 37.79) % 100}%`,
-              top: `${((i * 19.37 + (motion ? t * speed * (2 + (i % 4)) : 0)) % 110) - 5}%`,
-              width: (2 + (i % 4)) * u,
-              height: (2 + (i % 4)) * u,
-              borderRadius: "50%",
-              background: i % 3 ? "#efab71" : "#fff4e4",
-              opacity: 0.12 + (Math.sin(t * speed + i) + 1) * 0.11,
-              filter: i % 4 === 0 ? `blur(${3 * u}px)` : "none",
-              boxShadow: `0 0 ${(7 + (i % 3) * 4) * u}px #ec8b5440`,
-            }}
-          />
-        ))}
-        <img
-          src={logoSrc}
-          alt=""
-          style={{
-            position: "absolute",
-            left: ox,
-            top: oy,
-            width: logoW,
-            height: logoH,
-            objectFit: "contain",
-            opacity: fade,
-          }}
+        <Particles
+          frame={frame}
+          fps={fps}
+          width={w}
+          height={h}
+          density={particleDensity}
+          speed={particleSpeed}
+          style={particleStyle}
+          theme={palette.id}
+          accent={palette.accent}
+          motion={motion}
         />
         <div
-          style={{
-            position: "absolute",
-            left: ox,
-            top: oy,
-            width: logoW,
-            height: logoH,
-            maskImage: `url("${logoSrc}")`,
-            WebkitMaskImage: `url("${logoSrc}")`,
-            maskSize: "100% 100%",
-            WebkitMaskSize: "100% 100%",
-            maskRepeat: "no-repeat",
-            overflow: "hidden",
-            opacity: level * fade,
-          }}
+          style={{ position: "absolute", inset: 0, transform, clipPath: clip }}
         >
-          {photos.length > 0 &&
-            Array.from({ length: cells }, (_, i) => {
-              const order = (i * 37) % cells,
-                delay = 0.16 + Math.sqrt(order / cells) * 0.57,
-                appear = motion ? ease((t / duration - delay) / 0.075) : 1;
-              return (
-                <div
-                  key={i}
-                  style={{
-                    position: "absolute",
-                    left: `${((i % 9) / 9) * 100}%`,
-                    top: `${(Math.floor(i / 9) / 10) * 100}%`,
-                    width: "11.2%",
-                    height: "10.2%",
-                    opacity: appear,
-                    overflow: "hidden",
-                  }}
-                >
-                  <img
-                    src={photos[i % photos.length].src}
-                    alt=""
+          <img
+            src={logoSrc}
+            alt=""
+            style={{
+              position: "absolute",
+              left: ox,
+              top: oy,
+              width: logoW,
+              height: logoH,
+              objectFit: "contain",
+              opacity: fade,
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              left: ox,
+              top: oy,
+              width: logoW,
+              height: logoH,
+              maskImage: `url("${logoSrc}")`,
+              WebkitMaskImage: `url("${logoSrc}")`,
+              maskSize: "100% 100%",
+              WebkitMaskSize: "100% 100%",
+              maskRepeat: "no-repeat",
+              overflow: "hidden",
+              opacity: level * fade,
+            }}
+          >
+            {photos.length > 0 &&
+              Array.from({ length: cells }, (_, i) => {
+                const order = (i * 37) % cells,
+                  delay = 0.16 + Math.sqrt(order / cells) * 0.57,
+                  appear = motion ? ease((t / duration - delay) / 0.075) : 1;
+                return (
+                  <div
+                    key={i}
                     style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      transform: `scale(${1 + (1 - appear) * 0.25})`,
+                      position: "absolute",
+                      left: `${((i % 9) / 9) * 100}%`,
+                      top: `${(Math.floor(i / 9) / 10) * 100}%`,
+                      width: "11.2%",
+                      height: "10.2%",
+                      opacity: appear,
+                      overflow: "hidden",
                     }}
-                  />
-                </div>
-              );
-            })}
+                  >
+                    <img
+                      src={photos[i % photos.length].src}
+                      alt=""
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        transform: `scale(${1 + (1 - appear) * 0.25})`,
+                      }}
+                    />
+                  </div>
+                );
+              })}
+          </div>
+          <img
+            src={logoSrc}
+            alt="La SPA"
+            style={{
+              position: "absolute",
+              left: ox,
+              top: oy,
+              width: logoW,
+              height: logoH,
+              objectFit: "contain",
+              opacity: fade,
+              mixBlendMode: photos.length ? "screen" : "normal",
+            }}
+          />
         </div>
-        <img
-          src={logoSrc}
-          alt="La SPA"
-          style={{
-            position: "absolute",
-            left: ox,
-            top: oy,
-            width: logoW,
-            height: logoH,
-            objectFit: "contain",
-            opacity: fade,
-            mixBlendMode: photos.length ? "screen" : "normal",
-          }}
-        />
         {title && (
           <div
             style={{
@@ -158,31 +172,28 @@ export function PhotoConstellation({
       </div>
     );
   }
+  const palette = visualTheme(backgroundTheme);
   return (
     <div
       style={{
         position: "absolute",
         inset: 0,
         overflow: "hidden",
-        background: "radial-gradient(ellipse at 50% 42%,#462c20,#111317 69%)",
+        background: `radial-gradient(ellipse at 50% 42%,${palette.start},${palette.end} 80%)`,
       }}
     >
-      {Array.from({ length: 7 }, (_, i) => (
-        <div
-          key={`orb${i}`}
-          style={{
-            position: "absolute",
-            left: `${12 + i * 13}%`,
-            top: `${18 + (i % 3) * 23}%`,
-            width: 5 * u,
-            height: 5 * u,
-            background: "#eb651c",
-            borderRadius: "50%",
-            opacity: 0.16 + Math.sin(t + i) * 0.1,
-            transform: `translateY(${motion ? Math.sin(t * 0.8 + i) * 24 * u : 0}px)`,
-          }}
-        />
-      ))}
+      <Particles
+        frame={frame}
+        fps={fps}
+        width={w}
+        height={h}
+        density={particleDensity}
+        speed={particleSpeed}
+        style={particleStyle}
+        theme={palette.id}
+        accent={palette.accent}
+        motion={motion}
+      />
       {photos.length > 0 &&
         mosaicPoints.map((point, i) => {
           const photo = photos[i % photos.length],

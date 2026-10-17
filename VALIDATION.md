@@ -1,4 +1,21 @@
-# Vérifications — AniPic 3.3.0
+# Vérifications — AniPic 3.4.0
+
+## V3.4 — 17 octobre 2026
+
+Installation propre **Node.js 24.18.1 / npm ci** dans un nouveau dossier : **409 packages**, aucune vulnérabilité signalée. Aucun changement manuel de version transitive ni nouvelle dépendance ; les versions du manifeste et du lockfile sont 3.4.0.
+
+Suite complète : **148 tests réussis**, aucun échec ni test ignoré, environ 74,5 s. Après les derniers ajustements de couvertures vidéo et de libellés d’ententes, **15 tests ciblés supplémentaires réussis**. Le test réel de miniature C8 avait révélé un problème de format couleur MJPEG ; il a été corrigé et vérifié, y compris pour une vidéo plus courte que le point d’aperçu. Builds frontend et vidéo réussis après les dernières modifications. **99 liens documentaires internes contrôlés, aucune cible manquante.** Configurations réelles du client Compose officiel vérifiées : base, C8+Import et stack avec image locale ; politiques d’image et protections des volumes conservées.
+
+Nouveaux scénarios : erreurs IA compréhensibles sans divulguer les exceptions, réponse Gemini sans texte / budget épuisé et contenu Token Harbor sous forme de blocs, historique de chat borné et refus de rôle système, lecture sans compte refusée, avatars et permissions, dernière connexion, corbeille réversible avec fichiers conservés, couvertures de sous-albums sans fuite de dossier privé. Compression réelle avec sauvegarde complète relue, hash vérifié, récupération des originaux par restauration, protection contre une recompression et contre la rotation des sauvegardes. Pannes simulées : import simultané, sauvegarde refusée, sauvegarde réellement corrompue et dossier photos renommé pour simuler sa déconnexion, sans création d’un dossier de remplacement.
+
+Rendus Remotion réels inspectés : Halloween paysage, informations SPA de Noël portrait, horaires en grille, cinq styles de logo, finales de bilan paysage et portrait. Les logos, statistiques, textes et horaires restent distincts. Les exportations anciennes restent inchangées.
+
+Navigateur : sélection SPA et loader d’affiche visibles ; aperçu chargé et boutons d’export activés après préparation. Chat contextuel avec réponses simulées, Markdown, liens distinguant les homonymes par espèce/identifiant, conservation de la conversation après fermeture et message d’erreur IA vide vérifiés. Deux cartes C8 d’illustration avec miniatures décodées, même hauteur avec et sans badge Morée (316,27 px dans le viewport de test). Estimation de stockage effectuée sans modification des photos, information de sauvegarde visible et lancement de compression désactivé sans accord.
+
+Démo principale sauvegardée avant migration **15 → 16**, intégrité SQLite `ok`. Comptes contrôlés après redémarrage : **79 animaux, 14 photos, 2 photos à trier, 4 projets vidéo**, identiques à l’état initial. Serveur local actif sur `http://localhost:3036`. Aucun reset, compression réelle des données de l’utilisateur ni changement des volumes NAS. Le serveur UI avec IA simulée a utilisé une copie isolée, sans appel au service externe.
+
+Limites : les appels Canva/IA sont simulés dans les tests, sans requête payante ni connexion réelle à un compte Canva. La fluidité sur la TV physique n’est pas mesurée. Aucun moteur Docker disponible ici : construction complète d’image, exécution de la CI sur GitHub et déploiement Portainer/NAS réels non exécutés. Les contrôles existants de CI restent en place.
+
 
 14–16 octobre 2026, Windows, Node.js 24.18.1. Données de test isolées, aucun changement dans les ZIP d’origine, l’ancienne API ou votre NAS.
 
@@ -27,6 +44,12 @@ Migration principale **14 → 15**, sauvegarde SQLite cohérente avant redémarr
 ## Nettoyage et logo — 17 octobre 2026
 
 Suite complète répétée : **137 tests réussis**, 0 échec, environ 60 s. Builds frontend et vidéo réussis après suppression des anciens montages. **89 liens documentaires internes vérifiés**, aucune cible manquante. Les anciennes commandes story/trailer sont conservées comme points d’entrée du montage actuel ; la commande story a produit sept images réelles en 1080 × 1920, durée de composition 24,5 s, sans scène GPIC. Le logo a été inspecté en PNG et dans le menu de l’application à sa taille réelle. Le dossier généré du build vidéo est nettoyé explicitement pour retirer les anciennes copies publiques ; les répertoires des données ne sont pas concernés. Aucun test Docker complet supplémentaire exécuté.
+
+## Correctif de mise à jour Portainer — 17 octobre 2026
+
+`compose.yml` définit maintenant `pull_policy: build` pour compiler l’image locale depuis les sources. `portainer-stack.yml` reste destiné à une image préconstruite, avec `pull_policy: never`. Le téléchargement forcé dans Portainer doit rester désactivé ; le correctif n’a pas été appliqué au serveur distant depuis cette session.
+
+Contrôle réel avec le client officiel Compose 5.6.0 : configurations de base, C8+Import et image locale acceptées. Le script `check-deploy-config.mjs`, ajouté en CI et à la procédure avant release, refuse deux régressions introduites dans des copies isolées : `pull_policy: missing` et `create_host_path: true`. Comparaison complète des modèles JSON avant/après : seule la politique de build change ; volumes, chemins, droits et variables de production restent identiques. Aucun conteneur ni volume créé. La suite applicative n’a pas été répétée pour ce changement de déploiement ; les derniers 137 tests et builds concernent le code applicatif inchangé. Construction d’image et déploiement Portainer non exécutés ici, moteur Docker indisponible.
 
 ## Historique des contrôles
 

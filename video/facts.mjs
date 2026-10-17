@@ -1,4 +1,7 @@
-import {normalizeCompatibility} from '../shared/compatibility-text.mjs';
+import {
+  normalizeCompatibility,
+  compatibilityState,
+} from "../shared/compatibility-text.mjs";
 export function compatibilityLabels(values = {}) {
   return Object.entries(normalizeCompatibility(values)).map(([key, value]) => {
     const k = key.toLowerCase();
@@ -18,15 +21,18 @@ export function compatibilityLabels(values = {}) {
             ? "👧"
             : "🐾";
     const raw = String(value).trim(),
-      v = raw.toLowerCase();
-    const label = /^(ok|oui|yes|true|1)$/.test(v)
-      ? "OK"
-      : /^(ko|non|no|false|0)$/.test(v)
-        ? "Pas OK"
-        : /^(inconnu|unknown|à tester|a tester|n\/a|null|)$/.test(v)
-          ? "À confirmer"
-          : raw.charAt(0).toUpperCase() + raw.slice(1);
+      v = raw.toLowerCase(),
+      state = compatibilityState(value);
+    const label =
+      state === "yes"
+        ? "OK"
+        : state === "no"
+          ? "Pas OK"
+          : /^(inconnu|unknown|à tester|a tester|n\/a|null|)$/.test(v)
+            ? "À confirmer"
+            : raw.charAt(0).toUpperCase() + raw.slice(1);
     return {
+      state,
       subject,
       icon,
       label,

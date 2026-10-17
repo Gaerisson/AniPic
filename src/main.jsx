@@ -55,6 +55,7 @@ import { StatusAppearanceContext } from "./animal-status.jsx";
 import { DownloadDialog } from "./downloads.jsx";
 import { CanvaDialog } from "./canva.jsx";
 import { QuickAssistant, About } from "./assistant.jsx";
+import { UserPicture } from "./user-avatar.jsx";
 import { Login, AnimalDetail, UploadForm, Account } from "./dialogs.jsx";
 import {
   Collections,
@@ -628,11 +629,7 @@ function App() {
               }
             >
               <span className="avatar">
-                {user ? (
-                  user.name.slice(0, 2).toUpperCase()
-                ) : (
-                  <Users size={18} />
-                )}
+                {user ? <UserPicture user={user} /> : <Users size={18} />}
               </span>
               <span>
                 <strong>{user?.name || "Espace équipe"}</strong>
@@ -700,7 +697,7 @@ function App() {
                   setModal(user ? { type: "account" } : { type: "login" })
                 }
               >
-                {user ? user.name[0].toUpperCase() : <Users size={16} />}
+                {user ? <UserPicture user={user} /> : <Users size={16} />}
               </button>
             </div>
           </header>
@@ -946,3 +943,4 @@ createRoot(document.getElementById("root")).render(<App />);
 
 import "./update32.css";
 import "./update33.css";
+import "./update34.css";

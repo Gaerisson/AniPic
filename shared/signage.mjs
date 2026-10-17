@@ -21,6 +21,8 @@ export const showDefaults = Object.freeze({
   logoAnimation: "fade",
   particleDensity: 35,
   particleSpeed: 40,
+  particleStyle: "auto",
+  backgroundTheme: "classic",
   rotationMinutes: 5,
   excludedScenes: [],
   pace: "gentle",

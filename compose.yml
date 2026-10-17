@@ -2,7 +2,10 @@ name: anipic
 services:
   anipic:
     build: .
-    image: anipic:3.3.0
+    image: anipic:3.4.0
+    # Image locale construite depuis le dépôt. Dans Portainer, désactiver
+    # « Re-pull image » : aucune image anipic n’est publiée dans un registre.
+    pull_policy: build
     container_name: anipic
     init: true
     restart: unless-stopped
@@ -17,6 +20,7 @@ services:
       PROXY_TRUSTED_IPS: "${PROXY_TRUSTED_IPS:-127.0.0.1,::1}"
       SOURCE_ALLOWED_HOSTS: "${SOURCE_ALLOWED_HOSTS:-www.la-spa.fr,la-spa.fr,api-spa.gaerisson-softs.fr,srv.gaerisson-softs.fr}"
       MAX_UPLOAD_MB: "${MAX_UPLOAD_MB:-25}"
+      MAX_MEDIA_MB: "${MAX_MEDIA_MB:-512}"
       CACHE_MB: "${CACHE_MB:-512}"
       DEMO_MODE: "false"
       VIDEO_RENDER_ENABLED: "${VIDEO_RENDER_ENABLED:-true}"

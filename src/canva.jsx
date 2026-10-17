@@ -234,7 +234,26 @@ export function CanvaDialog({ animalId, photoId, close, open, notify }) {
     [projects, setProjects] = useState([]),
     [active, setActive] = useState(null),
     [pollError, setPollError] = useState("");
-  const sending = useRef(false);
+  const sending = useRef(false),
+    designWindow = useRef(null),
+    autoProject = useRef(null);
+  function openReady(project) {
+    if (project.id !== autoProject.current) return;
+    if (project.state === "success" && project.designs?.[0]) {
+      if (designWindow.current && !designWindow.current.closed)
+        designWindow.current.location.replace(
+          `/api/canva/projects/${project.id}/edit/${encodeURIComponent(project.designs[0].id)}`,
+        );
+      else
+        notify(
+          "Design prêt. Cliquez sur « Ouvrir dans Canva » (fenêtre bloquée par le navigateur).",
+        );
+      autoProject.current = null;
+    } else if (["failed", "interrupted"].includes(project.state)) {
+      designWindow.current?.close();
+      autoProject.current = null;
+    }
+  }
   const history = () =>
     api(`/canva/projects?animalId=${animalId}`).then((r) =>
       setProjects(r.items),
@@ -349,6 +368,7 @@ export function CanvaDialog({ animalId, photoId, close, open, notify }) {
         if (!alive) return;
         setProjects((rows) => [p, ...rows.filter((r) => r.id !== p.id)]);
         setActive(p);
+        openReady(p);
         setPollError("");
         if (p.state === "in_progress" && ++attempts < 40)
           timer = setTimeout(poll, 3000);
@@ -371,6 +391,15 @@ export function CanvaDialog({ animalId, photoId, close, open, notify }) {
     sending.current = true;
     setBusy(destination);
     setError("");
+    if (destination === "canva") {
+      designWindow.current = window.open("about:blank", "_blank");
+      if (designWindow.current) {
+        designWindow.current.opener = null;
+        designWindow.current.document.title = "AniPic · Préparation Canva";
+        designWindow.current.document.body.textContent =
+          "Votre design Canva est en préparation. Cette fenêtre l’ouvrira dès qu’il sera prêt.";
+      }
+    }
     try {
       const body = { animalId, photoIds: selected, ...options };
       if (destination === "pptx") {
@@ -384,10 +413,13 @@ export function CanvaDialog({ animalId, photoId, close, open, notify }) {
         );
       } else {
         const project = await api("/canva/projects", { method: "POST", body });
+        autoProject.current = project.id;
+        openReady(project);
         setActive(project);
         await history();
       }
     } catch (e) {
+      if (destination === "canva") designWindow.current?.close();
       setError(e.message);
       history().catch(() => {});
     } finally {
@@ -401,6 +433,7 @@ export function CanvaDialog({ animalId, photoId, close, open, notify }) {
     try {
       const p = await api(`/canva/projects/${project.id}`);
       setActive(p);
+      openReady(p);
       await history();
     } catch (e) {
       setPollError(e.message);

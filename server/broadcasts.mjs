@@ -2,6 +2,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { pageAccessGuard } from "./page-access.mjs";
 import { rangeReply } from "./video.mjs";
+import { broadcastThumbnail } from "./broadcast-thumbnails.mjs";
 const fail = (message, code = 404) =>
   Object.assign(new Error(message), { statusCode: code });
 const formats = new Set([".mp4", ".webm", ".m4v", ".mkv"]);
@@ -100,6 +101,28 @@ export async function registerBroadcasts(app, { db, c }) {
           message:
             "Le dossier C8 est indisponible. Vérifiez son montage et les droits de lecture.",
         };
+      }
+    },
+  );
+  app.get(
+    "/api/broadcasts/:id/thumbnail",
+    {
+      preHandler: pageAccessGuard(db, "broadcasts"),
+      config: { rateLimit: { max: 90, timeWindow: "1 minute" } },
+    },
+    async (req, reply) => {
+      const asset = await broadcastFile(c.broadcastDir, req.params.id);
+      try {
+        return reply
+          .header("Cache-Control", "private,max-age=300")
+          .type("image/jpeg")
+          .send(await broadcastThumbnail(c, asset));
+      } catch (error) {
+        req.log.warn({ err: error }, "Aperçu C8 indisponible");
+        throw fail(
+          "Aperçu indisponible pour cette vidéo. La lecture reste disponible.",
+          422,
+        );
       }
     },
   );

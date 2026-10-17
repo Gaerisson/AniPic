@@ -366,6 +366,8 @@ export function applySnapshot(db, snapshot) {
   const date = now();
   let created = 0,
     updated = 0,
+    changed = 0,
+    unchanged = 0,
     absent = 0;
   const historyKey = `complete:${snapshot.scope}`;
   const previous = db
@@ -412,6 +414,20 @@ export function applySnapshot(db, snapshot) {
           old.id,
         );
         updated++;
+        const differs =
+          old.name !== a.name ||
+          old.species !== a.species ||
+          old.sex !== a.sex ||
+          old.birth_date !== (a.birthDate ?? null) ||
+          old.description !== a.description ||
+          old.source_url !== (a.sourceUrl ?? null) ||
+          old.breed !== a.breed ||
+          old.status !== a.status ||
+          old.compatibility !== JSON.stringify(a.compatibility) ||
+          old.source_metadata !== JSON.stringify(a.metadata) ||
+          old.tags !== JSON.stringify(a.tags);
+        if (differs) changed++;
+        else unchanged++;
         if (old.status === "source_missing" && old.archived_at)
           feedEvent(db, { ...old, status: a.status }, "restored");
       } else {
@@ -511,6 +527,8 @@ export function applySnapshot(db, snapshot) {
   return {
     created,
     updated,
+    changed,
+    unchanged,
     archived: absent,
     complete: snapshot.complete,
     absenceCheck: countAbsences,

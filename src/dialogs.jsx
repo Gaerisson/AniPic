@@ -1,7 +1,10 @@
+import { PhotoTrash } from "./photo-trash.jsx";
+import { UserAvatarEditor, UserPicture } from "./user-avatar.jsx";
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   PawPrint,
   Archive,
+  Trash2,
   Camera,
   ShieldCheck,
   ArrowRight,
@@ -233,6 +236,7 @@ export function AnimalDetail({
         caption: photo.caption,
         hidden: !!photo.hidden,
         archived: !!photo.archived_at,
+        deleted: !!photo.deleted_at,
       };
       const result = await api("/photos/" + photo.id, {
         method: "PATCH",
@@ -832,6 +836,13 @@ export function AnimalDetail({
               >
                 Archiver la photo
               </Button>
+              <Button
+                variant="quiet"
+                icon={Trash2}
+                onClick={() => updatePhoto({ deleted: true })}
+              >
+                Supprimer · corbeille
+              </Button>
             </div>
           )}
           {canEdit && selected.length > 0 && (
@@ -885,6 +896,16 @@ export function AnimalDetail({
               </Button>
             </div>
           )}
+          {canEdit && (
+            <PhotoTrash
+              animalId={animal.id}
+              notify={notify}
+              reload={() => {
+                load();
+                reload();
+              }}
+            />
+          )}
           {animal.photos.some((p) => p.archived_at) && (
             <details className="archived-photos">
               <summary>
@@ -914,6 +935,27 @@ export function AnimalDetail({
                           }}
                         >
                           Restaurer
+                        </Button>
+                      )}
+                      {canEdit && (
+                        <Button
+                          variant="quiet"
+                          icon={Trash2}
+                          onClick={async () => {
+                            try {
+                              await api("/photos/" + p.id, {
+                                method: "PATCH",
+                                body: { deleted: true },
+                              });
+                              load();
+                              reload();
+                              notify("Photo placée dans la corbeille.");
+                            } catch (e) {
+                              notify(e.message, "error");
+                            }
+                          }}
+                        >
+                          Supprimer
                         </Button>
                       )}
                     </div>
@@ -1087,8 +1129,9 @@ export function Account({ user, close, notify, onLogout }) {
   const [busy, setBusy] = useState(false);
   return (
     <Modal title="Votre espace équipe." onClose={close}>
+      <UserAvatarEditor user={user} notify={notify} />
       <div className="account-identity">
-        <span className="avatar">{user.name.slice(0, 2).toUpperCase()}</span>
+        <UserPicture user={user} />
         <div>
           <h3>{user.name}</h3>
           <span className="muted">

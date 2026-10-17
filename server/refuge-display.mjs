@@ -45,7 +45,7 @@ export async function buildDisplay(
       continue;
     const photos = db
       .prepare(
-        "SELECT p.id,p.hash,b.mime FROM photos p JOIN blobs b ON b.hash=p.hash WHERE animal_id=? AND hidden=0 AND archived_at IS NULL ORDER BY p.id=? DESC,p.created_at DESC LIMIT 100",
+        "SELECT p.id,p.hash,b.mime FROM photos p JOIN blobs b ON b.hash=p.hash WHERE animal_id=? AND hidden=0 AND deleted_at IS NULL AND archived_at IS NULL ORDER BY p.id=? DESC,p.created_at DESC LIMIT 100",
       )
       .all(a.id, a.cover_id || "")
       .filter((p) => matchingTag(db, "photo", p.id, program.tags))

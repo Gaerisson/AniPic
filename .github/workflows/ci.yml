@@ -31,16 +31,11 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
       - name: Validate Compose and optional mounts
-        env:
-          ANIPIC_MEDIA_PATH: /mnt/anipic/photos
-          ANIPIC_BACKUP_PATH: /mnt/anipic/backups
-          ANIPIC_C8_PATH: /mnt/anipic/C8
-          ANIPIC_IMPORT_PATH: /mnt/anipic/Import
-        run: |
-          docker compose -f compose.yml config --quiet
-          docker compose -f compose.yml -f compose.c8.yml -f compose.import.yml config --quiet
-          docker compose -f portainer-stack.yml config --quiet
+        run: node scripts/check-deploy-config.mjs
       - name: Build complete production image
         run: docker build --pull --tag anipic:ci .
       - name: Start production app and render a real clip in disposable storage

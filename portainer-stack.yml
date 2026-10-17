@@ -1,8 +1,10 @@
-# Construire d'abord l'image anipic:3.3.0 sur le moteur Docker de Portainer.
+# Construire d'abord l'image anipic:3.4.0 sur le moteur Docker de Portainer.
+# Déploiement depuis Git avec compilation : utiliser compose.yml à la place.
+# Pour les mises à jour, laisser « Re-pull image » désactivé.
 # Définir les variables dans Portainer > Stacks > Environment variables.
 services:
   anipic:
-    image: anipic:3.3.0
+    image: anipic:3.4.0
     pull_policy: never
     container_name: anipic
     init: true
@@ -12,6 +14,7 @@ services:
       - "${ANIPIC_BIND_IP:-127.0.0.1}:${ANIPIC_PORT:-8088}:3000"
     environment:
       NODE_ENV: production
+      MAX_MEDIA_MB: "${MAX_MEDIA_MB:-512}"
       HOST: 0.0.0.0
       PORT: "3000"
       DB_DIR: /data

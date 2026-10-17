@@ -37,7 +37,7 @@ export async function registerAlbums(app, { db, c, authorized }) {
         `
     SELECT p.id AS id,NULL animal_id,p.hash,p.filename,p.caption,p.created_at AS created_at,b.width,b.height,b.size,b.mime,p.filename name,'private' kind FROM album_photos p JOIN blobs b ON b.hash=p.hash WHERE collection_id=? AND p.deleted_at IS NULL
     UNION ALL
-    SELECT p.id,p.animal_id,p.hash,p.filename,p.caption,p.created_at,b.width,b.height,b.size,b.mime,a.name,'animal' FROM collection_photos cp JOIN photos p ON p.id=cp.photo_id JOIN animals a ON a.id=p.animal_id JOIN blobs b ON b.hash=p.hash WHERE cp.collection_id=? AND (?=1 OR (p.hidden=0 AND p.archived_at IS NULL AND a.archived_at IS NULL))
+    SELECT p.id,p.animal_id,p.hash,p.filename,p.caption,p.created_at,b.width,b.height,b.size,b.mime,a.name,'animal' FROM collection_photos cp JOIN photos p ON p.id=cp.photo_id JOIN animals a ON a.id=p.animal_id JOIN blobs b ON b.hash=p.hash WHERE cp.collection_id=? AND p.deleted_at IS NULL AND (?=1 OR (p.hidden=0 AND p.archived_at IS NULL AND a.archived_at IS NULL))
     ORDER BY created_at DESC,id LIMIT ? OFFSET ?`,
       )
       .all(albumId, albumId, user ? 1 : 0, limit, offset);
@@ -45,12 +45,26 @@ export async function registerAlbums(app, { db, c, authorized }) {
     const items = photos(row.id, user, limit, (page - 1) * limit);
     const total = db
       .prepare(
-        "SELECT (SELECT COUNT(*) FROM album_photos WHERE collection_id=? AND deleted_at IS NULL)+(SELECT COUNT(*) FROM collection_photos cp JOIN photos p ON p.id=cp.photo_id JOIN animals a ON a.id=p.animal_id WHERE cp.collection_id=? AND (?=1 OR (p.hidden=0 AND p.archived_at IS NULL AND a.archived_at IS NULL))) n",
+        "SELECT (SELECT COUNT(*) FROM album_photos WHERE collection_id=? AND deleted_at IS NULL)+(SELECT COUNT(*) FROM collection_photos cp JOIN photos p ON p.id=cp.photo_id JOIN animals a ON a.id=p.animal_id WHERE cp.collection_id=? AND p.deleted_at IS NULL AND (?=1 OR (p.hidden=0 AND p.archived_at IS NULL AND a.archived_at IS NULL))) n",
       )
       .get(row.id, row.id, user ? 1 : 0).n;
     return {
       ...row,
       effective_public: publicAlbum(db, row.id),
+      covers: db
+        .prepare(
+          "WITH RECURSIVE children(id,depth) AS (SELECT ?,0 UNION ALL SELECT c.id,ch.depth+1 FROM collections c JOIN children ch ON c.parent_id=ch.id WHERE ch.depth<12) SELECT id FROM children ORDER BY depth",
+        )
+        .all(row.id)
+        .filter((a) => user || publicAlbum(db, a.id))
+        .flatMap((a) => photos(a.id, user, 4))
+        .sort(
+          (a, b) =>
+            Number(b.mime.startsWith("image/")) -
+            Number(a.mime.startsWith("image/")),
+        )
+        .slice(0, 4)
+        .map(({ hash, ...p }) => p),
       photo_count: total,
       page,
       pages: Math.ceil(total / limit),
@@ -219,7 +233,11 @@ export async function registerAlbums(app, { db, c, authorized }) {
       const row = find(req.params.id, req.user);
       const imported = [];
       for await (const part of req.parts({
-        limits: { files: 50, fields: 0, fileSize: c.maxUploadBytes },
+        limits: {
+          files: 50,
+          fields: 0,
+          fileSize: c.maxMediaBytes || 512 * 1024 ** 2,
+        },
       }))
         if (part.type === "file") {
           if (/\.(mp4|webm|mov|m4v)$/i.test(part.filename || "")) {

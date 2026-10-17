@@ -1,3 +1,4 @@
+import { aiFailure, aiResponseText } from "./ai-response.mjs";
 import { compatibilityLabels } from "../video/facts.mjs";
 const sexes = { female: "Femelle", male: "Mâle", unknown: "" };
 export function publicFacts(animal) {
@@ -78,7 +79,7 @@ export async function aiPost(
     body = {
       systemInstruction: { parts: [{ text: system }] },
       contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: { maxOutputTokens: 1000 },
+      generationConfig: { maxOutputTokens: 4096 },
     };
   } else {
     const model = options.tokenharborModel || process.env.TOKENHARBOR_MODEL;
@@ -115,26 +116,13 @@ export async function aiPost(
     );
   const text = await response.text();
   if (text.length > 100000) throw new Error("Réponse IA trop volumineuse.");
-  const result = JSON.parse(text);
-  if (
-    provider === "gemini" &&
-    (result.promptFeedback?.blockReason ||
-      !["STOP", "MAX_TOKENS"].includes(result.candidates?.[0]?.finishReason))
-  )
-    throw Object.assign(
-      new Error("Le service IA n’a pas renvoyé un brouillon exploitable."),
-      { statusCode: 502 },
+  let result;
+  try {
+    result = JSON.parse(text);
+  } catch {
+    throw aiFailure(
+      "Le service IA a renvoyé une réponse illisible. Réessayez ou utilisez le brouillon local.",
     );
-  const output =
-    provider === "gemini"
-      ? result.candidates?.[0]?.content?.parts
-          ?.filter((p) => !p.thought)
-          .map((p) => p.text || "")
-          .join("")
-      : result.choices?.[0]?.message?.content;
-  if (typeof output !== "string" || !output.trim())
-    throw Object.assign(new Error("Réponse IA sans texte."), {
-      statusCode: 502,
-    });
-  return output.trim().slice(0, 5000);
+  }
+  return aiResponseText(result, provider).slice(0, 5000);
 }

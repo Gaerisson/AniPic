@@ -68,7 +68,7 @@ export function ShowTimeline({ show, program: p, change, seek, notify }) {
           seconds: type === "video" ? 20 : 7,
           title: "",
           body: "",
-          theme: type === "message" ? "auto" : "classic",
+          theme: "auto",
           ...(type === "video" && assets[0] ? { assetId: assets[0].id } : {}),
         },
       ],
@@ -470,8 +470,15 @@ export function ShowTimeline({ show, program: p, change, seek, notify }) {
                       </select>
                     </label>
                     <label className="full-width">
-                      Message
+                      {b.type === "hours"
+                        ? "Horaires · un jour ou groupe de jours par ligne"
+                        : "Message"}
                       <textarea
+                        placeholder={
+                          b.type === "hours"
+                            ? "Lundi : fermé\nMardi à dimanche : 14h – 17h"
+                            : undefined
+                        }
                         value={b.body}
                         maxLength="350"
                         rows="3"

@@ -71,14 +71,14 @@ export function messageContent(block, show = {}) {
   if (block.type === "hours")
     return {
       ...block,
-      theme: "classic",
+      theme,
       title: block.title || "Horaires du refuge",
       body: block.body || show.textDefaults?.hours || textDefaults.hours,
     };
   if (block.type === "spa")
     return {
       ...block,
-      theme: "classic",
+      theme,
       title: block.title || "La SPA",
       body: block.body || show.textDefaults?.spaInfo || textDefaults.spaInfo,
     };

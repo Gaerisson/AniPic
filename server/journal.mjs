@@ -1,4 +1,19 @@
 import { id, now } from "./db.mjs";
+const names = {
+  sync: "Synchronisation SPA",
+  json_imported: "Import des fiches SPA",
+  backup: "Sauvegarde",
+  archive_compress: "Compression des archives",
+  photo_updated: "Photo modifiée",
+  settings_updated: "Configuration enregistrée",
+  login: "Connexion",
+  login_failed: "Connexion refusée",
+  user_avatar_updated: "Avatar modifié",
+  user_avatar_reset: "Avatar retiré",
+  album_created: "Album créé",
+  album_updated: "Album modifié",
+};
+const label = (value) => names[value] || value.replaceAll("_", " ");
 export function recordError(db, req, error, status) {
   // Never persist query strings, bodies, cookies, OAuth codes, keys or stack traces.
   const code = /^[A-Z0-9_]{1,60}$/.test(error.code || "")
@@ -47,7 +62,7 @@ export async function registerJournal(app, { db, authorized }) {
         .map((r) => ({
           ...r,
           kind: "action",
-          title: r.action,
+          title: label(r.action),
           detail: r.detail,
         }));
       const jobs = db
@@ -56,7 +71,15 @@ export async function registerJournal(app, { db, authorized }) {
         .map((r) => ({
           ...r,
           kind: r.state === "failed" ? "error" : "job",
-          title: r.kind + " · " + r.state,
+          title:
+            label(r.kind) +
+            " · " +
+            ({
+              done: "Terminée",
+              failed: "Échec",
+              running: "En cours",
+              interrupted: "Interrompue",
+            }[r.state] || r.state),
           detail: r.detail,
         }));
       return [...failures, ...actions, ...jobs]

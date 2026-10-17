@@ -47,7 +47,7 @@ function LiveVideo({ src, style, localFrame, fps, paused }) {
     const t = localFrame / fps;
     if (Math.abs((v.currentTime || 0) - t) > 0.7) v.currentTime = t;
     if (paused) v.pause();
-    else v.play().catch(() => {});
+    else if (v.paused) v.play().catch(() => {});
   }, [localFrame, paused, src, fps]);
   return (
     <video
@@ -227,6 +227,8 @@ export function SignageCanvas({
                   transform: motion
                     ? `scale(${1.01 + progress * 0.045 * power})`
                     : undefined,
+                  willChange: motion ? "transform" : undefined,
+                  backfaceVisibility: "hidden",
                 }}
               />
             )}
@@ -373,6 +375,22 @@ export function SignageCanvas({
                         border: `1px solid ${glass || cinema || cards ? "#ffffff30" : "#d4c3b3"}`,
                         padding: "8px 12px",
                         borderRadius: 10 * u,
+                        color:
+                          e.state === "yes"
+                            ? glass || cinema || cards
+                              ? "#8fd7b6"
+                              : "#27654e"
+                            : e.state === "no"
+                              ? glass || cinema || cards
+                                ? "#f5a1a1"
+                                : "#9a3434"
+                              : undefined,
+                        background:
+                          e.state === "yes"
+                            ? "#48aa7c15"
+                            : e.state === "no"
+                              ? "#da555515"
+                              : undefined,
                       }}
                     >
                       <CompatibilityIcon subject={e.subject} size={25 * u} />
@@ -423,6 +441,7 @@ export function SignageCanvas({
             motion={motion}
             particleDensity={p.particleDensity}
             particleSpeed={p.particleSpeed}
+            particleStyle={p.particleStyle}
           />
         </div>
       ) : scene.type === "video" ? (
@@ -467,6 +486,8 @@ export function SignageCanvas({
           animation={p.logoAnimation}
           particleDensity={p.particleDensity}
           particleSpeed={p.particleSpeed}
+          particleStyle={p.particleStyle}
+          backgroundTheme={p.backgroundTheme}
         />
       ) : scene.type === "stats" ? (
         <div

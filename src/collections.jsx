@@ -121,27 +121,32 @@ export function Collections({ version, open, canEdit, user, notify, reload }) {
                   onClick={() => setParent(c.id)}
                 >
                   <div className="collection-cover">
-                    {c.photos
-                      .slice(0, 4)
-                      .map((p) =>
-                        p.mime?.startsWith("video/") ? (
-                          <video
-                            key={p.id}
-                            src={photoUrl(p, 320)}
-                            muted
-                            playsInline
-                            preload="metadata"
-                          />
-                        ) : (
-                          <img
-                            key={p.id}
-                            src={photoUrl(p, 320)}
-                            alt=""
-                            loading="lazy"
-                          />
-                        ),
-                      )}
-                    {!c.photos.length && <Folder size={42} />}
+                    {(c.covers || c.photos).slice(0, 4).map((p) =>
+                      p.mime?.startsWith("video/") ? (
+                        <video
+                          key={p.id}
+                          src={photoUrl(p, 320)}
+                          muted
+                          playsInline
+                          preload="metadata"
+                          onLoadedMetadata={(e) => {
+                            if (e.currentTarget.duration > 0)
+                              e.currentTarget.currentTime = Math.min(
+                                2,
+                                e.currentTarget.duration * 0.35,
+                              );
+                          }}
+                        />
+                      ) : (
+                        <img
+                          key={p.id}
+                          src={photoUrl(p, 320)}
+                          alt=""
+                          loading="lazy"
+                        />
+                      ),
+                    )}
+                    {!(c.covers || c.photos).length && <Folder size={42} />}
                   </div>
                   <div>
                     <span className="collection-label">
@@ -163,6 +168,9 @@ export function Collections({ version, open, canEdit, user, notify, reload }) {
                     </h3>
                     <p>{c.description || "Un espace pour vos images."}</p>
                     <small>
+                      {!c.photo_count &&
+                        c.covers?.length > 0 &&
+                        "Aperçu des sous-dossiers · "}
                       {c.photo_count} photos ·{" "}
                       {albums.filter((a) => a.parent_id === c.id).length}{" "}
                       sous-dossiers

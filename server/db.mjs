@@ -9,7 +9,7 @@ export function openDb(c) {
     "PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;",
   );
   const version = db.prepare("PRAGMA user_version").get().user_version;
-  if (version > 15) throw new Error("Base créée par une version plus récente.");
+  if (version > 16) throw new Error("Base créée par une version plus récente.");
   if (version === 0)
     db.exec(`
     BEGIN;
@@ -150,6 +150,26 @@ export function openDb(c) {
     CREATE TABLE IF NOT EXISTS diagnostic_log(id TEXT PRIMARY KEY,created_at TEXT NOT NULL,level TEXT NOT NULL,status INTEGER,user_id TEXT,method TEXT,path TEXT,code TEXT);
     CREATE INDEX IF NOT EXISTS diagnostic_recent ON diagnostic_log(created_at);
     PRAGMA user_version=15;`);
+    });
+  if (version < 16)
+    transaction(db, () => {
+      if (
+        !db
+          .prepare("PRAGMA table_info(users)")
+          .all()
+          .some((c) => c.name === "last_login_at")
+      )
+        db.exec("ALTER TABLE users ADD COLUMN last_login_at TEXT");
+      if (
+        !db
+          .prepare("PRAGMA table_info(photos)")
+          .all()
+          .some((c) => c.name === "deleted_at")
+      )
+        db.exec("ALTER TABLE photos ADD COLUMN deleted_at TEXT");
+      db.exec(`CREATE TABLE IF NOT EXISTS user_avatars(user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,hash TEXT NOT NULL,image BLOB NOT NULL);
+      CREATE TABLE IF NOT EXISTS archive_compactions(id TEXT PRIMARY KEY,backup_id TEXT NOT NULL REFERENCES backups(id),created_at TEXT NOT NULL,detail TEXT NOT NULL);
+      PRAGMA user_version=16;`);
     });
   db.prepare("DELETE FROM site_passes WHERE expires_at < ?").run(now());
   db.prepare("DELETE FROM sessions WHERE expires_at < ?").run(now());

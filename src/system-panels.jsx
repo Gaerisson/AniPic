@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { OperationSummary } from "./operation-summary.jsx";
 import {
   RefreshCw,
   CheckCircle2,
@@ -86,11 +87,11 @@ export function Journal() {
       <section className="panel journal-release">
         <BookOpen size={23} />
         <div>
-          <h2>AniPic 3.3 · Journal des évolutions</h2>
+          <h2>AniPic 3.4 · Journal des évolutions</h2>
           <p>
-            Installation Docker contrôlée en CI, préparation NAS protégée,
-            retour Canva avec PIN, albums photo/vidéo, déplacement et corbeille,
-            médias SPA dans les supports, lecteur et interface corrigés.
+            Assistant conversationnel, ambiances saisonnières, horaires TV,
+            aperçus C8, avatars, dernières connexions et suivi détaillé.
+            Compression des archives après sauvegarde vérifiée et protégée.
           </p>
           <a
             href="https://github.com/Gaerisson/AniPic"
@@ -134,8 +135,10 @@ export function Journal() {
               <div>
                 <strong>{r.title}</strong>
                 <small>
-                  {r.user_name || "Système"} · {date(r.created_at)}
+                  {r.user_name || "Système"} ·{" "}
+                  {new Date(r.created_at).toLocaleString("fr-FR")}
                 </small>
+                <OperationSummary detail={r.detail} />
                 {r.detail && (
                   <details>
                     <summary>Détails</summary>

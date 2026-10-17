@@ -1,3 +1,8 @@
+import {
+  logoAnimations,
+  particleStyles,
+  visualThemes,
+} from "../shared/visual-themes.mjs";
 import { DropArea, UploadPreviews } from "./upload-feedback.jsx";
 import { uploadWithProgress } from "./api.js";
 import { useState, useEffect, useRef } from "react";
@@ -785,6 +790,60 @@ export default function Studio({
                 />
                 Statistiques à la fin
               </label>
+              <label>
+                Animation finale du logo
+                <select
+                  disabled={!canEdit}
+                  value={film.logoAnimation || "fade"}
+                  onChange={(e) => update("logoAnimation", e.target.value)}
+                >
+                  {Object.entries(logoAnimations).map(([id, n]) => (
+                    <option key={id} value={id}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Ambiance du fond
+                <select
+                  disabled={!canEdit}
+                  value={film.backgroundTheme || "classic"}
+                  onChange={(e) => update("backgroundTheme", e.target.value)}
+                >
+                  <option value="auto">Selon la saison</option>
+                  {Object.entries(visualThemes).map(([id, t]) => (
+                    <option key={id} value={id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Particules
+                <select
+                  disabled={!canEdit}
+                  value={film.particleStyle || "auto"}
+                  onChange={(e) => update("particleStyle", e.target.value)}
+                >
+                  {Object.entries(particleStyles).map(([id, n]) => (
+                    <option key={id} value={id}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Densité · {film.particleDensity ?? 35}%
+                <input
+                  disabled={!canEdit}
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={film.particleDensity ?? 35}
+                  onChange={(e) => update("particleDensity", +e.target.value)}
+                />
+              </label>
             </>
           )}
           <div className="form-row">
@@ -1390,8 +1449,8 @@ export default function Studio({
             />
           </div>
           <p>
-            MP4/WebM pour la vidéo · MP3/WAV/M4A pour le son · 100 Mo par
-            fichier.
+            MP4/WebM pour la vidéo · MP3/WAV/M4A pour le son · limite serveur
+            configurable (512 Mo par défaut) par fichier.
           </p>
           {canEdit && (
             <DropArea

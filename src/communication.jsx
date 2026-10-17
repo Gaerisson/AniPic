@@ -3,7 +3,16 @@ import {
   textDefaults,
 } from "../shared/content-defaults.mjs";
 import { useState, useEffect, useRef } from "react";
-import { Download, Printer, Package, Copy, CheckCircle2 } from "lucide-react";
+import {
+  Download,
+  Printer,
+  Package,
+  Copy,
+  CheckCircle2,
+  LoaderCircle,
+  Globe,
+  Camera,
+} from "lucide-react";
 import { api, apiBlob, apiDownload, imageUrl, copyText, date } from "./api.js";
 import { Button, Modal, Spinner } from "./ui.jsx";
 export function AnimalCommunication({
@@ -120,6 +129,7 @@ export function CommunicationDialog({
       focusY: 50,
     }),
     [preview, setPreview] = useState(""),
+    [previewBusy, setPreviewBusy] = useState(false),
     [error, setError] = useState(""),
     [busy, setBusy] = useState("");
   const current = useRef("");
@@ -137,6 +147,7 @@ export function CommunicationDialog({
   }, [animalId]);
   useEffect(() => {
     if (!chosen) return;
+    setPreviewBusy(true);
     let alive = true;
     const timer = setTimeout(async () => {
       try {
@@ -152,6 +163,8 @@ export function CommunicationDialog({
         setError("");
       } catch (e) {
         if (alive) setError(e.message);
+      } finally {
+        if (alive) setPreviewBusy(false);
       }
     }, 450);
     return () => {
@@ -198,7 +211,13 @@ export function CommunicationDialog({
       className="communication-modal"
     >
       <div className="communication-grid">
-        <div className="poster-preview">
+        <div className="poster-preview" aria-busy={previewBusy || !!busy}>
+          {(previewBusy || busy) && (
+            <div className="poster-working" role="status">
+              <LoaderCircle className="spin" size={22} />
+              {busy ? "Génération du fichier…" : "Préparation de l’aperçu…"}
+            </div>
+          )}
           {preview ? (
             <div className="poster-edit-canvas">
               <img src={preview} alt="Aperçu de l’affiche portrait" />
@@ -269,7 +288,7 @@ export function CommunicationDialog({
           <div className="feature-actions">
             <Button
               icon={Printer}
-              disabled={!!busy || !preview}
+              disabled={!!busy || previewBusy || !preview}
               onClick={() => download("pdf")}
             >
               {busy === "pdf" ? "Préparation…" : "PDF imprimable"}
@@ -277,7 +296,7 @@ export function CommunicationDialog({
             <Button
               variant="secondary"
               icon={Download}
-              disabled={!!busy || !preview}
+              disabled={!!busy || previewBusy || !preview}
               onClick={() => download("png")}
             >
               PNG 300 dpi
@@ -424,10 +443,14 @@ export function CommunicationDialog({
               <option value={100}>Bas</option>
             </select>
           </label>
+          <p className="photo-origin-note">
+            <Globe size={15} /> Site SPA · <Camera size={15} /> Vos photos
+            locales
+          </p>
           <div className="communication-photos">
             {animal?.source_metadata?.thumbnail && (
               <button
-                className={chosen === "spa" ? "selected" : ""}
+                className={`source-choice ${chosen === "spa" ? "selected" : ""}`}
                 onClick={() => setChosen("spa")}
                 aria-label="Utiliser la photo du site SPA sur l’affiche"
               >
@@ -435,7 +458,9 @@ export function CommunicationDialog({
                   src={`/api/animals/${animal.id}/source-photo?w=320`}
                   alt="Photo du site SPA"
                 />
-                <small>SPA</small>
+                <small>
+                  <Globe size={12} /> Site SPA
+                </small>
               </button>
             )}
             {animal?.photos
@@ -443,11 +468,14 @@ export function CommunicationDialog({
               .map((p) => (
                 <button
                   key={p.id}
-                  className={chosen === p.id ? "selected" : ""}
+                  className={`local-choice ${chosen === p.id ? "selected" : ""}`}
                   onClick={() => setChosen(p.id)}
                   aria-label={`Utiliser ${p.filename} sur l’affiche`}
                 >
                   <img src={imageUrl(p.id, 320)} alt="" />
+                  <small>
+                    <Camera size={12} /> Locale
+                  </small>
                 </button>
               ))}
           </div>

@@ -66,7 +66,7 @@ export function Broadcasts({ user, open, ui }) {
           </p>
           <p>
             Les fichiers sont lus directement sur le NAS. Anipic ne les copie
-            pas et ne génère pas de miniature vidéo.
+            pas. Les aperçus sont préparés dans le cache local.
           </p>
         </div>
       ) : !data.available ? (
@@ -109,6 +109,7 @@ export function Broadcasts({ user, open, ui }) {
               >
                 <span className="broadcast-art">
                   <Tv size={40} />
+                  <img src={`/api/broadcasts/${v.id}/thumbnail?v=${encodeURIComponent(v.updatedAt)}`} alt="" loading="lazy" onError={e=>{e.currentTarget.style.display="none"}}/>
                   <i>
                     <Play size={20} />
                   </i>
