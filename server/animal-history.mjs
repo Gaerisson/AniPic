@@ -141,7 +141,15 @@ export async function registerHistory(app, { db, authorized }) {
   );
   app.get(
     "/api/changes",
-    { preHandler: authorized(["admin", "editor", "agent", "viewer"]) },
+    {
+      preHandler: authorized([
+        "admin",
+        "editor",
+        "agent",
+        "volunteer",
+        "viewer",
+      ]),
+    },
     (req, reply) => read(req, reply, true),
   );
 }

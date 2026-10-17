@@ -41,12 +41,25 @@ test("qualified ententes are amber, missing values are omitted, theme choice sur
     "Femelle : non avec les chats",
     "Selon le profil : oui",
     "Pour les enfants, non",
+    "À tester",
+    "Non testé",
+    "Selon profil",
+    "Rencontre nécessaire",
+    "Sociable avec certains chiens",
+    "Non renseigné",
+    "Inconnu",
+    "OK",
+    "Pas OK",
+    "Oui ?",
+    "Épanoui",
+    "Nonchalant",
   ])
     assert.equal(compatibilityState(s), "conditional");
-  assert.equal(compatibilityState("Non testé"), "unknown");
   assert.equal(compatibilityState("Non."), "no");
   assert.equal(compatibilityState("Oui !"), "yes");
-  for (const value of ["Épanoui", "Nonchalant", "À tester", "Non renseigné"])
+  assert.equal(compatibilityState("  OUI  "), "yes");
+  assert.equal(compatibilityState("  NON  "), "no");
+  for (const value of ["", null, undefined, "—", "N/A", "..."])
     assert.equal(compatibilityState(value), "unknown");
   for (const value of ["N/A", "n.a", "Non renseigné", null, "—"])
     assert.equal(hasAnimalInfo(value), false);

@@ -2,7 +2,7 @@ name: anipic
 services:
   anipic:
     build: .
-    image: anipic:3.5.4
+    image: anipic:3.6.0
     # Image locale construite depuis le dépôt. Dans Portainer, désactiver
     # « Re-pull image » : aucune image anipic n’est publiée dans un registre.
     pull_policy: build
@@ -28,6 +28,8 @@ services:
       GEMINI_MODEL: "${GEMINI_MODEL:-gemini-3.5-flash-lite}"
       TOKENHARBOR_API_KEY: "${TOKENHARBOR_API_KEY:-}"
       TOKENHARBOR_MODEL: "${TOKENHARBOR_MODEL:-}"
+      GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID:-}"
+      GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET:-}"
       CANVA_CLIENT_ID: "${CANVA_CLIENT_ID:-}"
       CANVA_CLIENT_SECRET: "${CANVA_CLIENT_SECRET:-}"
       CANVA_TOKEN_KEY: "${CANVA_TOKEN_KEY:-}"

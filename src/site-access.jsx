@@ -14,6 +14,9 @@ export function SiteGate({
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [login, setLogin] = useState(preferAccount);
+  useEffect(() => {
+    if (preferAccount) setLogin(true);
+  }, [preferAccount]);
   return (
     <main className="site-gate">
       <section className="panel">

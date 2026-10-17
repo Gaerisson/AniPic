@@ -8,6 +8,7 @@ import { createApp } from "../server/app.mjs";
 import { ingest } from "../server/storage.mjs";
 import { renderFilm, mediaMetadata } from "../server/video.mjs";
 import { createUser } from "../server/auth.mjs";
+import "./check-cutout-runtime.mjs";
 const base = await fs.mkdtemp(path.join(os.tmpdir(), "anipic-docker-smoke-"));
 const app = await createApp({
   dbDir: path.join(base, "db"),

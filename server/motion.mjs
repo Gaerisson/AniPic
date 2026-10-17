@@ -6,7 +6,7 @@ import { parseShow } from "./signage-schema.mjs";
 import { buildDisplay } from "./refuge-display.mjs";
 import { renderComposition, rangeReply } from "./video.mjs";
 import { sourcePhotoBuffer } from "./source-photo.mjs";
-const all = ["admin", "editor", "agent", "viewer"],
+const all = ["admin", "editor", "agent", "volunteer", "viewer"],
   uuid = z.string().uuid();
 const fail = (message, statusCode = 400) =>
   Object.assign(new Error(message), { statusCode });
@@ -89,7 +89,7 @@ export async function registerMotion(app, { db, c, authorized, job }) {
   app.post(
     "/api/motion/render",
     {
-      preHandler: authorized(),
+      preHandler: authorized(["admin", "editor", "agent", "volunteer"]),
       config: { rateLimit: { max: 5, timeWindow: "1 hour" } },
     },
     async (req) => {
@@ -148,7 +148,7 @@ export async function registerMotion(app, { db, c, authorized, job }) {
   );
   app.post(
     "/api/motion/exports/:id/cancel",
-    { preHandler: authorized() },
+    { preHandler: authorized(["admin", "editor", "agent", "volunteer"]) },
     async (req) => {
       cancels.get(uuid.parse(req.params.id))?.();
       return { ok: true };
@@ -156,7 +156,7 @@ export async function registerMotion(app, { db, c, authorized, job }) {
   );
   app.delete(
     "/api/motion/exports/:id",
-    { preHandler: authorized() },
+    { preHandler: authorized(["admin", "editor", "agent", "volunteer"]) },
     async (req) => {
       const v = uuid.parse(req.params.id);
       const r = db
@@ -171,7 +171,7 @@ export async function registerMotion(app, { db, c, authorized, job }) {
   );
   app.post(
     "/api/motion/exports/:id/restore",
-    { preHandler: authorized() },
+    { preHandler: authorized(["admin", "editor", "agent", "volunteer"]) },
     async (req) => {
       const v = uuid.parse(req.params.id);
       db.prepare(

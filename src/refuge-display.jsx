@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Component, useEffect, useState } from "react";
 import { Monitor, ExternalLink, Save, Film, Settings2 } from "lucide-react";
 import { api } from "./api.js";
 import { Button, Spinner, Empty } from "./ui.jsx";
@@ -7,7 +7,38 @@ import { ShowOptions, MotionExports } from "./show-options.jsx";
 import { ShowTimeline } from "./show-timeline.jsx";
 import { copyText } from "./api.js";
 import { showDefaults } from "../shared/signage.mjs";
+import {
+  useDisplayMonitor,
+  DisplayMonitorControl,
+} from "./use-display-monitor.jsx";
+import { DisplayScreens } from "./display-screens.jsx";
+class TVPlaybackBoundary extends Component {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch() {
+    this.props.onStatus({
+      state: "error",
+      scene: null,
+      issues: ["render_error"],
+    });
+  }
+  render() {
+    return this.state.failed ? (
+      <div className="show-loading">
+        <p>La lecture a été interrompue.</p>
+        <Button onClick={() => this.setState({ failed: false })}>
+          Réessayer
+        </Button>
+      </div>
+    ) : (
+      this.props.children
+    );
+  }
+}
 export function RefugeScreen() {
+  const monitor = useDisplayMonitor();
   const [show, setShow] = useState(null),
     [error, setError] = useState("");
   useEffect(() => {
@@ -16,11 +47,17 @@ export function RefugeScreen() {
       api("/public/display")
         .then((d) => {
           if (alive) {
+            monitor.sync(d);
             setShow(d);
             setError("");
           }
         })
-        .catch((e) => alive && setError(e.message));
+        .catch((e) => {
+          if (alive) {
+            setError(e.message);
+            monitor.failed();
+          }
+        });
     load();
     const timer = setInterval(load, 60000);
     return () => {
@@ -45,13 +82,26 @@ export function RefugeScreen() {
           icon={Monitor}
           title={!show.enabled ? "Écran désactivé" : "Aucun animal sélectionné"}
           text="Configurez le programme dans Écran du refuge."
-          action={<a href="#gallery">Retour à Anipic</a>}
+          action={
+            <>
+              <a href="#gallery">Retour à Anipic</a>
+              <DisplayMonitorControl monitor={monitor} />
+            </>
+          }
         />
       </main>
     );
   return (
     <>
-      <ShowPlayer full show={show} synced />
+      <TVPlaybackBoundary key={show.revision} onStatus={monitor.onStatus}>
+        <ShowPlayer
+          full
+          show={show}
+          synced
+          onStatus={monitor.onStatus}
+          monitorControl={<DisplayMonitorControl monitor={monitor} />}
+        />
+      </TVPlaybackBoundary>
       {error && (
         <div className="screen-error" role="status">
           Connexion interrompue · programme conservé
@@ -66,7 +116,8 @@ export function DisplaySettings({ notify, user }) {
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [tab, setTab] = useState("programme"),
-    [seekFrame, setSeekFrame] = useState(null);
+    [seekFrame, setSeekFrame] = useState(null),
+    [monitoring, setMonitoring] = useState(false);
   useEffect(() => {
     api("/admin/display")
       .then(setCfg)
@@ -132,7 +183,7 @@ export function DisplaySettings({ notify, user }) {
           </a>
           <Button
             icon={Save}
-            disabled={busy}
+            disabled={busy || monitoring}
             onClick={async () => {
               setBusy(true);
               try {
@@ -151,148 +202,162 @@ export function DisplaySettings({ notify, user }) {
           </Button>
         </div>
       </div>
-      <div className="signage-editor">
-        <div className="signage-config panel">
-          <div className="signage-tabs">
-            {[
-              ["programme", "Programme"],
-              ["style", "Style"],
-              ["diffusion", "Diffusion"],
-            ].map(([id, label]) => (
-              <button
-                key={id}
-                className={tab === id ? "active" : ""}
-                onClick={() => setTab(id)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          {tab === "diffusion" ? (
-            <div className="show-options">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={cfg.displayEnabled}
-                  onChange={(e) => patch("displayEnabled", e.target.checked)}
+      <nav className="display-view-tabs" aria-label="Écran du refuge">
+        <button aria-pressed={!monitoring} onClick={() => setMonitoring(false)}>
+          Programme & diffusion
+        </button>
+        <button aria-pressed={monitoring} onClick={() => setMonitoring(true)}>
+          Suivi des TV
+        </button>
+      </nav>
+      {monitoring ? (
+        <DisplayScreens notify={notify} />
+      ) : (
+        <div className="signage-editor">
+          <div className="signage-config panel">
+            <div className="signage-tabs">
+              {[
+                ["programme", "Programme"],
+                ["style", "Style"],
+                ["diffusion", "Diffusion"],
+              ].map(([id, label]) => (
+                <button
+                  key={id}
+                  className={tab === id ? "active" : ""}
+                  onClick={() => setTab(id)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {tab === "diffusion" ? (
+              <div className="show-options">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={cfg.displayEnabled}
+                    onChange={(e) => patch("displayEnabled", e.target.checked)}
+                  />
+                  Activer l’écran public
+                </label>
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={cfg.displaySpaPhotos}
+                    onChange={(e) =>
+                      patch("displaySpaPhotos", e.target.checked)
+                    }
+                  />
+                  Photos SPA en l’absence de photo locale
+                </label>
+                <small>
+                  Les photos SPA sont signalées à l’écran. Les exports utilisent
+                  les médias publics et les références SPA sélectionnées.
+                </small>
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={cfg.displayReserved}
+                    onChange={(e) => patch("displayReserved", e.target.checked)}
+                  />
+                  Inclure les animaux réservés
+                </label>
+                <ShowOptions
+                  program={program}
+                  change={(v) => patch("displayProgram", v)}
+                  section="schedule"
                 />
-                Activer l’écran public
-              </label>
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={cfg.displaySpaPhotos}
-                  onChange={(e) => patch("displaySpaPhotos", e.target.checked)}
-                />
-                Photos SPA en l’absence de photo locale
-              </label>
-              <small>
-                Les photos SPA sont signalées à l’écran. Les exports utilisent
-                les médias publics et les références SPA sélectionnées.
-              </small>
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={cfg.displayReserved}
-                  onChange={(e) => patch("displayReserved", e.target.checked)}
-                />
-                Inclure les animaux réservés
-              </label>
+                <a className="button secondary" href="#motion">
+                  <Film size={17} />
+                  Fonds animés & réseaux
+                </a>
+              </div>
+            ) : (
               <ShowOptions
                 program={program}
                 change={(v) => patch("displayProgram", v)}
-                section="schedule"
+                section={tab}
+                hidden={cfg.displayHiddenIds}
+                setHidden={(v) => patch("displayHiddenIds", v)}
               />
-              <a className="button secondary" href="#motion">
-                <Film size={17} />
-                Fonds animés & réseaux
-              </a>
+            )}
+          </div>
+          <div className="signage-preview-col">
+            <div className="section-heading">
+              <h3>Aperçu en direct</h3>
+              <span className="tag">
+                {show?.items.length || 0} animaux ·{" "}
+                {Math.round(show?.duration || 0)} s
+              </span>
             </div>
-          ) : (
-            <ShowOptions
-              program={program}
-              change={(v) => patch("displayProgram", v)}
-              section={tab}
-              hidden={cfg.displayHiddenIds}
-              setHidden={(v) => patch("displayHiddenIds", v)}
-            />
-          )}
-        </div>
-        <div className="signage-preview-col">
-          <div className="section-heading">
-            <h3>Aperçu en direct</h3>
-            <span className="tag">
-              {show?.items.length || 0} animaux ·{" "}
-              {Math.round(show?.duration || 0)} s
-            </span>
-          </div>
-          {show?.items.length || show?.program.inserts.length ? (
-            <ShowPlayer show={show} seekFrame={seekFrame} />
-          ) : (
-            <Empty
-              icon={Monitor}
-              title="Aucun média pour cette sélection"
-              text="Ajoutez une photo publique, autorisez une vidéo ou élargissez les filtres."
-            />
-          )}
-          {error && (
-            <p className="error" role="alert">
-              {error}
-            </p>
-          )}
-          <div className="panel export-program">
-            <div>
-              <h3>Exporter ce programme</h3>
-              <small>MP4 H.264 · 1080p · son coupé · 10 min maximum</small>
+            {show?.items.length || show?.program.inserts.length ? (
+              <ShowPlayer show={show} seekFrame={seekFrame} />
+            ) : (
+              <Empty
+                icon={Monitor}
+                title="Aucun média pour cette sélection"
+                text="Ajoutez une photo publique, autorisez une vidéo ou élargissez les filtres."
+              />
+            )}
+            {error && (
+              <p className="error" role="alert">
+                {error}
+              </p>
+            )}
+            <div className="panel export-program">
+              <div>
+                <h3>Exporter ce programme</h3>
+                <small>MP4 H.264 · 1080p · son coupé · 10 min maximum</small>
+              </div>
+              <Button
+                icon={Film}
+                variant="secondary"
+                disabled={
+                  busy ||
+                  !show ||
+                  (!show.items.length && !show.program.inserts.length)
+                }
+                onClick={render}
+              >
+                Créer le MP4
+              </Button>
             </div>
-            <Button
-              icon={Film}
-              variant="secondary"
-              disabled={
-                busy ||
-                !show ||
-                (!show.items.length && !show.program.inserts.length)
-              }
-              onClick={render}
-            >
-              Créer le MP4
-            </Button>
+            {show && (
+              <ShowTimeline
+                show={show}
+                program={program}
+                change={(v) => patch("displayProgram", v)}
+                seek={(f) => setSeekFrame({ frame: f, at: Date.now() })}
+                notify={notify}
+              />
+            )}
+            <div className="panel tv-link-panel">
+              <h3>Lien web pour la TV</h3>
+              <p>
+                Ouvrez cette adresse dans le navigateur du téléviseur. Le
+                programme tourne en boucle et reçoit les réglages enregistrés
+                sous une minute.
+              </p>
+              <code>{location.origin}/#display</code>
+              <Button
+                variant="secondary"
+                type="button"
+                onClick={async () => {
+                  await copyText(`${location.origin}/#display`);
+                  notify("Lien TV copié.");
+                }}
+              >
+                Copier le lien TV
+              </Button>
+              <small>
+                Utilisez l’adresse de votre serveur ou NAS depuis la TV ;
+                localhost désigne cet ordinateur.
+              </small>
+            </div>
+            <MotionExports notify={notify} canEdit={user?.role !== "viewer"} />
           </div>
-          {show && (
-            <ShowTimeline
-              show={show}
-              program={program}
-              change={(v) => patch("displayProgram", v)}
-              seek={(f) => setSeekFrame({ frame: f, at: Date.now() })}
-              notify={notify}
-            />
-          )}
-          <div className="panel tv-link-panel">
-            <h3>Lien web pour la TV</h3>
-            <p>
-              Ouvrez cette adresse dans le navigateur du téléviseur. Le
-              programme tourne en boucle et reçoit les réglages enregistrés sous
-              une minute.
-            </p>
-            <code>{location.origin}/#display</code>
-            <Button
-              variant="secondary"
-              type="button"
-              onClick={async () => {
-                await copyText(`${location.origin}/#display`);
-                notify("Lien TV copié.");
-              }}
-            >
-              Copier le lien TV
-            </Button>
-            <small>
-              Utilisez l’adresse de votre serveur ou NAS depuis la TV ;
-              localhost désigne cet ordinateur.
-            </small>
-          </div>
-          <MotionExports notify={notify} canEdit={user?.role !== "viewer"} />
         </div>
-      </div>
+      )}
     </>
   );
 }

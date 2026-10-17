@@ -1,5 +1,29 @@
 # Journal des versions
 
+## 3.10.0 — 18 octobre 2026
+
+Suivi TV : écrans nommés, dernier contact, actualisation du programme, séquence en cours, incidents et reprises datés, détection des écrans hors ligne et retrait du suivi. Gestion réservée aux agents SPA et à l’administration ; PIN maintenu, aperçus exclus. Migration additive 20 → 21. [Détail](RELEASE_v3.10.0.md).
+
+## 3.9.1 — 18 octobre 2026
+
+Ententes : seuls « Oui » et « Non » sans précision sont définitifs. Toute autre réponse renseignée est orange, y compris les descriptions sans oui/non et les ententes à tester. Texte SPA conservé ; règle commune aux fiches, filtres et vidéos. [Détail](RELEASE_v3.9.1.md).
+
+## 3.9.0 — 18 octobre 2026
+
+Gazette préremplie : résumé automatique, mouvements datés, portraits répartis entre espèces et événements partagés. Agenda d’équipe avec dates clés, rendez-vous sur plusieurs jours, annulation, module d’accueil, publication TV au choix et contrôle des modifications concurrentes. Données actualisées chaque minute ; textes et placements de l’interface assouplis sur mobile. Migration additive 19 → 20, sans changement des montages Docker. [Détail](RELEASE_v3.9.0.md).
+
+## 3.8.0 — 18 octobre 2026
+
+Gazette complète avec arrivées et adoptions illustrées, dates corrigibles pour chaque édition, agenda de dates clés, brouillons partagés et travail local mémorisé. PDF, pages JPEG, ZIP d’images et visuel réseaux PNG ; partage de fichiers vers WhatsApp avec repli par téléchargement. L’atelier affiche la gazette et le suivi des affiches de box. [Détail](RELEASE_v3.8.0.md).
+
+## 3.7.0 — 17 octobre 2026
+
+Atelier de tri photo avec références SPA, détourage local avec réglage du contour et export PNG, suivi des affiches installées dans les box et gazette mensuelle A4 en trois styles. Préparations privées avec progression, brouillons et choix mémorisés, originaux conservés. Migration SQLite 19 et contrôle du moteur ONNX CPU dans le smoke test Docker. [Détail](RELEASE_v3.7.0.md).
+
+## 3.6.0 — 17 octobre 2026
+
+Inscription Google avec validation des comptes bénévoles et droits de création dédiés. Vidéo depuis une fiche animal, albums privés, archives, statistiques et C8. Exports de fiches en arrière-plan avec progression, PDF allégés, ZIP unique et rapport des photos en erreur. Migration SQLite 17 → 18 sans changement des montages. [Détail](RELEASE_v3.6.0.md).
+
 ## 3.5.4 — 17 octobre 2026
 
 Originaux chargés progressivement dans les albums pour un zoom net, sans ouvrir leur accès public. Couleurs de texte TV indépendantes du thème de l’interface, y compris messages, statistiques et aperçu du bilan annuel. Ententes avec « oui/non » dans une phrase classées en orange. Guide des API SPA/AniPic avec exemples vérifiés. [Détail](RELEASE_v3.5.4.md).

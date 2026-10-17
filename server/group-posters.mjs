@@ -228,11 +228,9 @@ export async function registerGroupPosters(app, { db, c, authorized }) {
           }),
         );
         if (unavailable)
-          return reply
-            .code(422)
-            .send({
-              error: `Photo indisponible pour ${unavailable}. Choisissez une autre source ou retirez cet animal.`,
-            });
+          return reply.code(422).send({
+            error: `Photo indisponible pour ${unavailable}. Choisissez une autre source ou retirez cet animal.`,
+          });
         const png = await groupPosterImage(
           c,
           items,

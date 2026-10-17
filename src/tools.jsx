@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import {
   Camera,
   Plus,
@@ -23,6 +23,7 @@ import { Weather } from "./home.jsx";
 import { SpaPhoto } from "./spa-photo.jsx";
 import { priorityLabels } from "../shared/photo-priority.mjs";
 import { TeamUtilities } from "./team-utilities.jsx";
+const CreativeWorkshop = lazy(() => import("./creative-workshop.jsx"));
 export function TaskForm({ animal, close, notify, reload }) {
   const [busy, setBusy] = useState(false);
   return (
@@ -484,6 +485,9 @@ export function AgentTools({ notify, open, go, user }) {
         </div>
       </div>
       <TeamUtilities go={go} />
+      <Suspense fallback={<Spinner />}>
+        <CreativeWorkshop user={user} notify={notify} open={open} go={go} />
+      </Suspense>
       <div className="tool-links">
         {["admin", "agent"].includes(user?.role) && (
           <Button

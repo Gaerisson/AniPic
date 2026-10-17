@@ -39,15 +39,39 @@ export function BrandLogo({ src = "/spa-logo.png", width = 130, style = {} }) {
     </div>
   );
 }
-function LiveVideo({ src, style, localFrame, fps, paused }) {
+function LiveVideo({ src, style, localFrame, fps, paused, onIssue }) {
   const ref = useRef();
+  const attempt = useRef({ src: "", at: -Infinity, pending: false });
   useEffect(() => {
     const v = ref.current;
     if (!v) return;
     const t = localFrame / fps;
     if (Math.abs((v.currentTime || 0) - t) > 0.7) v.currentTime = t;
-    if (paused) v.pause();
-    else if (v.paused) v.play().catch(() => {});
+    if (paused) {
+      v.pause();
+      attempt.current.at = -Infinity;
+    } else if (
+      v.paused &&
+      !attempt.current.pending &&
+      (attempt.current.src !== src ||
+        performance.now() - attempt.current.at > 3000)
+    ) {
+      const trying = { src, at: performance.now(), pending: true };
+      attempt.current = trying;
+      v.play()
+        .catch((error) => {
+          if (error.name === "AbortError") trying.at = -Infinity;
+          else
+            onIssue?.(
+              error.name === "NotAllowedError"
+                ? "video_autoplay"
+                : "video_load",
+            );
+        })
+        .finally(() => {
+          trying.pending = false;
+        });
+    }
   }, [localFrame, paused, src, fps]);
   return (
     <video
@@ -57,7 +81,13 @@ function LiveVideo({ src, style, localFrame, fps, paused }) {
       muted
       playsInline
       preload="metadata"
-      onError={(e) => e.currentTarget.pause()}
+      onError={(e) => {
+        e.currentTarget.pause();
+        onIssue?.("video_load");
+      }}
+      onWaiting={() => onIssue?.("video_stalled")}
+      onStalled={() => onIssue?.("video_stalled")}
+      onPlaying={() => onIssue?.(null)}
     />
   );
 }
@@ -94,6 +124,7 @@ export function SignageCanvas({
   paused = false,
   Video = LiveVideo,
   logoSrc = "/spa-logo.png",
+  onPlaybackIssue,
 }) {
   const p = { ...showDefaults, ...show.program },
     size = showSize(p.orientation),
@@ -204,6 +235,7 @@ export function SignageCanvas({
           >
             {media.kind === "video" ? (
               <Video
+                onIssue={onPlaybackIssue}
                 src={media.src}
                 localFrame={local}
                 fps={fps}
@@ -457,6 +489,7 @@ export function SignageCanvas({
       ) : scene.type === "video" ? (
         <div style={{ ...common, background: "#000", opacity }}>
           <Video
+            onIssue={onPlaybackIssue}
             src={media.src}
             localFrame={local}
             fps={fps}

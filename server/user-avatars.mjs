@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import { audit } from "./db.mjs";
 export async function registerUserAvatars(app, { db, authorized }) {
-  const all = ["admin", "editor", "agent", "viewer"];
+  const all = ["admin", "editor", "agent", "volunteer", "viewer"];
   function target(req) {
     const uid = z.string().uuid().parse(req.params.id);
     if (uid !== req.user.id && req.user.role !== "admin")

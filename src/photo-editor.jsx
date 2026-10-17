@@ -193,9 +193,9 @@ export default function PhotoEditor({ initial, canEdit, user, notify }) {
   }
   useEffect(() => {
     if (!initial?.photoId) return;
-    if (user?.role !== "admin") {
+    if (!["admin", "volunteer"].includes(user?.role)) {
       setError(
-        "La retouche des photos de la bibliothèque est réservée aux administrateurs. Vous pouvez ouvrir votre propre fichier.",
+        "La retouche des photos de la bibliothèque est réservée aux administrateurs et bénévoles validés. Vous pouvez ouvrir votre propre fichier.",
       );
       return;
     }
@@ -374,7 +374,9 @@ export default function PhotoEditor({ initial, canEdit, user, notify }) {
   }
   async function output(save = false) {
     if (libraryId && user?.role !== "admin") {
-      setError("Retouche de bibliothèque réservée aux administrateurs.");
+      setError(
+        "Retouche de bibliothèque réservée aux administrateurs et bénévoles validés.",
+      );
       return;
     }
     setBusy(save ? "save" : "export");

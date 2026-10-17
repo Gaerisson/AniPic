@@ -54,7 +54,7 @@ export function getSession(db, token) {
   return (
     db
       .prepare(
-        "SELECT u.id,u.name,u.role,s.csrf,s.token_hash,(SELECT hash FROM user_avatars WHERE user_id=u.id) avatarHash FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>? AND u.active=1",
+        "SELECT u.id,u.name,u.role,s.csrf,s.token_hash,EXISTS(SELECT 1 FROM google_identities g WHERE g.user_id=u.id) googleAccount,(SELECT hash FROM user_avatars WHERE user_id=u.id) avatarHash FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>? AND u.active=1 AND NOT EXISTS(SELECT 1 FROM google_identities g WHERE g.user_id=u.id AND g.status!='approved')",
       )
       .get(hashToken(token), now()) ?? null
   );

@@ -11,6 +11,9 @@ import { sourceLink } from "./communication.mjs";
 import { parseShow } from "./signage-schema.mjs";
 import { matchingTag } from "./animal-media.mjs";
 import { showTimeline, scheduleOpen } from "../shared/signage.mjs";
+import { agendaItems } from "./agenda.mjs";
+import { parisDate, agendaDateLabel } from "../shared/agenda.mjs";
+import { displayRevision, registerDisplayMonitor } from "./display-monitor.mjs";
 const input = z.object({
   displayEnabled: z.boolean(),
   displaySeconds: z.number().int().min(5).max(60),
@@ -31,7 +34,49 @@ export async function buildDisplay(
     program = parseShow({ showQr: cfg.displayQr, ...cfg.displayProgram }),
     items = [];
   if (!cfg.displayEnabled && !force)
-    return { enabled: false, items, seconds: cfg.displaySeconds, program };
+    return {
+      enabled: false,
+      items,
+      seconds: cfg.displaySeconds,
+      program,
+      revision: displayRevision(db, cfg, at),
+    };
+  // Only events explicitly approved for the public TV leave the team agenda.
+  if (program.mode !== "wallpaper") {
+    const from = parisDate(at),
+      until = new Date(from + "T12:00:00Z");
+    until.setUTCDate(until.getUTCDate() + 90);
+    const upcoming = agendaItems(db, from, until.toISOString().slice(0, 10), {
+      channel: "tv",
+      limit: 6,
+    }).items;
+    program.inserts = [
+      ...program.inserts,
+      ...upcoming
+        .filter((e) => !program.inserts.some((b) => b.id === e.id))
+        .map((e, i) => ({
+          id: e.id,
+          type: "message",
+          afterAnimal: (i + 1) * 4,
+          seconds: 10,
+          title: e.title,
+          body: [
+            agendaDateLabel(e.date) +
+              (e.endDate && e.endDate !== e.date
+                ? ` au ${agendaDateLabel(e.endDate)}`
+                : "") +
+              (e.time ? ` · ${e.time}` : ""),
+            e.location,
+            e.description,
+          ]
+            .filter(Boolean)
+            .join("\n")
+            .slice(0, 350),
+          theme: "auto",
+          agenda: true,
+        })),
+    ];
+  }
   const excluded = new Set(cfg.displayHiddenIds);
   const animals = db
     .prepare(
@@ -158,6 +203,7 @@ export async function buildDisplay(
     ...eligible.slice(0, offset),
   ].slice(0, program.maxAnimals);
   const show = {
+    revision: displayRevision(db, cfg, at),
     calendarDate: new Intl.DateTimeFormat("en-CA", {
       timeZone: "Europe/Paris",
       year: "numeric",
@@ -209,6 +255,7 @@ export async function buildDisplay(
   return show;
 }
 export async function registerDisplay(app, { db, c, authorized }) {
+  await registerDisplayMonitor(app, { db, c, authorized });
   app.get(
     "/api/admin/display",
     { preHandler: authorized(displayManagerRoles) },

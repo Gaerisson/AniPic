@@ -65,7 +65,13 @@ export async function registerMusic(app, { db, c, authorized }) {
   app.get(
     "/api/video/music/search",
     {
-      preHandler: authorized(["admin", "editor", "agent", "viewer"]),
+      preHandler: authorized([
+        "admin",
+        "editor",
+        "agent",
+        "volunteer",
+        "viewer",
+      ]),
       config: { rateLimit: { max: 12, timeWindow: "1 minute" } },
     },
     async (req, reply) => {
@@ -106,7 +112,7 @@ export async function registerMusic(app, { db, c, authorized }) {
   app.post(
     "/api/video/music/import",
     {
-      preHandler: authorized(),
+      preHandler: authorized(["admin", "editor", "agent", "volunteer"]),
       config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
     },
     async (req, reply) => {
@@ -145,7 +151,15 @@ export async function registerMusic(app, { db, c, authorized }) {
   );
   app.get(
     "/api/video/projects/:id/credits",
-    { preHandler: authorized(["admin", "editor", "agent", "viewer"]) },
+    {
+      preHandler: authorized([
+        "admin",
+        "editor",
+        "agent",
+        "volunteer",
+        "viewer",
+      ]),
+    },
     async (req, reply) => {
       const project = db
         .prepare(

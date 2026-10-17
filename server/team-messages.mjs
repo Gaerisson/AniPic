@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { id, now, audit } from "./db.mjs";
 export async function registerMessages(app, { db, authorized }) {
-  const roles = ["admin", "editor", "agent", "viewer"];
+  const roles = ["admin", "editor", "agent", "volunteer", "viewer"];
   const visible = (req) =>
     db
       .prepare(

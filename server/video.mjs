@@ -622,7 +622,7 @@ export async function rangeReply(req, reply, file, mime) {
     .send(createReadStream(file, { start, end }));
 }
 export async function registerVideo(app, { db, c, authorized, job }) {
-  const all = ["admin", "editor", "agent", "viewer"];
+  const all = ["admin", "editor", "agent", "volunteer", "viewer"];
   const preview = (input) =>
     resolveFilm(db, c, input, (kind, assetId) =>
       kind === "spa"
@@ -653,7 +653,7 @@ export async function registerVideo(app, { db, c, authorized, job }) {
   );
   app.post(
     "/api/video/assets",
-    { preHandler: authorized() },
+    { preHandler: authorized(["admin", "editor", "agent", "volunteer"]) },
     async (req, reply) => {
       const kind = z.enum(["video", "audio"]).parse(req.query.kind);
       const part = await req.file({
@@ -716,7 +716,7 @@ export async function registerVideo(app, { db, c, authorized, job }) {
   );
   app.post(
     "/api/video/projects",
-    { preHandler: authorized() },
+    { preHandler: authorized(["admin", "editor", "agent", "volunteer"]) },
     async (req, reply) => {
       const input = Film.parse(req.body);
       preview(input);
@@ -737,7 +737,7 @@ export async function registerVideo(app, { db, c, authorized, job }) {
   );
   app.put(
     "/api/video/projects/:id",
-    { preHandler: authorized() },
+    { preHandler: authorized(["admin", "editor", "agent", "volunteer"]) },
     async (req) => {
       const input = Film.parse(req.body);
       preview(input);
@@ -766,7 +766,7 @@ export async function registerVideo(app, { db, c, authorized, job }) {
   app.post(
     "/api/video/projects/:id/render",
     {
-      preHandler: authorized(),
+      preHandler: authorized(["admin", "editor", "agent", "volunteer"]),
       config: { rateLimit: { max: 5, timeWindow: "1 hour" } },
     },
     async (req) => {
@@ -827,7 +827,7 @@ export async function registerVideo(app, { db, c, authorized, job }) {
   );
   app.post(
     "/api/video/renders/:id/cancel",
-    { preHandler: authorized() },
+    { preHandler: authorized(["admin", "editor", "agent", "volunteer"]) },
     async (req) => {
       cancellations.get(UUID.parse(req.params.id))?.();
       return { ok: true };

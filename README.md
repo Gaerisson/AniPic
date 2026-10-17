@@ -12,7 +12,7 @@ Anipic reprend le projet GPIC SPA pour organiser les photos des animaux, prépar
 
 **Projet vibecodé par [Gaerisson](https://github.com/Gaerisson/), avec Codex, assistant d’OpenAI.** L’idée, les besoins métier, les choix visuels et la direction du projet viennent de Gaerisson.
 
-[Release 3.5.4](RELEASE_v3.5.4.md) · [Installation Docker / Portainer](docs/DEPLOIEMENT.md) · [Journal des versions](CHANGELOG.md) · [API SPA / AniPic](docs/API_ANIMAUX.md) · [Tests et validation](VALIDATION.md)
+[Release 3.10.0](RELEASE_v3.10.0.md) · [Installation Docker / Portainer](docs/DEPLOIEMENT.md) · [Journal des versions](CHANGELOG.md) · [API SPA / AniPic](docs/API_ANIMAUX.md) · [Google et bénévoles](GOOGLE.md) · [Agenda partagé](docs/AGENDA.md) · [Suivi des TV](docs/SUIVI_TV.md) · [Tests et validation](VALIDATION.md)
 
 ![La photothèque AniPic](public/presentation-v32/home.png)
 
@@ -25,6 +25,14 @@ Deux montages de **24,5 secondes**, 30 images/s : portraits en relief et présen
 | [1080 × 1920 · MP4](docs/media/anipic-presentation-story.mp4) | [1920 × 1080 · MP4](docs/media/anipic-presentation-paysage.mp4) |
 
 [Composition et reproduction du montage](PRESENTATION.md).
+
+## Nouveautés 3.8
+
+Gazette du refuge avec arrivées et adoptions datées, agenda de dates clés, éditorial, brouillons partagés et photos SPA/locales. Exports PDF, images et visuel réseaux, avec bouton de partage du fichier vers WhatsApp. L’atelier présente la gazette et le suivi des affiches de box. [Mode d’emploi](docs/ATELIER_REFUGE.md).
+
+## Nouveautés 3.7
+
+Assistant de tri photo avec références SPA, détourage local en PNG transparent avec réglages de contour, suivi des affiches dans les box et gazette mensuelle A4 en trois styles. Ces outils sont regroupés dans Outils de l’équipe et ouverts aux bénévoles approuvés. [Utilisation et prérequis du détourage](docs/ATELIER_REFUGE.md).
 
 ## Nouveautés 3.5
 
@@ -52,7 +60,7 @@ Préparation des photos SPA avant lecture, cache partagé entre miniatures et vi
 | Création | Éditeur photo en direct, presets et réglages avancés, studio Remotion, sous-titres, voix off, Canva, visuels Facebook et fonds d’écran. |
 | TV | Lien web plein écran, renouvellement des animaux, timeline par glisser-déposer et étirement, vidéos, messages saisonniers automatiques, horaires, exclusions et export MP4. |
 | Vie du refuge | Fil illustré et historique réunis, couleurs par événement, API publique, RSS, statistiques et bilan annuel animé avec formation du logo SPA. |
-| Équipe | Rôles administrateur / photographe / agent SPA / lecteur, albums privés, messages avec accusé de lecture, assistant et avatar configurable. |
+| Équipe | Rôles administrateur / photographe / agent SPA / bénévole approuvé / lecteur, albums privés, messages avec accusé de lecture, assistant et avatar configurable. |
 | Administration | Accès PIN optionnel, connexion agent par IP, widgets d’accueil, textes par défaut, accès public/équipe par page, GeoIP local, sauvegardes et exports des paramètres. |
 
 ## Démarrer en local
@@ -111,7 +119,7 @@ npm run build
 npm run video:build
 ```
 
-**172 tests passent** lors de la validation locale de cette version. Les essais couvrent notamment les droits, le PIN et les IP, la confidentialité, les homonymes, les dates, la comparaison de photos, les sauvegardes, la TV et les connecteurs simulés. [Détails et limites des essais](VALIDATION.md).
+**181 tests passent** lors de la validation locale de cette version. Les essais couvrent notamment les droits, le PIN et les IP, la confidentialité, les homonymes, les dates, la comparaison de photos, les sauvegardes, la TV et les connecteurs simulés. [Détails et limites des essais](VALIDATION.md).
 
 ## Documentation
 
@@ -126,3 +134,9 @@ Géolocalisation : [IP Geolocation by DB-IP](https://db-ip.com), base City Lite 
 Bibliothèques : React, Tailwind CSS, Fastify, SQLite, Sharp, Remotion, Lucide, Mediabunny, PDF-lib et QRCode. Polices et licences locales conservées. Les photos de démo et leurs sources sont documentées dans `demo/`. Les références d’interaction du carrousel et des cartes sont [Edmundo](https://codepen.io/edmundojr/pen/qdLWWx), [Robin Dela](https://codepen.io/robin-dela/pen/jVddbq) et [Nicolas Pavlotsky](https://codepen.io/nicolaspavlotsky/details/wqGgLO).
 
 Les anciennes notes sont rangées dans [docs/history](docs/history/README.md). Le logo se régénère avec `npm run brand:build` depuis une géométrie SVG commune aux variantes écran, favicon et PNG.
+
+### Comptes bénévoles et exports en série
+
+Les bénévoles peuvent demander un compte avec Google ; l’administrateur doit le valider avant tout accès aux outils. Le rôle donne accès aux créations photo/vidéo/affiches, albums privés, archives, statistiques et C8, sans administration ni registre interne. [Configurer Google](GOOGLE.md).
+
+Les affiches en série se préparent en arrière-plan avec progression et rapport des erreurs. Jusqu’à 500 animaux par sélection ; un seul ZIP contient les PDF, en lots de 10 pages. Le résultat privé reste téléchargeable 24 heures et le suivi reprend au retour sur la page. Les PDF utilisent des images JPEG de qualité d’impression, au lieu d’accumuler les pages PNG très volumineuses.

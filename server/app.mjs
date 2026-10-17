@@ -5,8 +5,10 @@ import {
 import { hasAnimalInfo } from "../shared/animal-info.mjs";
 import { registerInternalRegister } from "./internal-register.mjs";
 import { registerGroupPosters } from "./group-posters.mjs";
+import { registerCreativeWorkshop } from "./creative-workshop.mjs";
 import { registerArchiveCompression } from "./archive-compression.mjs";
 import { appVersion } from "../shared/version.mjs";
+import { registerGoogleAuth } from "./google-auth.mjs";
 import { mediaMaintenance } from "./media-maintenance.mjs";
 import { createHash } from "node:crypto";
 import { registerArchiveFolders } from "./archive-folders.mjs";
@@ -109,6 +111,7 @@ const publicSession = (s) =>
         id: s.id,
         name: s.name,
         role: s.role,
+        authProvider: s.googleAccount ? "google" : "local",
         csrf: s.csrf,
         ...(s.avatarHash ? { avatarHash: s.avatarHash } : {}),
       }
@@ -227,6 +230,7 @@ export async function createApp(overrides = {}) {
     });
   });
   await registerSiteAccess(app, { db, c, authorized });
+  await registerGoogleAuth(app, { db, c, authorized });
   await registerArchiveFolders(app, { db });
   await registerJournal(app, { db, authorized });
   await registerArchiveCompression(app, { db, c, authorized, job });
@@ -284,7 +288,9 @@ export async function createApp(overrides = {}) {
         .object({ name: z.string().max(100), password: z.string().max(200) })
         .parse(req.body);
       const user = db
-        .prepare("SELECT * FROM users WHERE name=? AND active=1")
+        .prepare(
+          "SELECT * FROM users WHERE name=? AND active=1 AND NOT EXISTS(SELECT 1 FROM google_identities g WHERE g.user_id=users.id)",
+        )
         .get(name);
       // Always run the expensive hash comparison to reduce username enumeration.
       const fallback = "00000000000000000000000000000000:" + "00".repeat(64);
@@ -310,7 +316,15 @@ export async function createApp(overrides = {}) {
   );
   app.post(
     "/api/logout",
-    { preHandler: authorized(["admin", "editor", "agent", "viewer"]) },
+    {
+      preHandler: authorized([
+        "admin",
+        "editor",
+        "agent",
+        "volunteer",
+        "viewer",
+      ]),
+    },
     async (req, reply) => {
       db.prepare("DELETE FROM sessions WHERE token_hash=?").run(
         req.user.token_hash,
@@ -700,7 +714,15 @@ export async function createApp(overrides = {}) {
   );
   app.post(
     "/api/animals/:id/favorite",
-    { preHandler: authorized(["admin", "editor", "agent", "viewer"]) },
+    {
+      preHandler: authorized([
+        "admin",
+        "editor",
+        "agent",
+        "volunteer",
+        "viewer",
+      ]),
+    },
     async (req) => {
       const animalId = UUID.parse(req.params.id);
       if (!db.prepare("SELECT id FROM animals WHERE id=?").get(animalId))
@@ -1168,7 +1190,7 @@ export async function createApp(overrides = {}) {
   app.get("/api/admin/users", { preHandler: authorized(["admin"]) }, async () =>
     db
       .prepare(
-        "SELECT u.id,u.name,u.role,u.created_at,u.active,u.last_login_at,(SELECT hash FROM user_avatars WHERE user_id=u.id) avatarHash FROM users u ORDER BY u.created_at",
+        "SELECT u.id,u.name,u.role,u.created_at,u.active,u.last_login_at,(SELECT hash FROM user_avatars WHERE user_id=u.id) avatarHash,g.status google_status,g.email google_email,g.display_name google_name,g.requested_at FROM users u LEFT JOIN google_identities g ON g.user_id=u.id ORDER BY u.created_at",
       )
       .all(),
   );
@@ -1180,7 +1202,7 @@ export async function createApp(overrides = {}) {
         .object({
           name: z.string().regex(/^[a-zA-Z0-9_.-]{3,40}$/),
           password: z.string().min(12).max(200),
-          role: z.enum(["admin", "editor", "agent", "viewer"]),
+          role: z.enum(["admin", "editor", "agent", "volunteer", "viewer"]),
         })
         .parse(req.body);
       if (db.prepare("SELECT id FROM users WHERE name=?").get(input.name))
@@ -1205,13 +1227,27 @@ export async function createApp(overrides = {}) {
       const userId = UUID.parse(req.params.id);
       const input = z
         .object({
-          role: z.enum(["admin", "editor", "agent", "viewer"]).optional(),
+          role: z
+            .enum(["admin", "editor", "agent", "volunteer", "viewer"])
+            .optional(),
           active: z.boolean().optional(),
         })
         .parse(req.body);
       const target = db.prepare("SELECT * FROM users WHERE id=?").get(userId);
       if (!target)
         return reply.code(404).send({ error: "Compte introuvable." });
+      const google = db
+        .prepare("SELECT status FROM google_identities WHERE user_id=?")
+        .get(userId);
+      if (
+        google &&
+        google.status !== "approved" &&
+        (input.active || input.role)
+      )
+        return reply.code(409).send({
+          error:
+            "Validez d’abord la demande de ce bénévole avec le bouton de validation.",
+        });
       const active =
         input.active == null ? target.active : Number(input.active);
       const role = input.role ?? target.role;
@@ -1246,7 +1282,15 @@ export async function createApp(overrides = {}) {
   );
   app.put(
     "/api/account/password",
-    { preHandler: authorized(["admin", "editor", "agent", "viewer"]) },
+    {
+      preHandler: authorized([
+        "admin",
+        "editor",
+        "agent",
+        "volunteer",
+        "viewer",
+      ]),
+    },
     async (req) => {
       const input = z
         .object({
@@ -1276,6 +1320,7 @@ export async function createApp(overrides = {}) {
   await registerExtras(app, { db, c, authorized, job });
   await registerInternalRegister(app, { db, authorized });
   await registerGroupPosters(app, { db, c, authorized });
+  await registerCreativeWorkshop(app, { db, c, authorized });
   if (existsSync(path.join(root, "dist", "index.html"))) {
     await app.register(serveStatic, {
       root: path.join(root, "dist"),

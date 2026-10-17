@@ -1,0 +1,245 @@
+.agenda-shell {
+  padding: clamp(16px, 3vw, 32px);
+  min-width: 0;
+  color: var(--ink);
+}
+.agenda-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.agenda-heading h2 {
+  margin: 8px 0;
+  font-size: 28px;
+}
+.agenda-heading p {
+  color: var(--muted);
+  margin: 0;
+}
+.agenda-toolbar {
+  display: flex;
+  gap: 14px;
+  align-items: end;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+.agenda-toolbar label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 0;
+}
+.agenda-month {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+}
+.agenda-toolbar > .button {
+  margin-left: auto;
+}
+.agenda-month-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  border-radius: 16px;
+  padding: 18px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+.agenda-month-banner svg {
+  color: var(--accent);
+}
+.agenda-month-banner strong {
+  font-size: 22px;
+  text-transform: capitalize;
+}
+.agenda-month-banner > span {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--muted);
+}
+.agenda-events {
+  display: grid;
+  gap: 14px;
+}
+.agenda-event {
+  display: flex;
+  gap: 18px;
+  align-items: start;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+}
+.agenda-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 12px;
+  padding: 12px;
+  min-width: 68px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+.agenda-day b {
+  font-size: 28px;
+}
+.agenda-day span {
+  font-size: 12px;
+}
+.agenda-event-main {
+  flex: 1;
+  min-width: 0;
+}
+.agenda-event h3 {
+  margin: 10px 0;
+  font-size: 20px;
+  overflow-wrap: anywhere;
+}
+.agenda-event p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 10px 0;
+}
+.agenda-event small {
+  font-size: 10px;
+  color: var(--muted);
+}
+.agenda-meta,
+.agenda-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.agenda-meta span,
+.agenda-badges span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.agenda-badges span {
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+  color: var(--ink);
+  padding: 4px 7px;
+  font-size: 10px;
+}
+.agenda-event.cancelled {
+  opacity: 0.65;
+}
+.agenda-event.cancelled h3 {
+  text-decoration: line-through;
+}
+.agenda-empty {
+  text-align: center;
+  padding: 48px 16px;
+  color: var(--muted);
+}
+.agenda-empty svg {
+  color: var(--accent);
+}
+.agenda-form {
+  padding: 20px;
+  min-width: 0;
+}
+.agenda-form input,
+.agenda-form select,
+.agenda-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+.agenda-form input[type="checkbox"] {
+  width: auto;
+}
+.agenda-publication {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+}
+.agenda-publication legend {
+  font-size: 12px;
+  color: var(--muted);
+  padding: 0 7px;
+}
+.agenda-form .checkbox-label {
+  flex-direction: row;
+  align-items: center;
+  color: var(--ink);
+  line-height: 1.5;
+}
+.agenda-form-actions,
+.agenda-delete {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.agenda-delete {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.agenda-delete p {
+  flex-basis: 100%;
+  margin: 0;
+}
+.agenda-form-actions .button {
+  margin: 0;
+  align-self: auto;
+}
+@media (max-width: 650px) {
+  .agenda-toolbar {
+    align-items: stretch;
+  }
+  .agenda-toolbar > .button {
+    margin: 0;
+  }
+  .agenda-month {
+    width: 100%;
+  }
+  .agenda-month label {
+    flex: 1;
+  }
+  .agenda-month input {
+    width: 100%;
+  }
+  .agenda-event {
+    padding: 14px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .agenda-event-main {
+    min-width: calc(100% - 100px);
+  }
+  .agenda-event > .button {
+    margin-left: auto;
+  }
+  .agenda-month-banner {
+    flex-wrap: wrap;
+  }
+  .agenda-month-banner > span {
+    margin-left: 0;
+  }
+  .agenda-form .form-row {
+    grid-template-columns: 1fr;
+  }
+  .agenda-form-actions .button {
+    flex: 1;
+  }
+  .agenda-heading > .button {
+    width: 100%;
+  }
+}

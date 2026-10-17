@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { api, apiBlob, apiDownload, imageUrl, copyText, date } from "./api.js";
 import { Button, Modal, Spinner } from "./ui.jsx";
+import { BoxPosterForm } from "./box-poster-form.jsx";
 export function AnimalCommunication({
   animal,
   photo,
@@ -303,6 +304,22 @@ export function CommunicationDialog({
             </Button>
           </div>
           <p className="muted">Logo et palette SPA · A4 portrait par défaut.</p>
+          {["admin", "editor", "agent", "volunteer"].includes(user?.role) &&
+            chosen && (
+              <details className="feature-details">
+                <summary>Suivi de l’affiche dans le box</summary>
+                <div className="feature-body">
+                  <BoxPosterForm
+                    animalId={animalId}
+                    refPhoto={{
+                      kind: chosen === "spa" ? "spa" : "local",
+                      id: chosen === "spa" ? animalId : chosen,
+                    }}
+                    notify={notify}
+                  />
+                </div>
+              </details>
+            )}
           <div className="poster-template-picks">
             {[
               ["spa", "SPA · Institutionnel"],

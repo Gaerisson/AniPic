@@ -17,7 +17,7 @@ export async function registerPhotoEdits(app, { db, c, authorized }) {
   };
   app.get(
     "/api/photos/:id/edit-source",
-    { preHandler: authorized(["admin"]) },
+    { preHandler: authorized(["admin", "volunteer"]) },
     async (req, reply) => {
       const photo = find(req.params.id);
       return reply
@@ -28,7 +28,7 @@ export async function registerPhotoEdits(app, { db, c, authorized }) {
   app.post(
     "/api/photos/:id/edits",
     {
-      preHandler: authorized(["admin"]),
+      preHandler: authorized(["admin", "volunteer"]),
       config: { rateLimit: { max: 30, timeWindow: "1 minute" } },
     },
     async (req, reply) => {

@@ -1,4 +1,94 @@
-# Vérifications — AniPic 3.5.4
+# Vérifications — AniPic 3.10.0
+
+## V3.10.0 — 18 octobre 2026
+
+**208 tests réussis**, aucun échec ni test ignoré, suite complète en 119,7 s. Les neuf tests du suivi vérifient le PIN, les identités d’écran, les rôles, CSRF et origine, les entrées limitées, le silence réseau, les réglages en attente, la pause, l’onglet masqué, le blocage de lecture, les incidents et reprises, les conflits de renommage, la révocation et les limites d’inscription. Un scénario utilise le vrai client de télémétrie avec une horloge contrôlée et les routes HTTP de test, sans simuler les écritures SQLite. Les identités persistent après réouverture de la base.
+
+Les 31 tests ciblés du suivi, des accès TV, de l’agenda et des rendus avaient réussi. Après le dernier ajustement du diagnostic vidéo, les onze tests du suivi et des médias ont également réussi. Une ancienne attente de test sur le libellé « ok » a été adaptée à la règle Oui/Non stricte de 3.9.1 ; les réponses nuancées restent conservées.
+
+**Installation propre npm sous Node.js 24.18.1 :** 464 packages installés, 465 audités, aucune vulnérabilité signalée. Builds frontend et vidéo réussis. Les configurations Compose base, C8+Import et Portainer sont vérifiées avec le client officiel, sans modifier les montages. Aucun nouveau service ou paquet ajouté. La migration SQLite 20 → 21 ajoute deux tables et un index.
+
+**Composants chargés en SSR :** lecteur public, configuration agent, suivi privé et commande de réactivation. Les libellés restent échappés. Ce contrôle de chargement ne constitue pas une vérification visuelle interactive.
+
+**Démonstration relancée en 3.10.0**, après sauvegarde cohérente de SQLite. Les 14 tables existantes hors sessions ont les mêmes lignes et hachages, et toutes les sessions encore valides sont conservées. L’événement de l’agenda existant, les 79 animaux, 14 photos, 17 blobs, trois albums, quatre projets vidéo, deux imports, cinq demandes et 86 paramètres sont intacts. Intégrité et clés étrangères valides ; accès anonyme au suivi refusé par le serveur réel (HTTP 401). Aucun écran fictif n’a été inscrit dans la base habituelle.
+
+**Limites :** pas de TV physique disponible pour un essai réel, ni de nouvelle vérification visuelle interactive du navigateur. Les pertes de connexion, blocages et reprises sont simulés explicitement dans les tests ; cela ne remplace pas l’essai sur le navigateur du téléviseur. Construction/démarrage Docker, CI GitHub en ligne et déploiement Portainer/NAS non exécutés ici, faute de moteur Docker. Aucun volume existant supprimé ou réinitialisé.
+
+## V3.9.1 — 18 octobre 2026
+
+**25 tests ciblés réussis**, aucun échec ni test ignoré, en 19,2 s. Les tests couvrent les réponses Oui/Non seules, les précisions, les descriptions libres sans oui/non, les réponses à tester, les valeurs absentes, les filtres combinés et les rendus existants. La suite complète de 199 tests ci-dessous correspond à la version 3.9.0 et n’a pas été relancée pour ce correctif ciblé.
+
+Builds frontend et vidéo réussis sous Node.js 24.18.1. `npm ci` propre réussi : 464 packages installés, 465 audités et zéro vulnérabilité signalée. Serveur de démonstration relancé en 3.9.1. Aucun changement des dépendances, de SQLite ou des montages Docker. Le texte et les faits SPA sont conservés. La vérification visuelle interactive du navigateur et le build Docker restent non exécutés ici.
+
+## V3.9.0 — 18 octobre 2026
+
+**199 tests réussis**, aucun échec ni test ignoré, suite complète en 118,1 s. Après le dernier ajustement du texte du résumé, les dix tests de la gazette et de l’agenda ont été relancés : dix réussis. Les 25 tests ciblés couvrant l’atelier, les migrations et les comportements existants avaient également réussi.
+
+L’agenda est testé pour les accès anonymes, rôles lecteur et bénévole, CSRF, dates et heures invalides, événements sur plusieurs jours, modifications entre membres, conflit de révision et retrait conservé en base. L’intégration gazette/TV exclut les événements internes, annulés ou hors période, reprend les changements et distingue les choix de publication. Le mode fond d’écran n’intègre pas l’agenda.
+
+La gazette automatique est testée sans sélection manuelle : arrivées et adoptions vérifiées, portraits répartis entre espèces, exclusion des archives de la sélection courante, portraits masqués, résumé des mouvements retenus, PDF et PNG réels. Le transport SPA est simulé. Une image absente produit un portrait explicite sans interrompre toute l’édition. Les tests existants conservent les contrôles de confidentialité et de propriété des exports.
+
+**Interface :** compilation complète et chargement SSR des nouveaux composants avec les profils administration, agent, bénévole, lecteur et visiteur. Présence des actions autorisées et structure des labels contrôlées. Revue CSS des formulaires, grilles, en-têtes, boutons, fermeture des fenêtres et cartes pour les petits écrans. **Aucune nouvelle vérification visuelle interactive du navigateur : ces contrôles ne garantissent pas à eux seuls tous les placements réels.**
+
+**PDF :** trois exemples de six pages, avec résumé automatique et photos de démonstration, rendus avec Poppler. Couvertures SPA, éditoriale et glass, portraits, dates clés et visuel réseaux inspectés. Les mouvements/dates de ces exemples de mise en page sont fictifs.
+
+**npm ci propre sous Node.js 24.18.1 réussi :** 464 packages installés, 465 audités, zéro vulnérabilité signalée. Version du manifeste et du lockfile modifiée par npm. Builds frontend et vidéo réussis. Configurations Compose de base, C8+Import et Portainer vérifiées avec le client officiel ; montages inchangés. Migration 19 → 20 testée sans perte de brouillons, animaux ou sessions ; ajout d’une table d’agenda et de son index.
+
+**Démonstration relancée sur http://localhost:3036 en 3.9.0**, après sauvegarde SQLite cohérente. Sur la base habituelle, 13 tables existantes ont exactement les mêmes lignes et hachages ; toutes les sessions encore valides sont identiques. Une session déjà expirée a été supprimée par le nettoyage normal au démarrage. Les 79 animaux, 14 photos, 17 blobs, trois albums, quatre projets vidéo, deux imports, cinq demandes et 86 paramètres sont conservés. Intégrité SQLite et clés étrangères vérifiées.
+
+**Non exécutés : construction et démarrage réels de l’image Docker, CI GitHub en ligne, déploiement Portainer/NAS et partage WhatsApp réel.** Aucun moteur Docker n’est disponible ici. Aucun volume existant n’a été supprimé ni réinitialisé. Les erreurs ou avertissements historiques ci-dessous ne remplacent pas ces limites de validation.
+
+## V3.8.0 — 18 octobre 2026
+
+**194 tests réussis**, aucun échec ni test ignoré, suite complète en 122,2 s. Les cinq tests dédiés à la nouvelle gazette ont également été relancés après le dernier ajustement de normalisation des textes : cinq réussis. Les champs trimés par le serveur ne rendent plus une édition tout juste générée artificiellement « modifiée ». Les treize tests ciblés de l’atelier et de la gazette avaient réussi avant le contrôle complet.
+
+Les nouveaux tests vérifient les dates d’arrivée issues des faits SPA, sans confusion avec l’import des fiches, les adoptions issues de statuts datés, l’exclusion des simples archives, les corrections réservées à l’édition, les masquages et les dates clés futures. Dates impossibles et heures invalides refusées. Brouillons, sessions, rôles et CSRF testés ; catalogue des animaux archivés limité aux faits publics et aux créateurs autorisés.
+
+**Exports réels PDF, PNG, JPEG et ZIP** testés avec un transport de photos SPA simulé. Scénario à huit arrivées, une adoption et un rendez-vous : six pages PDF, six JPEG et un visuel PNG 1080 × 1350. Une photo absente produit une carte explicite avec nom et date, et un avertissement ; une photo privée est remplacée par la référence SPA disponible. Les accès anonymes ou d’un autre compte sont refusés pour tous les fichiers. Les originaux et leur confidentialité restent inchangés.
+
+**Partage de fichiers testé sans envoi réel** : fichier préparé avant le clic, appel natif simulé avec le fichier et le texte, absence de substitution par une URL privée, détection d’un navigateur non compatible, annulation du partage et refus d’une réponse HTML inattendue. Aucun message WhatsApp, aucune publication ni connexion à un compte Meta n’a été effectué.
+
+**Contrôle visuel des PDF et images** : exemples avec vraies photos de démonstration en trois styles, chacun avec six pages, plus visuels réseaux. PDF rendus avec Poppler ; rubriques adoptions/arrivées, grandes cartes pour les petits effectifs, agenda, textes, pied de page et logo transparent inspectés. Le rendu final utilise des libellés neutres pour les mouvements. Les dates et adoptions des exemples de mise en page sont fictives, uniquement destinées aux contrôles.
+
+**Installation propre Node.js 24.18.1 : npm ci réussi**, 464 packages installés, 465 audités, zéro vulnérabilité signalée. Manifeste et lockfile version 3.8.0 synchronisés par npm. Builds frontend et vidéo réussis, bundle principal sous 500 Ko. Configurations Compose base, C8+Import et Portainer validées avec le client officiel. git diff --check et liens de documentation contrôlés. Aucun montage, volume ni configuration NAS modifié.
+
+**Serveur de test relancé sur http://localhost:3036, version 3.8.0.** Sauvegarde cohérente de SQLite avant redémarrage puis comparaison de 14 tables : comptes, sessions, animaux, photos, blobs, albums/liens, projets, imports, planning, paramètres, décisions photo, affiches et brouillons. Nombres et hachages des lignes inchangés. Schéma 19 conservé, intégrité et clés étrangères valides. 79 animaux, 14 photos, 17 blobs, trois albums, deux imports, quatre projets et les deux sessions existantes conservés. Aucun original ni donnée de travail supprimé.
+
+L’assistant de tri et le détourage sont retirés du menu. Leurs données et API existantes sont conservées ; les tests de non-régression de ces API restent exécutés.
+
+**Non exécuté :** essai interactif dans le navigateur et dans l’application WhatsApp sur l’appareil de l’utilisateur, build/démarrage Docker (moteur absent), CI GitHub en ligne, déploiement Portainer/NAS réel. Le partage dépend des capacités du navigateur et des applications installées ; les exports téléchargeables constituent le repli prévu. La validation Compose ne remplace pas le test de l’image Docker.
+
+## V3.7.0 — 17 octobre 2026
+
+**189 tests réussis**, aucun échec ni test ignoré, suite complète finale en 106,2 s. Huit nouveaux tests couvrent les mesures de qualité, la comparaison locale/SPA et ses erreurs, les décisions mémorisées, le masque de détourage et sa copie, les affiches de box avec conflits de modification, les photos privées, la panne du moteur, le refus avant chargement si la mémoire manque et la gazette réelle. Les tests existants de PIN, Google/bénévoles, Canva, albums, NAS, archives et vidéo restent réussis.
+
+Le tri analyse réellement les octets JPEG/WebP de test avec Sharp : netteté, flou, exposition et dimensions. Le transport SPA est simulé ; aucun portrait de référence n’est ajouté aux originaux. Les décisions ne suppriment aucune photo. Les exports Gazette des tests sont de véritables PDF avec images et aperçus, et les autres comptes ne peuvent pas télécharger une préparation privée. Aucune adoption n’est déduite d’un archivage. Les scénarios de photo manquante et de photo privée sont vérifiés.
+
+**Détourage réel exécuté**, avec téléchargement du modèle BiRefNet lite 512, révision fixe 962e67969ec6acec9c19fab76acee4f5e22e990c, puis nouvelle inférence depuis le cache. Dernière mesure sur ce PC : 4,9 s et pic RSS de 1 911 152 Ko, soit environ 2 Go pour le processus de test. PNG transparent et rendu sur fond uni inspectés visuellement sur une photo de chien : animal et fleur conservés, fond retiré. Ce résultat ne garantit pas le contour de chaque animal ni les performances d’un NAS. Le modèle 512 calcule un masque à résolution réduite ; les très fins détails peuvent nécessiter une retouche. Un seul détourage à la fois, worker libéré et contrôle préalable de 3 Gio disponibles. Les tests HTTP de masque utilisent un processeur simulé distinct de cette inférence réelle. Test natif ONNX CPU réussi sur un petit graphe Identity ; le smoke test Docker l’exécutera aussi dans l’image.
+
+**Gazette contrôlée visuellement** en trois styles sur de vraies photos de démonstration. Trois pages par exemple : couverture, portraits et nouvelles. PDF rendus avec Poppler et images des pages inspectées ; espacements, contraste et logo transparent vérifiés. Les textes longs sont continués sur des pages supplémentaires. Le navigateur interactif n’a pas été revalidé dans cet environnement.
+
+**npm ci propre sous Node.js 24.18.1 réussi** : 464 packages installés, 465 audités, zéro vulnérabilité signalée. Lockfile régénéré uniquement par npm, manifeste et lockfile à 3.7.0. Builds frontend et vidéo réussis. Atelier chargé à la demande pour conserver le bundle principal sous 500 Ko. Configurations Compose base, C8+Import et Portainer validées avec le client officiel ; montages et politiques conservés. Docker utilise ONNX CPU sans téléchargement CUDA facultatif. Licences tierces incluses. git diff --check et liens de documentation contrôlés.
+
+**Migration 18 → 19 répétée sur une copie cohérente de la base habituelle**, après sauvegarde SQLite. Comptes, sessions, animaux, photos, blobs, albums/liens, projets vidéo, imports, planning et paramètres : nombres et hachages des lignes inchangés. Intégrité et clés étrangères valides, réouverture réussie. La migration ajoute seulement trois tables et un index. Serveur de test relancé sur http://localhost:3036, version 3.7.0, schéma 19. Les 79 animaux, 14 photos, 17 blobs, trois albums, deux imports et quatre projets sont conservés. Aucun jeu de données fictif supplémentaire ni original modifié sur la base habituelle.
+
+**Non exécuté : build/démarrage Docker, CI GitHub en ligne, déploiement Portainer/NAS réel, détourage sur le NAS de production et vérification visuelle interactive du navigateur.** Aucun moteur Docker n’est disponible ici. La validation Compose, le contrôle des bibliothèques et l’inférence Windows ne remplacent pas le test de l’image Linux. Aucun volume existant n’a été supprimé ou réinitialisé.
+
+## V3.6.0 — 17 octobre 2026
+
+**181 tests réussis**, aucun échec ni test ignoré, suite complète finale en 140,3 s. Les 22 tests ciblés de migration/authentification/exports/PIN/révisions avaient également réussi. La première suite avait identifié une transaction imbriquée dans l’enregistrement Google ; cette erreur est corrigée et l’intégralité de la suite a été relancée sur le code final.
+
+Google : vérification réelle des signatures RSA par la bibliothèque officielle avec clés locales de test ; transport vers Google simulé. Tests de PKCE S256, state lié au navigateur, nonce, usage unique et expiration, mauvais émetteur/audience/signature, e-mail non confirmé, refus/approbation/désactivation. Aucun compte équipe ni session avant validation ; absence de fusion automatique par e-mail ou nom ; rôle du JWT ignoré au profit du rôle AniPic. Une identité en attente reste refusée même si un champ active est accidentellement positionné. Mise à jour générique d’un compte en attente refusée. PIN global toujours actif hors des routes d’entrée Google ciblées. Test de secret enregistré par l’interface, jamais renvoyé ni inclus dans l’export des paramètres ; désactivation du connecteur testée.
+
+Rôle bénévole : accès aux API de création vidéo/assets, albums, statistiques, C8, archives et tags ; création effective d’un projet vidéo à partir d’une référence SPA, attribué au bénévole. Administration, comptes, configuration TV, registre interne et archivage d’un animal refusés. Retouches enregistrées en copie, sans remplacer l’original. Les tests d’accès existants des autres rôles restent réussis.
+
+Affiches : scénario de **68 fiches avec générateur d’images simulé**, véritables PDF et ZIP : 68 pages réparties dans sept PDF de dix pages maximum, progression persistée et fichier téléchargeable par le seul propriétaire ou l’administration. Contrôles session/CSRF et refus à un autre compte. Photo simulée indisponible : les deux pages réussies d’une sélection de trois restent exportables, avec rapport d’erreur dans le ZIP. Un rendu réel d’affiche confirme l’inclusion JPEG à qualité d’impression et un PDF de moins de 2 Mo sur l’image de test, au lieu des intermédiaires PNG. Ce n’est pas un export des 68 photos du NAS de production.
+
+**Migration 17 → 18 répétée sur une copie cohérente de la base habituelle**, après sauvegarde SQLite. Comparaison des comptes, sessions, animaux, photos, blobs, albums/liens, projets, imports, planning et paramètres : nombres et hachages des lignes identiques. Schéma 18, intégrité ok, aucune erreur de clé étrangère, réouverture réussie. La migration utilise une transaction et réactive les clés étrangères même en cas d’échec. Après validation, serveur de démonstration relancé sur http://localhost:3036, health version 3.6.0. 79 animaux, 14 photos, 2 imports et 4 projets conservés. Google reste désactivé et non configuré sur cette base ; aucun faux identifiant n’a été ajouté.
+
+**Installation propre Node.js 24.18.1 : npm ci réussi**, 429 packages installés, 430 audités, zéro vulnérabilité signalée. Dépendance officielle google-auth-library installée par npm et lockfile régénéré, versions du manifeste et du lock synchronisées à 3.6.0. Builds frontend et vidéo réussis. Configurations Compose base, C8+Import et stack Portainer validées avec le client officiel ; mêmes volumes et protections NAS, seules les variables OAuth ont été ajoutées. git diff --check, liens de documentation et intégrité ZIP contrôlés. Aucun original ni montage NAS modifié.
+
+**Non exécuté :** connexion réelle Google (identifiants OAuth de l’utilisateur nécessaires), vérification visuelle interactive du navigateur, build/démarrage Docker et smoke test de l’image (moteur Docker absent), CI GitHub, déploiement Portainer/NAS réel, export des photos de production ou essai sur TV physique. La validation Compose ne remplace pas le démarrage d’une image Docker.
 
 ## V3.5.4 — 17 octobre 2026
 

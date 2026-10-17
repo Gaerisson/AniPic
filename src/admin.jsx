@@ -1,3 +1,4 @@
+import { GoogleAuthSettings, VolunteerRequests } from "./google-auth.jsx";
 import { UserPicture } from "./user-avatar.jsx";
 import { ArchiveCompression } from "./archive-storage.jsx";
 import { OperationSummary } from "./operation-summary.jsx";
@@ -358,6 +359,12 @@ function Dashboard({ data, overview, open }) {
   );
 }
 const actionNames = {
+  google_configured: "Connexion Google configurée",
+  google_login: "Connexion avec Google",
+  google_login_failed: "Connexion Google refusée",
+  volunteer_requested: "Demande d’accès bénévole",
+  volunteer_approved: "Compte bénévole validé",
+  volunteer_rejected: "Demande bénévole refusée",
   login: "Connexion à l’atelier",
   login_failed: "Connexion refusée",
   animal_created: "Nouvelle fiche créée",
@@ -977,9 +984,15 @@ function Team({ data, notify, reload, user }) {
       "Lecteur",
       "Consultation, favoris et téléchargement des originaux",
     ],
+    volunteer: [
+      "Bénévole",
+      "Créations photo/vidéo, affiches, albums privés, archives, statistiques et C8 ; après validation",
+    ],
   };
   return (
     <>
+      <VolunteerRequests users={data.users} notify={notify} reload={reload} />
+      <GoogleAuthSettings notify={notify} />
       <div className="panel">
         <div className="panel-heading">
           <div>
@@ -991,67 +1004,71 @@ function Team({ data, notify, reload, user }) {
           </Button>
         </div>
         <div className="team-list">
-          {data.users.map((u) => (
-            <div key={u.id}>
-              <UserPicture user={u} />
-              <span>
-                <strong>
-                  {u.name}
-                  {u.id === user.id && <span className="tag sage">Vous</span>}
-                </strong>
-                <small>Depuis le {date(u.created_at)}</small>
-                <small>
-                  Dernière connexion :{" "}
-                  {u.last_login_at
-                    ? new Date(u.last_login_at).toLocaleString("fr-FR")
-                    : "Pas encore de connexion enregistrée"}
-                </small>
-              </span>
-              <select
-                value={u.role}
-                disabled={u.id === user.id || !u.active}
-                aria-label={"Rôle de " + u.name}
-                onChange={async (e) => {
-                  try {
-                    await api("/admin/users/" + u.id, {
-                      method: "PATCH",
-                      body: { role: e.target.value },
-                    });
-                    notify(
-                      "Rôle mis à jour. Les sessions du membre ont été fermées.",
-                    );
-                    reload();
-                  } catch (e) {
-                    notify(e.message, "error");
-                  }
-                }}
-              >
-                {Object.entries(roles).map(([role, [label]]) => (
-                  <option key={role} value={role}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-              <Button
-                variant="quiet"
-                disabled={u.id === user.id}
-                onClick={async () => {
-                  try {
-                    await api("/admin/users/" + u.id, {
-                      method: "PATCH",
-                      body: { active: !u.active },
-                    });
-                    notify(u.active ? "Compte désactivé." : "Compte réactivé.");
-                    reload();
-                  } catch (e) {
-                    notify(e.message, "error");
-                  }
-                }}
-              >
-                {u.active ? "Désactiver" : "Réactiver"}
-              </Button>
-            </div>
-          ))}
+          {data.users
+            .filter((u) => !u.google_status || u.google_status === "approved")
+            .map((u) => (
+              <div key={u.id}>
+                <UserPicture user={u} />
+                <span>
+                  <strong>
+                    {u.name}
+                    {u.id === user.id && <span className="tag sage">Vous</span>}
+                  </strong>
+                  <small>Depuis le {date(u.created_at)}</small>
+                  <small>
+                    Dernière connexion :{" "}
+                    {u.last_login_at
+                      ? new Date(u.last_login_at).toLocaleString("fr-FR")
+                      : "Pas encore de connexion enregistrée"}
+                  </small>
+                </span>
+                <select
+                  value={u.role}
+                  disabled={u.id === user.id || !u.active}
+                  aria-label={"Rôle de " + u.name}
+                  onChange={async (e) => {
+                    try {
+                      await api("/admin/users/" + u.id, {
+                        method: "PATCH",
+                        body: { role: e.target.value },
+                      });
+                      notify(
+                        "Rôle mis à jour. Les sessions du membre ont été fermées.",
+                      );
+                      reload();
+                    } catch (e) {
+                      notify(e.message, "error");
+                    }
+                  }}
+                >
+                  {Object.entries(roles).map(([role, [label]]) => (
+                    <option key={role} value={role}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  variant="quiet"
+                  disabled={u.id === user.id}
+                  onClick={async () => {
+                    try {
+                      await api("/admin/users/" + u.id, {
+                        method: "PATCH",
+                        body: { active: !u.active },
+                      });
+                      notify(
+                        u.active ? "Compte désactivé." : "Compte réactivé.",
+                      );
+                      reload();
+                    } catch (e) {
+                      notify(e.message, "error");
+                    }
+                  }}
+                >
+                  {u.active ? "Désactiver" : "Réactiver"}
+                </Button>
+              </div>
+            ))}
         </div>
         {creating && (
           <form

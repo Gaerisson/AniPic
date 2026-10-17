@@ -5,7 +5,15 @@ import { publicAnimalMetadata } from "./animal-facts.mjs";
 export async function registerShootSheet(app, { db, authorized }) {
   app.get(
     "/api/shoot-sheet",
-    { preHandler: authorized(["admin", "editor", "agent", "viewer"]) },
+    {
+      preHandler: authorized([
+        "admin",
+        "editor",
+        "agent",
+        "volunteer",
+        "viewer",
+      ]),
+    },
     async (req) => {
       const q = z
         .object({

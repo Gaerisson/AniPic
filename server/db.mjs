@@ -9,7 +9,7 @@ export function openDb(c) {
     "PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;",
   );
   const version = db.prepare("PRAGMA user_version").get().user_version;
-  if (version > 17) throw new Error("Base créée par une version plus récente.");
+  if (version > 21) throw new Error("Base créée par une version plus récente.");
   if (version === 0)
     db.exec(`
     BEGIN;
@@ -178,6 +178,46 @@ export function openDb(c) {
       CREATE INDEX IF NOT EXISTS internal_register_recent ON internal_register(deleted_at,updated_at);
       PRAGMA user_version=17;`);
     });
+  if (version < 18) {
+    db.exec("PRAGMA foreign_keys=OFF");
+    try {
+      transaction(db, () => {
+        db.exec(`
+      CREATE TABLE users_v18(id TEXT PRIMARY KEY,name TEXT UNIQUE NOT NULL,password TEXT NOT NULL,role TEXT NOT NULL CHECK(role IN ('admin','editor','agent','volunteer','viewer')),created_at TEXT NOT NULL,active INTEGER NOT NULL DEFAULT 1,last_login_at TEXT);
+      INSERT INTO users_v18(id,name,password,role,created_at,active,last_login_at) SELECT id,name,password,role,created_at,active,last_login_at FROM users;
+      DROP TABLE users; ALTER TABLE users_v18 RENAME TO users;
+      CREATE TABLE IF NOT EXISTS google_identities(subject TEXT PRIMARY KEY,user_id TEXT UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,email TEXT NOT NULL,display_name TEXT NOT NULL,status TEXT NOT NULL CHECK(status IN ('pending','approved','rejected')),requested_at TEXT NOT NULL,reviewed_at TEXT,reviewed_by TEXT REFERENCES users(id));
+      CREATE TABLE IF NOT EXISTS google_oauth(state_hash TEXT PRIMARY KEY,browser_hash TEXT NOT NULL,verifier TEXT NOT NULL,nonce_hash TEXT NOT NULL,client_id TEXT NOT NULL,expires_at TEXT NOT NULL);
+      PRAGMA user_version=18;`);
+        if (db.prepare("PRAGMA foreign_key_check").all().length)
+          throw new Error("Migration des comptes : référence invalide.");
+      });
+    } finally {
+      db.exec("PRAGMA foreign_keys=ON");
+    }
+  }
+  if (version < 19)
+    transaction(db, () => {
+      db.exec(`CREATE TABLE IF NOT EXISTS photo_reviews(reference TEXT PRIMARY KEY,signature TEXT NOT NULL,decision TEXT NOT NULL CHECK(decision IN ('keep','maybe','reject')),user_id TEXT REFERENCES users(id) ON DELETE SET NULL,reviewed_at TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS box_posters(id TEXT PRIMARY KEY,animal_id TEXT NOT NULL REFERENCES animals(id),location TEXT NOT NULL,state TEXT NOT NULL CHECK(state IN ('printed','installed','removed')),photo_reference TEXT NOT NULL,snapshot TEXT NOT NULL,note TEXT NOT NULL DEFAULT '',printed_at TEXT,installed_at TEXT,updated_by TEXT REFERENCES users(id) ON DELETE SET NULL,updated_at TEXT NOT NULL);
+      CREATE INDEX IF NOT EXISTS box_posters_animal ON box_posters(animal_id,state);
+      CREATE TABLE IF NOT EXISTS gazette_drafts(id TEXT PRIMARY KEY,title TEXT NOT NULL,config TEXT NOT NULL,updated_by TEXT REFERENCES users(id) ON DELETE SET NULL,updated_at TEXT NOT NULL);
+      PRAGMA user_version=19;`);
+    });
+  if (version < 20)
+    transaction(db, () => {
+      db.exec(`CREATE TABLE IF NOT EXISTS agenda_events(id TEXT PRIMARY KEY,event_date TEXT NOT NULL,end_date TEXT NOT NULL,config TEXT NOT NULL,revision INTEGER NOT NULL DEFAULT 1,created_by TEXT REFERENCES users(id) ON DELETE SET NULL,updated_by TEXT REFERENCES users(id) ON DELETE SET NULL,created_at TEXT NOT NULL,updated_at TEXT NOT NULL,deleted_at TEXT);
+      CREATE INDEX IF NOT EXISTS agenda_dates ON agenda_events(event_date,end_date) WHERE deleted_at IS NULL;
+      PRAGMA user_version=20;`);
+    });
+  if (version < 21)
+    transaction(db, () => {
+      db.exec(`CREATE TABLE IF NOT EXISTS display_screens(id TEXT PRIMARY KEY,token_hash TEXT NOT NULL,name TEXT NOT NULL,ip TEXT NOT NULL,user_agent TEXT NOT NULL,status TEXT NOT NULL,created_at TEXT NOT NULL,last_seen TEXT NOT NULL,revision INTEGER NOT NULL DEFAULT 1,revoked_at TEXT);
+      CREATE TABLE IF NOT EXISTS display_screen_events(id TEXT PRIMARY KEY,screen_id TEXT NOT NULL REFERENCES display_screens(id) ON DELETE CASCADE,kind TEXT NOT NULL CHECK(kind IN ('connected','error','recovered')),codes TEXT NOT NULL,occurred_at TEXT NOT NULL);
+      CREATE INDEX IF NOT EXISTS display_screen_event_time ON display_screen_events(screen_id,occurred_at);
+      PRAGMA user_version=21;`);
+    });
+  db.prepare("DELETE FROM google_oauth WHERE expires_at < ?").run(now());
   db.prepare(
     "DELETE FROM site_passes WHERE expires_at<>'' AND expires_at < ?",
   ).run(now());

@@ -33,6 +33,8 @@ export function config(overrides = {}) {
     host: process.env.HOST || "127.0.0.1",
     origin: process.env.APP_ORIGIN || "http://localhost:3000",
     canvaClientId: process.env.CANVA_CLIENT_ID || "",
+    googleClientId: process.env.GOOGLE_CLIENT_ID || "",
+    googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
     canvaClientSecret: process.env.CANVA_CLIENT_SECRET || "",
     canvaRedirectUri: process.env.CANVA_REDIRECT_URI || "",
     canvaEncryptionKey: process.env.CANVA_TOKEN_KEY || "",

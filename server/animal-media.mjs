@@ -4,7 +4,7 @@ import { id, now, audit, transaction } from "./db.mjs";
 import { rangeReply } from "./video.mjs";
 import { showTimeline } from "../shared/signage.mjs";
 const uuid = z.string().uuid(),
-  all = ["admin", "editor", "agent", "viewer"];
+  all = ["admin", "editor", "agent", "volunteer", "viewer"];
 const fail = (message, statusCode = 404) =>
   Object.assign(new Error(message), { statusCode });
 export function mediaTags(db, kind, value) {
@@ -60,7 +60,7 @@ export async function registerAnimalMedia(app, { db, c, authorized }) {
   );
   app.put(
     "/api/media-tags/:kind/:id",
-    { preHandler: authorized() },
+    { preHandler: authorized(["admin", "editor", "agent", "volunteer"]) },
     async (req) => {
       const { kind, id: value } = req.params;
       media(kind, value);
@@ -108,7 +108,7 @@ export async function registerAnimalMedia(app, { db, c, authorized }) {
   );
   app.post(
     "/api/animals/:id/videos",
-    { preHandler: authorized() },
+    { preHandler: authorized(["admin", "editor", "agent", "volunteer"]) },
     async (req) => {
       animal(req.params.id);
       const v = z
@@ -130,7 +130,7 @@ export async function registerAnimalMedia(app, { db, c, authorized }) {
   );
   app.patch(
     "/api/animal-videos/:id",
-    { preHandler: authorized() },
+    { preHandler: authorized(["admin", "editor", "agent", "volunteer"]) },
     async (req) => {
       const v = z
         .object({ caption: z.string().trim().max(200), showOnTv: z.boolean() })
@@ -145,7 +145,7 @@ export async function registerAnimalMedia(app, { db, c, authorized }) {
   );
   app.delete(
     "/api/animal-videos/:id",
-    { preHandler: authorized() },
+    { preHandler: authorized(["admin", "editor", "agent", "volunteer"]) },
     async (req) => {
       db.prepare("DELETE FROM animal_videos WHERE id=?").run(
         uuid.parse(req.params.id),

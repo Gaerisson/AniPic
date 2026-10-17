@@ -195,3 +195,50 @@ html[data-theme] .album-image-status button {
   text-decoration: underline;
   pointer-events: auto;
 }
+
+.google-signin {
+  margin: 20px 0;
+}
+html[data-theme] .google-signin > .button {
+  width: 100%;
+  background: #fff;
+  color: #242424;
+  border: 1px solid #aaa;
+  min-height: 44px;
+}
+.google-auth-settings,
+.volunteer-requests,
+.batch-export-status {
+  margin-bottom: 24px;
+}
+.volunteer-requests article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-top: 1px solid var(--border);
+  padding: 18px 0;
+}
+.volunteer-requests article > div:last-child {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.volunteer-requests p {
+  margin: 5px 0;
+  overflow-wrap: anywhere;
+}
+.batch-export-status progress {
+  width: 100%;
+  height: 14px;
+  accent-color: var(--accent);
+}
+.batch-export-status > .spin {
+  color: var(--accent);
+}
+@media (max-width: 650px) {
+  .volunteer-requests article {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

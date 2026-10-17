@@ -175,9 +175,10 @@ export const interfaceFields = {
         "tv",
         "priorities",
         "activity",
+        "agenda",
       ]),
     )
-    .max(6)
+    .max(7)
     .refine((v) => new Set(v).size === v.length)
     .default(["photos", "clockWeather"]),
   pageAccess: z

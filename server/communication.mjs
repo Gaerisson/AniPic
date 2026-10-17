@@ -1,4 +1,5 @@
 import { hasAnimalInfo } from "../shared/animal-info.mjs";
+import { registerPosterExports } from "./poster-exports.mjs";
 import {
   textDefaults,
   posterLayoutDefaults,
@@ -304,6 +305,29 @@ export async function posterPdf(png, paper = "a4") {
   return Buffer.from(await doc.save());
 }
 export async function registerCommunication(app, { db, c, authorized }) {
+  async function printPage(id, template) {
+    const animal = db.prepare("SELECT * FROM animals WHERE id=?").get(id);
+    if (!animal) throw fail("Animal introuvable.", 404);
+    const photo = db
+      .prepare(
+        "SELECT * FROM photos WHERE animal_id=? AND deleted_at IS NULL AND archived_at IS NULL ORDER BY id=? DESC,created_at DESC LIMIT 1",
+      )
+      .get(id, animal.cover_id || "") || {
+      buffer: await sourcePhotoBuffer(db, c, id, 1280),
+    };
+    const cfg = settings(db),
+      opts = communicationOptions.parse({
+        photoId: photo.id || id,
+        template,
+        texts: cfg.textDefaults,
+        customLayout: cfg.posterLayout,
+      });
+    const png = await posterImage(c, animal, photo, opts, cfg.refugeName);
+    return sharp(png)
+      .jpeg({ quality: 93, chromaSubsampling: "4:4:4" })
+      .toBuffer();
+  }
+  await registerPosterExports(app, { db, c, authorized, render: printPage });
   let active = 0;
   const acquire = () => {
     if (active >= 2)
@@ -334,7 +358,13 @@ export async function registerCommunication(app, { db, c, authorized }) {
   app.post(
     "/api/posters/batch",
     {
-      preHandler: authorized(["admin", "editor", "agent", "viewer"]),
+      preHandler: authorized([
+        "admin",
+        "editor",
+        "agent",
+        "volunteer",
+        "viewer",
+      ]),
       config: { rateLimit: { max: 30, timeWindow: "1 minute" } },
     },
     async (req, reply) => {
@@ -354,36 +384,14 @@ export async function registerCommunication(app, { db, c, authorized }) {
         doc.setCreator("AniPic · Gaerisson");
         let bytes = 0;
         for (const id of [...new Set(v.animalIds)]) {
-          const animal = db.prepare("SELECT * FROM animals WHERE id=?").get(id);
-          if (!animal) throw fail("Animal introuvable.", 404);
-          let photo = db
-            .prepare(
-              "SELECT * FROM photos WHERE animal_id=? AND deleted_at IS NULL AND archived_at IS NULL ORDER BY id=? DESC,created_at DESC LIMIT 1",
-            )
-            .get(id, animal.cover_id || "");
-          if (!photo) {
-            photo = { buffer: await sourcePhotoBuffer(db, c, id, 1280) };
-          }
-          const opts = communicationOptions.parse({
-            photoId: photo.id || id,
-            template: v.template,
-            texts: settings(db).textDefaults,
-            customLayout: settings(db).posterLayout,
-          });
-          const png = await posterImage(
-            c,
-            animal,
-            photo,
-            opts,
-            settings(db).refugeName,
-          );
-          bytes += png.length;
+          const jpeg = await printPage(id, v.template);
+          bytes += jpeg.length;
           if (bytes > 80 * 1024 ** 2)
             throw fail(
-              "Export trop volumineux. Sélectionnez moins d’animaux.",
+              "Utilisez l’export en arrière-plan pour cette sélection.",
               413,
             );
-          const embedded = await doc.embedPng(png),
+          const embedded = await doc.embedJpg(jpeg),
             page = doc.addPage([595.2756, 841.8898]);
           page.drawImage(embedded, {
             x: 0,
@@ -410,7 +418,13 @@ export async function registerCommunication(app, { db, c, authorized }) {
   app.post(
     "/api/animals/:id/poster",
     {
-      preHandler: authorized(["admin", "editor", "agent", "viewer"]),
+      preHandler: authorized([
+        "admin",
+        "editor",
+        "agent",
+        "volunteer",
+        "viewer",
+      ]),
       config: { rateLimit: { max: 20, timeWindow: "1 minute" } },
     },
     async (req, reply) => {
@@ -445,7 +459,7 @@ export async function registerCommunication(app, { db, c, authorized }) {
   app.post(
     "/api/animals/:id/communication-pack",
     {
-      preHandler: authorized(),
+      preHandler: authorized(["admin", "editor", "agent", "volunteer"]),
       config: { rateLimit: { max: 5, timeWindow: "1 minute" } },
     },
     async (req, reply) => {

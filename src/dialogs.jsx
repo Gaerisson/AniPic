@@ -53,6 +53,7 @@ import { AnimalCompatibility } from "./compatibility.jsx";
 import { AnimalExtraFacts } from "./animal-extra-facts.jsx";
 import { SpaPhoto } from "./spa-photo.jsx";
 import { MediaTags, AnimalVideos } from "./animal-media.jsx";
+import { GoogleSignIn } from "./google-auth.jsx";
 import { PhotoComments } from "./photo-comments.jsx";
 import { AnimalCommunication } from "./communication.jsx";
 import { AnimalHistory } from "./animal-history.jsx";
@@ -86,6 +87,7 @@ export function Login({ onClose, session, onLogin, notify }) {
           et de ceux qu’elles racontent.
         </p>
       </div>
+      <GoogleSignIn notify={notify} />
       {session?.needsSetup ? (
         <div className="notice">
           <KeyRound size={20} />
@@ -158,6 +160,7 @@ export function AnimalDetail({
   reload,
   version,
   canEdit,
+  canCreate,
   user,
   video,
   editPhoto,
@@ -697,6 +700,27 @@ export function AnimalDetail({
                   Voir la fiche source <ExternalLink size={14} />
                 </a>
               )}
+              {canCreate && !canEdit && (
+                <div className="detail-actions">
+                  <Button icon={Video} onClick={() => video(animal)}>
+                    Créer sa vidéo
+                  </Button>
+                  {photo && user?.role === "volunteer" && (
+                    <Button
+                      variant="secondary"
+                      icon={Edit3}
+                      onClick={() =>
+                        editPhoto({
+                          photoId: photo.id,
+                          filename: photo.filename,
+                        })
+                      }
+                    >
+                      Retoucher une copie
+                    </Button>
+                  )}
+                </div>
+              )}
               {canEdit && (
                 <div className="detail-actions">
                   {photo && user?.role === "admin" && (
@@ -784,7 +808,7 @@ export function AnimalDetail({
           {user && (
             <AnimalVideos
               animalId={animal.id}
-              canEdit={canEdit}
+              canEdit={canCreate || canEdit}
               notify={notify}
             />
           )}
@@ -1169,56 +1193,64 @@ export function Account({ user, close, notify, onLogout }) {
                 admin: "Administrateur",
                 editor: "Photographe",
                 agent: "Agent SPA",
+                volunteer: "Bénévole",
                 viewer: "Lecteur",
               }[user.role]
             }
           </span>
         </div>
       </div>
-      <form
-        className="form-stack"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setBusy(true);
-          try {
-            await api("/account/password", {
-              method: "PUT",
-              body: Object.fromEntries(new FormData(e.currentTarget)),
-            });
-            notify("Votre mot de passe a été modifié.");
-            e.target.reset();
-          } catch (e) {
-            notify(e.message, "error");
-          } finally {
-            setBusy(false);
-          }
-        }}
-      >
-        <h3>Changer de mot de passe</h3>
-        <label>
-          Mot de passe actuel
-          <input
-            type="password"
-            name="current"
-            required
-            autoComplete="current-password"
-          />
-        </label>
-        <label>
-          Nouveau mot de passe
-          <input
-            type="password"
-            name="password"
-            required
-            minLength={12}
-            maxLength={200}
-            autoComplete="new-password"
-          />
-        </label>
-        <Button variant="secondary" icon={KeyRound} disabled={busy}>
-          Mettre à jour le mot de passe
-        </Button>
-      </form>
+      {user.authProvider === "google" ? (
+        <p className="notice">
+          Ce compte utilise Google pour se connecter. Aucun mot de passe AniPic
+          n’est nécessaire.
+        </p>
+      ) : (
+        <form
+          className="form-stack"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setBusy(true);
+            try {
+              await api("/account/password", {
+                method: "PUT",
+                body: Object.fromEntries(new FormData(e.currentTarget)),
+              });
+              notify("Votre mot de passe a été modifié.");
+              e.target.reset();
+            } catch (e) {
+              notify(e.message, "error");
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          <h3>Changer de mot de passe</h3>
+          <label>
+            Mot de passe actuel
+            <input
+              type="password"
+              name="current"
+              required
+              autoComplete="current-password"
+            />
+          </label>
+          <label>
+            Nouveau mot de passe
+            <input
+              type="password"
+              name="password"
+              required
+              minLength={12}
+              maxLength={200}
+              autoComplete="new-password"
+            />
+          </label>
+          <Button variant="secondary" icon={KeyRound} disabled={busy}>
+            Mettre à jour le mot de passe
+          </Button>
+        </form>
+      )}
       <Button
         className="logout-button"
         variant="quiet"

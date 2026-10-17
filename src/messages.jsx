@@ -111,6 +111,7 @@ export function AdminMessages({ data, notify, reload }) {
           Destinataires
           <select name="target" defaultValue="role:agent">
             <option value="role:agent">Agents SPA</option>
+            <option value="role:volunteer">Bénévoles</option>
             <option value="all">Toute l’équipe</option>
             <option value="role:editor">Photographes</option>
             {data.users

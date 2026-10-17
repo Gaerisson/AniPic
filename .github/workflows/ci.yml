@@ -5,6 +5,8 @@ on:
     tags: ['v*']
   pull_request:
   workflow_dispatch:
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
 permissions:
   contents: read
 jobs:

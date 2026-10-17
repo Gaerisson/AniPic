@@ -43,19 +43,11 @@ export function compatibilityState(value) {
     .trim()
     .toLocaleLowerCase("fr")
     .replace(/[.!\s]+$/g, "");
-  if (
-    /^(non test[ée]|pas test[ée]|non renseign|non d[ée]termin|inconnu|unknown|[àa] tester|n\/a|null)/.test(
-      raw,
-    )
-  )
+  if (!raw || /^(?:n\s*[/.]?\s*a|null|undefined|[-–—?…·_]+)$/.test(raw))
     return "unknown";
-  if (/^(oui|ok|yes|true|1)$/.test(raw)) return "yes";
-  if (/^(non|ko|no|false|0|pas ok)$/.test(raw)) return "no";
-  if (/^(oui|non|ok|ko|yes|no|pas ok)\b[\s,:;.!–—-]+\S/.test(raw))
-    return "conditional";
-  // A yes/no embedded in a longer answer is qualified, even if the source
-  // starts with a sex or another note (e.g. "Mâle oui selon profil").
-  if (/(?:^|[^\p{L}\p{N}_])(?:oui|non)(?=$|[^\p{L}\p{N}_])/u.test(raw))
-    return "conditional";
-  return "unknown";
+  if (raw === "oui") return "yes";
+  if (raw === "non") return "no";
+  // Only an unqualified Oui/Non is definitive. Any other written answer
+  // needs the orange caution treatment, even without a yes/no keyword.
+  return "conditional";
 }

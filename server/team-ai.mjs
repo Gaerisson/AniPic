@@ -94,7 +94,7 @@ export async function teamText(c, db, provider, system, user) {
   return aiResponseText(data, provider).slice(0, 6000);
 }
 export async function registerTeamAI(app, { db, c, authorized }) {
-  const all = ["admin", "editor", "agent", "viewer"];
+  const all = ["admin", "editor", "agent", "volunteer", "viewer"];
   app.get("/api/team-ai/status", { preHandler: authorized(all) }, async () =>
     aiConfiguration(c, db),
   );
@@ -137,7 +137,7 @@ export async function registerTeamAI(app, { db, c, authorized }) {
   app.post(
     "/api/assistant/answer",
     {
-      preHandler: authorized(),
+      preHandler: authorized(["admin", "editor", "agent", "volunteer"]),
       config: { rateLimit: { max: 6, timeWindow: "1 minute" } },
     },
     async (req) => {
@@ -175,7 +175,7 @@ export async function registerTeamAI(app, { db, c, authorized }) {
   app.post(
     "/api/video/narration/draft",
     {
-      preHandler: authorized(),
+      preHandler: authorized(["admin", "editor", "agent", "volunteer"]),
       config: { rateLimit: { max: 6, timeWindow: "1 minute" } },
     },
     async (req) => {
@@ -249,7 +249,7 @@ export async function registerTeamAI(app, { db, c, authorized }) {
   app.get(
     "/api/video/voices",
     {
-      preHandler: authorized(),
+      preHandler: authorized(["admin", "editor", "agent", "volunteer"]),
       config: { rateLimit: { max: 6, timeWindow: "1 minute" } },
     },
     async () => {
@@ -274,7 +274,7 @@ export async function registerTeamAI(app, { db, c, authorized }) {
   app.post(
     "/api/video/narration/generate",
     {
-      preHandler: authorized(),
+      preHandler: authorized(["admin", "editor", "agent", "volunteer"]),
       config: { rateLimit: { max: 6, timeWindow: "1 hour" } },
     },
     async (req) => {

@@ -132,7 +132,13 @@ export async function registerSourceMatches(app, { db, c, authorized }) {
   app.post(
     "/api/animals/:id/source-match",
     {
-      preHandler: authorized(["admin", "editor", "agent", "viewer"]),
+      preHandler: authorized([
+        "admin",
+        "editor",
+        "agent",
+        "volunteer",
+        "viewer",
+      ]),
       config: { rateLimit: { max: 40, timeWindow: "1 minute" } },
     },
     async (req, reply) => {

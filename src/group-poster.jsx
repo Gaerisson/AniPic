@@ -289,8 +289,7 @@ export default function GroupPoster({ user, overview, notify }) {
             </Button>
           </div>
           <p className="fineprint">
-              Document A4 / A3 / A2 : 300 dpi · Les photos privées sont
-            exclues.
+            Document A4 / A3 / A2 : 300 dpi · Les photos privées sont exclues.
           </p>
         </section>
       </div>

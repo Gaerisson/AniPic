@@ -1,5 +1,16 @@
 import { id, now } from "./db.mjs";
 const names = {
+  photo_reviewed: "Analyse du tri photo",
+  animal_cutout: "Détourage d’un animal",
+  cutout_saved: "Copie détourée enregistrée",
+  box_poster_recorded: "Affiche ajoutée au suivi des box",
+  box_poster_updated: "Suivi d’une affiche mis à jour",
+  gazette_exported: "Gazette du refuge exportée",
+  agenda_created: "Événement ajouté à l’agenda partagé",
+  agenda_updated: "Événement de l’agenda modifié",
+  agenda_removed: "Événement retiré de l’agenda",
+  display_screen_named: "Écran TV renommé",
+  display_screen_removed: "Écran TV retiré du suivi",
   register_created: "Entrée du registre ajoutée",
   register_updated: "Entrée du registre modifiée",
   register_removed: "Entrée du registre retirée",

@@ -536,7 +536,11 @@ test("Facebook local text is formatted from public facts and AI adapters keep ke
     source_url: "https://www.la-spa.fr/animal/nala",
   };
   const text = localPost(a);
-  assert.match(text, /🐱 OK Chats/);
+  assert.match(text, /🐱 Chats : Ok/);
+  assert.match(
+    localPost({ ...a, compatibility: '{"chats":"Oui"}' }),
+    /🐱 OK Chats/,
+  );
   assert.match(text, /🐶 Pas OK Chiens/);
   assert.match(text, /\n\n/);
   assert.doesNotMatch(text, /SECRET/);

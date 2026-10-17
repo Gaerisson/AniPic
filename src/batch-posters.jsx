@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
-import { Printer, Search, CheckCheck, ArrowLeft } from "lucide-react";
-import { api, apiDownload, imageUrl, speciesName } from "./api.js";
+import {
+  Printer,
+  Download,
+  LoaderCircle,
+  CheckCheck,
+  ArrowLeft,
+} from "lucide-react";
+import { api, imageUrl, speciesName } from "./api.js";
 import { Button, Empty, Spinner } from "./ui.jsx";
 import { SpaPhoto } from "./spa-photo.jsx";
 export default function BatchPosters({ user, notify, go }) {
@@ -9,7 +15,50 @@ export default function BatchPosters({ user, notify, go }) {
     [query, setQuery] = useState(""),
     [species, setSpecies] = useState("all"),
     [template, setTemplate] = useState("spa"),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [job, setJob] = useState(null),
+    [jobError, setJobError] = useState(""),
+    [pollRetry, setPollRetry] = useState(0);
+  const storageKey = "anipic-poster-export-" + user?.id;
+  useEffect(() => {
+    if (!user) return;
+    try {
+      const id = localStorage.getItem(storageKey);
+      if (id) setJob({ id, state: "running", done: 0, total: 0 });
+    } catch {}
+  }, [storageKey]);
+  useEffect(() => {
+    if (!job?.id || job.state !== "running") return;
+    let active = true,
+      timer;
+    setBusy(true);
+    const poll = async () => {
+      try {
+        const next = await api("/posters/exports/" + job.id);
+        if (!active) return;
+        setJob(next);
+        setJobError("");
+        if (next.state === "running") timer = setTimeout(poll, 1500);
+        else {
+          setBusy(false);
+          if (next.state === "done")
+            notify(
+              `Export prêt : ${next.total - next.errors.length} fiches. Téléchargez le ZIP.`,
+            );
+        }
+      } catch (e) {
+        if (active) {
+          setJobError(e.message);
+          setBusy(false);
+        }
+      }
+    };
+    poll();
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [job?.id, job?.state, pollRetry]);
   useEffect(() => {
     if (!user) return;
     let active = true;
@@ -49,7 +98,7 @@ export default function BatchPosters({ user, notify, go }) {
         <div>
           <h1>Affiches en série</h1>
           <p className="muted">
-            Tous les animaux sélectionnés · PDF A4 en lots de 20 pages
+            PDF A4 regroupés dans un ZIP · jusqu’à 500 animaux
           </p>
         </div>
         <Button
@@ -100,27 +149,22 @@ export default function BatchPosters({ user, notify, go }) {
           </select>
         </label>
         <Button
-          icon={Printer}
+          icon={busy ? LoaderCircle : Printer}
           disabled={!chosen.length || busy}
           onClick={async () => {
             setBusy(true);
+            setJobError("");
             try {
-              const pages = [];
-              for (let i = 0; i < chosen.length; i += 20)
-                pages.push(chosen.slice(i, i + 20));
-              // Each request remains bounded; browsers may ask to allow multiple downloads.
-              for (const [index, animalIds] of pages.entries())
-                await apiDownload(
-                  "/posters/batch",
-                  { animalIds, template },
-                  pages.length === 1
-                    ? "affiches-box-SPA.pdf"
-                    : `affiches-box-SPA-${index + 1}-sur-${pages.length}.pdf`,
-                );
-              notify("PDF des affichettes prêt.");
+              const next = await api("/posters/exports", {
+                method: "POST",
+                body: { animalIds: chosen, template },
+              });
+              setJob(next);
+              try {
+                localStorage.setItem(storageKey, next.id);
+              } catch {}
             } catch (e) {
-              notify(e.message, "error");
-            } finally {
+              setJobError(e.message);
               setBusy(false);
             }
           }}
@@ -130,6 +174,64 @@ export default function BatchPosters({ user, notify, go }) {
             : `Exporter ${chosen.length} affiche${chosen.length > 1 ? "s" : ""}`}
         </Button>
       </section>
+      {(job || jobError) && (
+        <section className="panel batch-export-status" aria-live="polite">
+          {busy && <LoaderCircle className="spin" size={26} />}
+          <h2>
+            {job?.state === "done"
+              ? "Vos fiches sont prêtes"
+              : job?.state === "failed"
+                ? "L’export n’a pas abouti"
+                : "Préparation des fiches"}
+          </h2>
+          {job && (
+            <>
+              <progress max={job.total || 1} value={job.done || 0} />
+              <p>
+                {job.done || 0} / {job.total || "…"} fiches traitées ·{" "}
+                {job.current}
+              </p>
+            </>
+          )}
+          {jobError && (
+            <>
+              <p role="alert">{jobError}</p>
+              <Button
+                variant="secondary"
+                onClick={() => setPollRetry((v) => v + 1)}
+              >
+                Reprendre le suivi
+              </Button>
+            </>
+          )}
+          {job?.errors?.length > 0 && (
+            <details>
+              <summary>{job.errors.length} fiche(s) à réessayer</summary>
+              {job.errors.map((e) => (
+                <p key={e.animalId}>
+                  {e.name} : {e.error}
+                </p>
+              ))}
+            </details>
+          )}
+          {job?.download && (
+            <>
+              <a className="button" href={job.download}>
+                <Download size={18} />
+                Télécharger les fiches · ZIP
+              </a>
+              <p className="muted">
+                {job.pdfs} PDF · téléchargement disponible pendant 24 heures.
+              </p>
+            </>
+          )}
+          {busy && (
+            <p className="muted">
+              Vous pouvez changer de page et revenir ici : l’export continue.
+            </p>
+          )}
+        </section>
+      )}
       <div className="batch-poster-toolbar">
         <span>
           {chosen.length} / {animals?.length || 0} sélectionnés

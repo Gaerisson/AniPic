@@ -1,6 +1,7 @@
 import { browserTheme, rememberTheme } from "./theme-store.mjs";
 const InternalRegister = lazy(() => import("./internal-register.jsx"));
 const GroupPoster = lazy(() => import("./group-poster.jsx"));
+const Agenda = lazy(() => import("./agenda.jsx"));
 const BatchPosters = lazy(() => import("./batch-posters.jsx"));
 import { SiteGate } from "./site-access.jsx";
 import { useUndo } from "./undo.jsx";
@@ -49,6 +50,7 @@ import {
   SlidersHorizontal,
   Info,
   Undo2,
+  CalendarDays,
 } from "lucide-react";
 import { api, setCsrf, uid } from "./api.js";
 import { createRoot } from "react-dom/client";
@@ -160,6 +162,12 @@ const pages = {
   about: { name: "À propos", icon: Info, group: "info" },
   broadcasts: { name: "Vidéo C8", icon: Video, group: "library" },
   tools: { name: "Outils de l’équipe", icon: Wand2, group: "library" },
+  agenda: {
+    name: "Agenda partagé",
+    icon: CalendarDays,
+    group: "library",
+    roles: ["admin", "editor", "agent", "volunteer", "viewer"],
+  },
   stats: { name: "Statistiques", icon: LayoutDashboard, group: "library" },
   api: { name: "API & connexions", icon: RefreshCw, group: "admin" },
   feed: { name: "Le fil du refuge", icon: Rss, group: "library" },
@@ -332,8 +340,20 @@ function App() {
       active = false;
     };
   }, [version]);
+  useEffect(() => {
+    const result = new URLSearchParams(location.search).get("google");
+    if (!result) return;
+    if (result === "connected") {
+      const u = new URL(location.href);
+      u.searchParams.delete("google");
+      history.replaceState(null, "", u.pathname + u.search + u.hash);
+      notify("Connexion Google réussie.");
+    } else setModal({ type: "login" });
+  }, []);
   const close = useCallback(() => setModal(null), []);
   const canEdit = user && ["admin", "editor", "agent"].includes(user.role);
+  const canCreate =
+    !!user && ["admin", "editor", "agent", "volunteer"].includes(user.role);
   const go = (key) => {
     if (key === "departures") key = "archives";
     if (key === "displaySettings" && !canManageDisplay(user)) {
@@ -408,6 +428,7 @@ function App() {
     close,
     user,
     canEdit,
+    canCreate,
     overview,
     updateAssistantAvatar: (url) =>
       setOverview((previous) => ({ ...previous, assistantAvatarUrl: url })),
@@ -419,9 +440,9 @@ function App() {
     ui: overview?.interface || {},
     go,
     editPhoto: (photo) => {
-      if (user?.role !== "admin")
+      if (!["admin", "volunteer"].includes(user?.role))
         return notify(
-          "La retouche des photos de la bibliothèque est réservée aux administrateurs.",
+          "La retouche des photos de la bibliothèque est réservée aux administrateurs et bénévoles validés.",
           "error",
         );
       setEditorDraft(photo);
@@ -575,6 +596,7 @@ function App() {
                   "feed",
                   "stats",
                   "tools",
+                  "agenda",
                   "register",
                   "archives",
                   "displaySettings",
@@ -691,6 +713,7 @@ function App() {
                         admin: "Administrateur",
                         editor: "Photographe",
                         agent: "Agent SPA",
+                        volunteer: "Bénévole",
                         viewer: "Lecteur",
                       }[user.role]
                     : "Se connecter"}
@@ -859,7 +882,7 @@ function App() {
             ) : page === "stats" ? (
               <Insights {...actions} />
             ) : page === "collections" ? (
-              <Collections {...actions} />
+              <Collections {...actions} canEdit={canCreate} />
             ) : page === "todo" ? (
               <ShootBoard {...actions} />
             ) : page === "inbox" ? (
@@ -887,12 +910,20 @@ function App() {
               </Suspense>
             ) : page === "tools" ? (
               <AgentTools {...actions} />
+            ) : page === "agenda" ? (
+              <Suspense fallback={<Spinner />}>
+                <Agenda {...actions} />
+              </Suspense>
             ) : page === "feed" ? (
               <RefugeActivity {...actions} />
             ) : page === "studio" ? (
               <StudioBoundary>
                 <Suspense fallback={<Spinner />}>
-                  <Studio initial={videoDraft} {...actions} />
+                  <Studio
+                    initial={videoDraft}
+                    {...actions}
+                    canEdit={canCreate}
+                  />
                 </Suspense>
               </StudioBoundary>
             ) : page === "broadcasts" ? (
@@ -965,7 +996,7 @@ function App() {
             {...actions}
           />
         )}
-        {modal?.type === "canva" && canEdit && (
+        {modal?.type === "canva" && canCreate && (
           <CanvaDialog
             animalId={modal.animalId}
             photoId={modal.photoId}
@@ -1006,10 +1037,15 @@ function App() {
             photos={modal.photos}
             index={modal.index}
             {...actions}
+            canEdit={canCreate}
           />
         )}
         {modal?.type === "collection-view" && (
-          <CollectionView collection={modal.collection} {...actions} />
+          <CollectionView
+            collection={modal.collection}
+            {...actions}
+            canEdit={canCreate}
+          />
         )}
         {modal?.type === "account" && (
           <Account
@@ -1040,3 +1076,4 @@ import "./update33.css";
 import "./update34.css";
 import "./update35.css";
 import "./update36.css";
+import "./update39.css";

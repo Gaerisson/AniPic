@@ -107,7 +107,7 @@ export async function registerAlbums(app, { db, c, authorized }) {
   });
   app.post(
     "/api/collections",
-    { preHandler: authorized() },
+    { preHandler: authorized(["admin", "editor", "agent", "volunteer"]) },
     async (req, reply) => {
       const v = z
         .object({
@@ -150,7 +150,7 @@ export async function registerAlbums(app, { db, c, authorized }) {
   );
   app.patch(
     "/api/collections/:id",
-    { preHandler: authorized() },
+    { preHandler: authorized(["admin", "editor", "agent", "volunteer"]) },
     async (req) => {
       const row = find(req.params.id, req.user),
         v = z
@@ -205,7 +205,7 @@ export async function registerAlbums(app, { db, c, authorized }) {
   );
   app.post(
     "/api/collections/:id/photos",
-    { preHandler: authorized() },
+    { preHandler: authorized(["admin", "editor", "agent", "volunteer"]) },
     async (req) => {
       const row = find(req.params.id, req.user),
         { photoIds } = z
@@ -226,7 +226,7 @@ export async function registerAlbums(app, { db, c, authorized }) {
   app.post(
     "/api/collections/:id/upload",
     {
-      preHandler: authorized(),
+      preHandler: authorized(["admin", "editor", "agent", "volunteer"]),
       config: { rateLimit: { max: 12, timeWindow: "1 minute" } },
     },
     async (req) => {
@@ -339,7 +339,7 @@ export async function registerAlbums(app, { db, c, authorized }) {
   });
   app.patch(
     "/api/collections/:id/items/:itemId",
-    { preHandler: authorized() },
+    { preHandler: authorized(["admin", "editor", "agent", "volunteer"]) },
     async (req) => {
       const album = find(req.params.id, req.user),
         itemId = UUID.parse(req.params.itemId);
@@ -431,7 +431,13 @@ export async function registerAlbums(app, { db, c, authorized }) {
   app.get(
     "/api/collections/:id/download",
     {
-      preHandler: authorized(["admin", "editor", "agent", "viewer"]),
+      preHandler: authorized([
+        "admin",
+        "editor",
+        "agent",
+        "volunteer",
+        "viewer",
+      ]),
       config: { rateLimit: { max: 5, timeWindow: "1 minute" } },
     },
     async (req, reply) => {

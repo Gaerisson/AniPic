@@ -17,7 +17,7 @@ async function body(response, max) {
 }
 export async function registerAuthorAvatar(app, { db }) {
   app.get("/api/author/avatar", async (req, reply) => {
-    const name = 'Gaerisson';
+    const name = "Gaerisson";
     if (!/^[a-zA-Z0-9-]{1,39}$/.test(name || "")) return reply.code(404).send();
     let entry = cache.get(name);
     if (!entry || Date.now() - entry.at > 300000) {

@@ -50,7 +50,7 @@ import { registerDisplay } from "./refuge-display.mjs";
 import { registerSimilar } from "./similar-photos.mjs";
 import { registerTranscription } from "./transcription.mjs";
 const UUID = z.string().uuid();
-const all = ["admin", "editor", "agent", "viewer"];
+const all = ["admin", "editor", "agent", "volunteer", "viewer"];
 const fail = (message, code = 404) =>
   Object.assign(new Error(message), { statusCode: code });
 const xml = (value) =>

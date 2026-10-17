@@ -67,6 +67,13 @@ export function siteAccessHook(db, c) {
     }
     const cfg = settings(db),
       sid = req.user?.token_hash;
+    const entryPath = req.url.split("?")[0],
+      googleEntry =
+        (req.method === "GET" &&
+          ["/api/auth/google/status", "/api/auth/google/callback"].includes(
+            entryPath,
+          )) ||
+        (req.method === "POST" && entryPath === "/api/auth/google/start");
     // Keep valid pre-existing passes without asking for the PIN again. Upgrade
     // only unexpired legacy passes; revoked and expired tokens never revive.
     if (
@@ -96,7 +103,7 @@ export function siteAccessHook(db, c) {
         .get(sid);
       if (binding && !matchesNetwork(req.ip, binding.network)) req.user = null;
     }
-    if (!req.user && !req.cookies.anipic_manual) {
+    if (!req.user && !req.cookies.anipic_manual && !googleEntry) {
       const network = (cfg.refugeNetworks || []).find((n) =>
         matchesNetwork(req.ip, n),
       );
@@ -127,6 +134,7 @@ export function siteAccessHook(db, c) {
     }
     if (
       siteGateRequired(db, req) &&
+      !googleEntry &&
       /^(?:\/api\/|\/media\/|\/feed\.xml)/.test(req.url) &&
       !/^\/api\/(?:health|session|gate(?:\/|$)|login(?:\?|$)|demo-session(?:\?|$))/.test(
         req.url,

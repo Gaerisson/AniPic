@@ -49,7 +49,15 @@ export async function registerVideoManagement(app, { db, authorized }) {
   trash("video_renders", "renders");
   app.get(
     "/api/video/trash",
-    { preHandler: authorized(["admin", "editor", "agent", "viewer"]) },
+    {
+      preHandler: authorized([
+        "admin",
+        "editor",
+        "agent",
+        "volunteer",
+        "viewer",
+      ]),
+    },
     async () => ({
       projects: db
         .prepare(
@@ -65,7 +73,15 @@ export async function registerVideoManagement(app, { db, authorized }) {
   );
   app.get(
     "/api/video/year/:year",
-    { preHandler: authorized(["admin", "editor", "agent", "viewer"]) },
+    {
+      preHandler: authorized([
+        "admin",
+        "editor",
+        "agent",
+        "volunteer",
+        "viewer",
+      ]),
+    },
     async (req) => {
       const year = String(
         z.coerce.number().int().min(2000).max(2100).parse(req.params.year),

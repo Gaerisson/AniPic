@@ -1,6 +1,6 @@
 {
   "name": "anipic",
-  "version": "3.5.4",
+  "version": "3.10.0",
   "private": true,
   "type": "module",
   "description": "PhotothÃ¨que autonome pour les refuges",
@@ -32,6 +32,7 @@
     "@fastify/multipart": "^9.3.0",
     "@fastify/rate-limit": "^10.3.0",
     "@fastify/static": "^10.1.6",
+    "@huggingface/transformers": "4.3.1",
     "@remotion/bundler": "4.0.535",
     "@remotion/player": "4.0.535",
     "@remotion/renderer": "4.0.535",
@@ -39,6 +40,7 @@
     "dbip-city-lite": "^1.0.18",
     "fastify": "^5.6.0",
     "flag-icons": "^7.6.0",
+    "google-auth-library": "^11.3.1",
     "lucide-react": "^0.468.0",
     "mediabunny": "^1.61.4",
     "mmdb-lib": "^3.0.3",
@@ -67,6 +69,8 @@
     "vite": "^7.1.10"
   },
   "allowScripts": {
-    "esbuild@0.28.1": true
+    "esbuild@0.28.1": true,
+    "onnxruntime-node@1.30.0": true,
+    "protobufjs@7.6.6": true
   }
 }

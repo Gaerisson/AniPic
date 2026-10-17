@@ -50,3 +50,7 @@ PNG/PDF portrait A4 (2480 × 3508 px), A3 (3508 × 4962 px environ) et A2 (4960 
 **Affiches de box en série** : **Sélectionner tous les résultats** sélectionne tous les résultats du filtre, et non seulement les vingt premiers. Les filtres n’effacent pas la sélection. Le téléchargement produit des PDF successifs de vingt pages ; autoriser les téléchargements multiples si le navigateur le demande. Une erreur laisse les lots précédents déjà téléchargés disponibles.
 
 **Feuille de séance** : portraits agrandis et espace de notes. Le mode demandes suit le planning ; retirer une demande ne supprime pas l’animal, qui peut rester proposé dans **Sans photo locale**. Ctrl+Z annule le retrait tant qu’aucune autre modification concurrente n’a remplacé sa version.
+
+## Affiches de box en série (3.6)
+
+La sélection accepte jusqu’à 500 animaux. Le bouton Exporter démarre une préparation en arrière-plan : progression, animal en cours et erreurs individuelles sont visibles. Vous pouvez quitter la page puis revenir ; le suivi est mémorisé par navigateur et compte. À la fin, cliquer sur **Télécharger les fiches · ZIP**. Il contient des PDF A4 de dix pages maximum, et un rapport si une photo a échoué. Les autres fiches restent récupérables. Le téléchargement est privé et disponible pendant 24 heures, sauf purge du cache ; après redémarrage interrompant une génération, la relancer. La limite des 80 Mo de PNG intermédiaires ne bloque plus cette voie d’export.

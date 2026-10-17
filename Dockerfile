@@ -1,4 +1,6 @@
 FROM node:24-bookworm-slim AS build
+# CPU inference is bundled; avoid downloading optional CUDA libraries at build time.
+ENV ONNXRUNTIME_NODE_INSTALL=skip
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -20,6 +22,7 @@ COPY --from=build --chown=node:node /app/video-bundle ./video-bundle
 COPY --from=build --chown=node:node /app/browser-path.txt ./browser-path.txt
 COPY --from=build --chown=node:node /opt/remotion-browser /opt/remotion-browser
 COPY --chown=node:node package.json package-lock.json ./
+COPY --chown=node:node THIRD_PARTY_NOTICES.txt ./
 COPY --chown=node:node server ./server
 COPY --chown=node:node shared ./shared
 COPY --chown=node:node scripts ./scripts

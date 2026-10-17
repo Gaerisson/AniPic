@@ -23,3 +23,5 @@ outputs
 docs
 examples
 *.md
+
+.google-oauth-secret*

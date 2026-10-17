@@ -2,13 +2,47 @@ import { useState, useEffect, lazy, Suspense } from "react";
 import { Camera, Rss, Monitor, ArrowUpRight } from "lucide-react";
 import { api, imageUrl } from "./api.js";
 import { SpaPhoto } from "./spa-photo.jsx";
+import { parisDate, agendaDateLabel } from "../shared/agenda.mjs";
 const Player = lazy(() =>
   import("./show-player.jsx").then((m) => ({ default: m.ShowPlayer })),
 );
 export function HomeWidgets({ widgets, user, overview, open }) {
   const [tasks, setTasks] = useState([]),
     [feed, setFeed] = useState([]),
-    [tv, setTv] = useState(null);
+    [tv, setTv] = useState(null),
+    [agenda, setAgenda] = useState(null),
+    [agendaError, setAgendaError] = useState("");
+  useEffect(() => {
+    if (!widgets.includes("agenda") || !user) return;
+    let stop = false;
+    const load = () => {
+      const from = parisDate(),
+        end = new Date(from + "T12:00:00Z");
+      end.setUTCDate(end.getUTCDate() + 90);
+      api(`/agenda?from=${from}&to=${end.toISOString().slice(0, 10)}`)
+        .then((r) => {
+          if (!stop) {
+            setAgenda(
+              r.items
+                .filter((e) => e.keyEvent && e.status !== "cancelled")
+                .slice(0, 6),
+            );
+            setAgendaError("");
+          }
+        })
+        .catch((e) => {
+          if (!stop) setAgendaError(e.message);
+        });
+    };
+    load();
+    const timer = setInterval(load, 60000);
+    window.addEventListener("focus", load);
+    return () => {
+      stop = true;
+      clearInterval(timer);
+      window.removeEventListener("focus", load);
+    };
+  }, [widgets.includes("agenda"), user?.id]);
   useEffect(() => {
     if (widgets.includes("priorities") && user)
       api("/tasks")
@@ -71,6 +105,41 @@ export function HomeWidgets({ widgets, user, overview, open }) {
                   </div>
                 ) : (
                   <p className="muted">Le programme TV n’est pas activé.</p>
+                )}
+              </>
+            ) : key === "agenda" ? (
+              <>
+                <h2>
+                  Les prochains rendez-vous{" "}
+                  <a href="#agenda">
+                    Tout l’agenda <ArrowUpRight size={14} />
+                  </a>
+                </h2>
+                {!user ? (
+                  <p className="muted">
+                    Connectez-vous pour consulter l’agenda de l’équipe.
+                  </p>
+                ) : agendaError ? (
+                  <p role="alert">{agendaError}</p>
+                ) : agenda === null ? (
+                  <p role="status">Chargement des rendez-vous…</p>
+                ) : agenda.length ? (
+                  <div className="home-agenda-list">
+                    {agenda.map((e) => (
+                      <a href="#agenda" key={e.id}>
+                        <time dateTime={e.date}>
+                          {agendaDateLabel(e.date)}
+                          {e.time && ` · ${e.time}`}
+                        </time>
+                        <strong>{e.title}</strong>
+                        {e.location && <small>{e.location}</small>}
+                      </a>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="muted">
+                    Aucune date clé prévue dans les 90 prochains jours.
+                  </p>
                 )}
               </>
             ) : key === "priorities" ? (

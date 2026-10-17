@@ -1,5 +1,5 @@
 import { useImageReadiness, AssetLoading } from "./asset-readiness.jsx";
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { Pause, Play, SkipBack, SkipForward, Maximize } from "lucide-react";
 import { SignageCanvas, BrandLogo } from "../shared/SignageCanvas.jsx";
 import {
@@ -17,13 +17,40 @@ export function ShowPlayer(props) {
       .concat("/spa-logo.png"),
   );
   const [loaded, setLoaded] = useState(null);
+  const report = useCallback(
+    (status) =>
+      props.onStatus?.({
+        ...status,
+        issues: [
+          ...new Set([
+            ...(status.issues || []),
+            ...(!state.ready && state.failed.length ? ["image_load"] : []),
+          ]),
+        ],
+      }),
+    [props.onStatus, state.ready, state.failed.length],
+  );
+  useEffect(() => {
+    if (!state.ready && !loaded)
+      props.onStatus?.({
+        state: state.failed.length ? "error" : "loading",
+        revision: "",
+        scene: null,
+        issues: state.failed.length ? ["image_load"] : [],
+        cursor: null,
+      });
+  }, [state.ready, state.failed.length, state.done, loaded, props.onStatus]);
   useEffect(() => {
     if (state.ready) setLoaded(props.show);
   }, [state.ready, props.show]);
   if (!state.ready && !loaded) return <AssetLoading state={state} />;
   return (
     <>
-      <ReadyShowPlayer {...props} show={state.ready ? props.show : loaded} />
+      <ReadyShowPlayer
+        {...props}
+        onStatus={props.onStatus ? report : undefined}
+        show={state.ready ? props.show : loaded}
+      />
       {!state.ready && !props.full && (
         <div className="show-refresh-status" role="status">
           Préparation de la nouvelle sélection · {state.done}/{state.total}
@@ -35,12 +62,22 @@ export function ShowPlayer(props) {
     </>
   );
 }
-function ReadyShowPlayer({ show, full = false, seekFrame, synced = false }) {
+function ReadyShowPlayer({
+  show,
+  full = false,
+  seekFrame,
+  synced = false,
+  onStatus,
+  monitorControl,
+}) {
   const wrap = useRef(),
     [scale, setScale] = useState(1),
     [frame, setFrame] = useState(0),
     [paused, setPaused] = useState(false),
-    [controls, setControls] = useState(true);
+    [controls, setControls] = useState(true),
+    [mediaIssue, setMediaIssue] = useState(null);
+  const waiting = useRef(null),
+    lastReport = useRef({ at: 0, key: "", state: "", issue: null });
   const clock = useRef({ frame: 0, time: 0 }),
     timeline = useMemo(() => showTimeline(show), [show]),
     size = showSize(show.program.orientation);
@@ -125,6 +162,82 @@ function ReadyShowPlayer({ show, full = false, seekFrame, synced = false }) {
     return () => window.removeEventListener("keydown", handler);
   }, [full, frame, paused]);
   const open = scheduleOpen(show.program);
+  const currentScene = sceneAt(timeline, frame);
+  const mediaStatus = useCallback((code) => {
+    if (code === "video_stalled") {
+      if (!waiting.current)
+        waiting.current = setTimeout(() => {
+          waiting.current = null;
+          setMediaIssue("video_stalled");
+        }, 5000);
+      return;
+    }
+    clearTimeout(waiting.current);
+    waiting.current = null;
+    setMediaIssue(code);
+  }, []);
+  useEffect(() => {
+    mediaStatus(null);
+    return () => {
+      clearTimeout(waiting.current);
+      waiting.current = null;
+    };
+  }, [currentScene.key, mediaStatus]);
+  useEffect(() => {
+    if (!onStatus) return;
+    const state = full && !open ? "standby" : paused ? "paused" : "playing",
+      time = performance.now(),
+      key = currentScene.key;
+    if (
+      time - lastReport.current.at < 1000 &&
+      key === lastReport.current.key &&
+      state === lastReport.current.state &&
+      mediaIssue === lastReport.current.issue
+    )
+      return;
+    lastReport.current = { at: time, key, state, issue: mediaIssue };
+    onStatus({
+      state,
+      revision: show.revision || "",
+      cursor: Math.floor(frame),
+      issues: mediaIssue ? [mediaIssue] : [],
+      scene:
+        state === "standby"
+          ? null
+          : {
+              key,
+              title: String(
+                currentScene.animal?.name ||
+                  currentScene.block?.title ||
+                  {
+                    logo: "Logo SPA",
+                    stats: "Les chiffres du refuge",
+                    message: "Message",
+                    hours: "Horaires",
+                    spa: "Informations SPA",
+                    wallpaper: "Fond animé",
+                  }[currentScene.type] ||
+                  "Séquence",
+              ).slice(0, 120),
+              type: currentScene.type,
+              position: Math.max(
+                0,
+                Math.floor((currentScene.frame - currentScene.start) / 24),
+              ),
+              duration: Math.round(currentScene.duration / 24),
+            },
+    });
+  }, [
+    frame,
+    paused,
+    open,
+    full,
+    mediaIssue,
+    show.revision,
+    currentScene,
+    timeline.frames,
+    onStatus,
+  ]);
   return (
     <div
       className={`show-player ${full ? "show-full" : ""}`}
@@ -141,6 +254,9 @@ function ReadyShowPlayer({ show, full = false, seekFrame, synced = false }) {
       }
       onPointerMove={() => setControls(true)}
       onPointerLeave={() => full && setControls(false)}
+      onErrorCapture={(e) => {
+        if (e.target.tagName === "IMG") mediaStatus("image_load");
+      }}
     >
       {!full || open ? (
         <div
@@ -151,7 +267,12 @@ function ReadyShowPlayer({ show, full = false, seekFrame, synced = false }) {
             transform: `translate(-50%,-50%) scale(${scale})`,
           }}
         >
-          <SignageCanvas show={show} frame={frame} paused={paused} />
+          <SignageCanvas
+            show={show}
+            frame={frame}
+            paused={paused}
+            onPlaybackIssue={onStatus ? mediaStatus : undefined}
+          />
         </div>
       ) : (
         <div className="show-standby">
@@ -180,6 +301,7 @@ function ReadyShowPlayer({ show, full = false, seekFrame, synced = false }) {
         <span>
           {Math.floor(frame / 24)} / {Math.round(timeline.frames / 24)} s
         </span>
+        {full && monitorControl}
         {full && (
           <button
             aria-label="Plein écran"

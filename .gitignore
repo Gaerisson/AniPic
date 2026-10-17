@@ -23,3 +23,5 @@ outputs/
 /anipic-presentation-*.mp4
 /story-presentation.mp4
 /anipic-story-*.png
+
+.google-oauth-secret*

@@ -7,6 +7,7 @@ export const widgetNames = {
   tv: "Programme TV en direct",
   priorities: "Priorités photo de l’équipe",
   activity: "Dernières nouvelles du refuge",
+  agenda: "Agenda partagé · dates importantes",
 };
 export function WidgetSettings({ values: v, change }) {
   const list = v.homeWidgets || ["photos", "clockWeather"];

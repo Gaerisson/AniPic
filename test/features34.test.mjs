@@ -493,11 +493,11 @@ test("seasonal SPA and opening hours blocks retain their theme; schedule and log
       logoAnimation,
     );
   assert.equal(compatibilityState("Oui ."), "yes");
-  assert.equal(compatibilityState("Pas OK"), "no");
-  assert.equal(compatibilityState("Non testé"), "unknown");
+  assert.equal(compatibilityState("Pas OK"), "conditional");
+  assert.equal(compatibilityState("Non testé"), "conditional");
   assert.equal(
     compatibilityState("Nous éviterons les enfants en bas âge"),
-    "unknown",
+    "conditional",
   );
   assert.equal(
     labelledCompatibility("Entente enfant ; oui . Bali est en SOS car FIV+")

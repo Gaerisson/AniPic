@@ -312,21 +312,25 @@ export async function registerCanva(app, { db, c, authorized }) {
   db.prepare(
     "UPDATE canva_projects SET state='interrupted',error='Envoi interrompu. Vérifiez vos créations Canva avant un nouvel envoi.' WHERE state='sending'",
   ).run();
-  app.get("/api/canva/status", { preHandler: authorized() }, async (req) => {
-    const cfg = canvaConfiguration(c),
-      connection = db
-        .prepare("SELECT connected_at FROM canva_connections WHERE user_id=?")
-        .get(req.user.id);
-    return {
-      ...cfg,
-      connected: !!connection,
-      connectedAt: connection?.connected_at || null,
-    };
-  });
+  app.get(
+    "/api/canva/status",
+    { preHandler: authorized(["admin", "editor", "agent", "volunteer"]) },
+    async (req) => {
+      const cfg = canvaConfiguration(c),
+        connection = db
+          .prepare("SELECT connected_at FROM canva_connections WHERE user_id=?")
+          .get(req.user.id);
+      return {
+        ...cfg,
+        connected: !!connection,
+        connectedAt: connection?.connected_at || null,
+      };
+    },
+  );
   app.post(
     "/api/canva/connect",
     {
-      preHandler: authorized(),
+      preHandler: authorized(["admin", "editor", "agent", "volunteer"]),
       config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
     },
     async (req, reply) => {
@@ -386,7 +390,7 @@ export async function registerCanva(app, { db, c, authorized }) {
             secure: c.secureCookie,
           });
         },
-        authorized(),
+        authorized(["admin", "editor", "agent", "volunteer"]),
       ],
       logLevel: "silent",
     },
@@ -438,7 +442,7 @@ export async function registerCanva(app, { db, c, authorized }) {
   );
   app.delete(
     "/api/canva/connection",
-    { preHandler: authorized() },
+    { preHandler: authorized(["admin", "editor", "agent", "volunteer"]) },
     async (req) =>
       locked(req.user.id, async () => {
         const row = db
@@ -475,14 +479,18 @@ export async function registerCanva(app, { db, c, authorized }) {
         return { ok: true, revoked };
       }),
   );
-  app.post("/api/canva/plan", { preHandler: authorized() }, async (req) => {
-    const plan = presentationPlan(db, req.body);
-    return {
-      pages: plan.pages,
-      facts: plan.facts,
-      photoCount: plan.photos.length,
-    };
-  });
+  app.post(
+    "/api/canva/plan",
+    { preHandler: authorized(["admin", "editor", "agent", "volunteer"]) },
+    async (req) => {
+      const plan = presentationPlan(db, req.body);
+      return {
+        pages: plan.pages,
+        facts: plan.facts,
+        photoCount: plan.photos.length,
+      };
+    },
+  );
   let building = 0;
   async function build(body) {
     if (building >= 2)
@@ -501,7 +509,7 @@ export async function registerCanva(app, { db, c, authorized }) {
   app.post(
     "/api/canva/presentation",
     {
-      preHandler: authorized(),
+      preHandler: authorized(["admin", "editor", "agent", "volunteer"]),
       config: { rateLimit: { max: 6, timeWindow: "1 minute" } },
     },
     async (req, reply) => {
@@ -522,7 +530,7 @@ export async function registerCanva(app, { db, c, authorized }) {
   app.post(
     "/api/canva/projects",
     {
-      preHandler: authorized(),
+      preHandler: authorized(["admin", "editor", "agent", "volunteer"]),
       config: { rateLimit: { max: 5, timeWindow: "1 minute" } },
     },
     async (req, reply) =>
@@ -575,21 +583,25 @@ export async function registerCanva(app, { db, c, authorized }) {
         }
       }),
   );
-  app.get("/api/canva/projects", { preHandler: authorized() }, async (req) => {
-    const { animalId } = z.object({ animalId: UUID }).parse(req.query);
-    return {
-      items: db
-        .prepare(
-          "SELECT * FROM canva_projects WHERE user_id=? AND animal_id=? ORDER BY created_at DESC LIMIT 30",
-        )
-        .all(req.user.id, animalId)
-        .map(publicProject),
-    };
-  });
+  app.get(
+    "/api/canva/projects",
+    { preHandler: authorized(["admin", "editor", "agent", "volunteer"]) },
+    async (req) => {
+      const { animalId } = z.object({ animalId: UUID }).parse(req.query);
+      return {
+        items: db
+          .prepare(
+            "SELECT * FROM canva_projects WHERE user_id=? AND animal_id=? ORDER BY created_at DESC LIMIT 30",
+          )
+          .all(req.user.id, animalId)
+          .map(publicProject),
+      };
+    },
+  );
   app.get(
     "/api/canva/projects/:id",
     {
-      preHandler: authorized(),
+      preHandler: authorized(["admin", "editor", "agent", "volunteer"]),
       config: { rateLimit: { max: 40, timeWindow: "1 minute" } },
     },
     async (req) =>
@@ -609,7 +621,7 @@ export async function registerCanva(app, { db, c, authorized }) {
   );
   app.post(
     "/api/canva/projects/:id/open",
-    { preHandler: authorized() },
+    { preHandler: authorized(["admin", "editor", "agent", "volunteer"]) },
     async (req) =>
       locked(req.user.id, async () => {
         const row = ownProject(req),
@@ -626,7 +638,7 @@ export async function registerCanva(app, { db, c, authorized }) {
   app.get(
     "/api/canva/projects/:id/edit/:designId",
     {
-      preHandler: authorized(),
+      preHandler: authorized(["admin", "editor", "agent", "volunteer"]),
       config: { rateLimit: { max: 30, timeWindow: "1 minute" } },
     },
     async (req, reply) =>

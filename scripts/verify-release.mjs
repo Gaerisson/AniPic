@@ -34,6 +34,7 @@ const steps = [
 ];
 const env = {
   ...process.env,
+  ONNXRUNTIME_NODE_INSTALL: "skip",
   ANIPIC_MEDIA_PATH: "/mnt/anipic/photos",
   ANIPIC_BACKUP_PATH: "/mnt/anipic/backups",
   ANIPIC_C8_PATH: "/mnt/anipic/C8",

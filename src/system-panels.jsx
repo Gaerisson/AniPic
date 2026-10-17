@@ -90,9 +90,8 @@ export function Journal() {
         <div>
           <h2>AniPic {appVersion} · Journal des évolutions</h2>
           <p>
-            Photos des albums en haute définition, textes TV lisibles quel que
-            soit le thème et ententes nuancées en orange. Guide des API SPA et
-            AniPic ajouté à la documentation du projet.
+            Comptes bénévoles avec Google, soumis à validation. Affiches en
+            série avec progression, PDF allégés et téléchargement dans un ZIP.
           </p>
           <a
             href="https://github.com/Gaerisson/AniPic"

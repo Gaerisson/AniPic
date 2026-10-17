@@ -13,7 +13,15 @@ export async function registerPhotoCollaboration(app, { db, authorized }) {
   }
   app.get(
     "/api/photos/:id/comments",
-    { preHandler: authorized(["admin", "editor", "agent", "viewer"]) },
+    {
+      preHandler: authorized([
+        "admin",
+        "editor",
+        "agent",
+        "volunteer",
+        "viewer",
+      ]),
+    },
     async (req) => {
       photo(req.params.id);
       return {

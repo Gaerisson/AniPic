@@ -95,11 +95,9 @@ export async function registerInternalRegister(app, { db, authorized }) {
         !req.headers["x-anipic-version"] ||
         req.headers["x-anipic-version"] !== current.updated_at
       )
-        return reply
-          .code(409)
-          .send({
-            error: "Cette entrée a changé. Actualisez avant de l’enregistrer.",
-          });
+        return reply.code(409).send({
+          error: "Cette entrée a changé. Actualisez avant de l’enregistrer.",
+        });
       const changes = Row.partial()
           .extend({ deleted: z.boolean().optional() })
           .strict()

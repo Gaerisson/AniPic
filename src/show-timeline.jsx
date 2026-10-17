@@ -39,8 +39,14 @@ export function ShowTimeline({ show, program: p, change, seek, notify }) {
       .catch(() => {});
   }, []);
   const blocks = p.inserts || [],
+    agendaBlocks = (show?.program.inserts || []).filter(
+      (b) => b.agenda && !blocks.some((x) => x.id === b.id),
+    ),
     timeline = show
-      ? showTimeline({ ...show, program: p })
+      ? showTimeline({
+          ...show,
+          program: { ...p, inserts: [...blocks, ...agendaBlocks] },
+        })
       : { scenes: [], frames: 0 };
   useEffect(() => {
     if (!expanded) return;
@@ -115,6 +121,12 @@ export function ShowTimeline({ show, program: p, change, seek, notify }) {
           Réinitialiser la piste
         </button>
       </div>
+      {agendaBlocks.length > 0 && (
+        <p className="fineprint">
+          {agendaBlocks.length} événement(s) de l’agenda partagé dans cette
+          piste. <a href="#agenda">Modifier les rendez-vous →</a>
+        </p>
+      )}
       <div className="programme-track" aria-label="Ordre de lecture">
         {timeline.scenes.map((s, i) => {
           const seconds =
@@ -250,7 +262,9 @@ export function ShowTimeline({ show, program: p, change, seek, notify }) {
                   </span>
                 )}
                 <strong>{title}</strong>
-                <small>{seconds} s</small>
+                <small>
+                  {seconds} s{s.block?.agenda ? " · Agenda" : ""}
+                </small>
               </button>
               <button
                 type="button"
