@@ -1,3 +1,4 @@
+import { NavLink } from "./nav-link.jsx";
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -18,6 +19,7 @@ import {
 } from "lucide-react";
 import { api, speciesName } from "./api.js";
 import { FoxAvatar } from "./fox-avatar.jsx";
+import { AssistantAnswer, AssistantThinking } from "./assistant-answer.jsx";
 const aliases = {
   history: "historique changements api publique avant apres spa",
   displaySettings: "tele television ecran kiosk masquer diffusion affichage",
@@ -278,7 +280,8 @@ export function QuickAssistant({
                 <>
                   <small>Animaux</small>
                   {animals.map((a) => (
-                    <button
+                    <NavLink
+                      href={"#animal/" + a.id}
                       key={a.id}
                       onClick={() => {
                         setOpened(false);
@@ -294,7 +297,7 @@ export function QuickAssistant({
                         </small>
                       </span>
                       <ArrowUpRight size={15} />
-                    </button>
+                    </NavLink>
                   ))}
                 </>
               )}
@@ -302,11 +305,15 @@ export function QuickAssistant({
                 <>
                   <small>Accès rapide</small>
                   {destinations.map((p) => (
-                    <button key={p.key} onClick={() => destination(p.key)}>
+                    <NavLink
+                      href={"#" + p.key}
+                      key={p.key}
+                      onClick={() => destination(p.key)}
+                    >
                       <p.icon size={17} />
                       <span>{p.name}</span>
                       <ArrowUpRight size={15} />
-                    </button>
+                    </NavLink>
                   ))}
                 </>
               )}
@@ -341,7 +348,8 @@ export function QuickAssistant({
                   Envoie votre question et les fiches publiques correspondantes
                   au service choisi.
                 </small>
-                {answer && <p className="assistant-answer">{answer}</p>}
+                {busy && <AssistantThinking />}
+                {answer && <AssistantAnswer text={answer} />}
                 {error && (
                   <p role="alert" className="error-text">
                     {error}
@@ -404,7 +412,7 @@ export function About({ overview, go, user, voice }) {
     <div className="about-page">
       <div className="page-heading">
         <h1>À propos</h1>
-        <span className="about-version">Version 3.2</span>
+        <span className="about-version">Version 3.3.0</span>
       </div>
       <section className="panel about-author">
         <FoxAvatar

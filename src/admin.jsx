@@ -40,6 +40,7 @@ const DisplaySettings = lazy(() =>
 );
 import { ImportAutomation } from "./import-automation.jsx";
 import { SimilarPhotos } from "./similar-photos.jsx";
+import { StorageChecks, Journal } from "./system-panels.jsx";
 
 const adminTitles = {
   displaySettings: ["Écran du refuge", ""],
@@ -52,6 +53,7 @@ const adminTitles = {
   backups: ["Sauvegardes", ""],
   settings: ["Configuration", ""],
   users: ["Équipe & accès", ""],
+  journal: ["Journal", ""],
 };
 export function Admin({
   page,
@@ -188,6 +190,8 @@ export function Admin({
         </Suspense>
       ) : page === "dashboard" ? (
         <Dashboard data={data} overview={overview} open={open} />
+      ) : page === "journal" ? (
+        <Journal />
       ) : page === "storage" ? (
         <>
           <Storage data={data} notify={notify} reload={reload} />
@@ -457,6 +461,7 @@ function Storage({ data, notify, reload }) {
     .join(",");
   return (
     <>
+      <StorageChecks notify={notify} />
       <div className="storage-layout">
         <section className="panel storage-main">
           <div className="panel-heading">

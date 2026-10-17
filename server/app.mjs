@@ -1,4 +1,7 @@
 import { createHash } from "node:crypto";
+import { registerArchiveFolders } from "./archive-folders.mjs";
+import { recordError, registerJournal } from "./journal.mjs";
+import { registerStorageHealth } from "./storage-health.mjs";
 import { cachedSourceMatch } from "./source-match.mjs";
 import {
   siteAccessHook,
@@ -55,21 +58,7 @@ const Settings = z.object({
   ...interfaceFields,
   refugeName: z.string().trim().min(1).max(100),
   authorGithubUrl: z
-    .string()
-    .url()
-    .max(300)
-    .refine((v) => {
-      const u = new URL(v);
-      return (
-        u.protocol === "https:" &&
-        u.hostname === "github.com" &&
-        !u.username &&
-        !u.password &&
-        !u.port &&
-        !u.search &&
-        !u.hash
-      );
-    })
+    .literal("https://github.com/Gaerisson/")
     .default("https://github.com/Gaerisson/"),
   subtitle: z.string().max(150),
   cacheMB: z.number().int().min(16).max(16384),
@@ -191,6 +180,11 @@ export async function createApp(overrides = {}) {
     };
   app.setErrorHandler((error, req, reply) => {
     const status = error instanceof z.ZodError ? 400 : error.statusCode || 500;
+    try {
+      recordError(db, req, error, status);
+    } catch {
+      /* Preserve original failure on a full/read-only DB. */
+    }
     if (status >= 500) req.log.error(error);
     reply.code(status).send({
       error:
@@ -205,10 +199,13 @@ export async function createApp(overrides = {}) {
     });
   });
   await registerSiteAccess(app, { db, c, authorized });
+  await registerArchiveFolders(app, { db });
+  await registerJournal(app, { db, authorized });
+  await registerStorageHealth(app, { c, authorized });
   app.get("/api/health", async (req, reply) => {
     try {
       assertStorage(c);
-      return { ok: true, version: "3.2.0" };
+      return { ok: true, version: "3.3.0" };
     } catch {
       return reply
         .code(503)
@@ -333,7 +330,10 @@ export async function createApp(overrides = {}) {
       photo_priority: priority.priority,
       photo_priority_reason: priority.reason,
       tags: JSON.parse(row.tags),
-      compatibility: publicCompatibility(JSON.parse(row.compatibility)),
+      compatibility: publicCompatibility(
+        JSON.parse(row.compatibility),
+        row.description,
+      ),
       source_metadata: publicAnimalMetadata(JSON.parse(row.source_metadata)),
       photo_count: photos.length,
       preview_ids: photos.slice(0, 6).map((p) => p.id),
@@ -683,12 +683,10 @@ export async function createApp(overrides = {}) {
         req.headers["x-photo-version"] &&
         req.headers["x-photo-version"] !== revision(photo)
       )
-        return reply
-          .code(409)
-          .send({
-            error:
-              "Cette photo a été modifiée depuis. Actualisez avant d’annuler.",
-          });
+        return reply.code(409).send({
+          error:
+            "Cette photo a été modifiée depuis. Actualisez avant d’annuler.",
+        });
       transaction(db, () => {
         db.prepare(
           "UPDATE photos SET caption=?,hidden=?,archived_at=? WHERE id=?",

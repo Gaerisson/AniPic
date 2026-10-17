@@ -18,11 +18,17 @@ export function AnimalStatus({
   const configured = useStatusAppearance();
   const value = statusKeys.includes(status) ? status : "unknown";
   const style = (appearance || configured)[value] || statusDefaults[value];
-  const label =
-    style?.label?.trim() || statusDefaults[value]?.label || "À confirmer";
-  const color = /^#[a-fA-F0-9]{6}$/.test(style?.color || "")
-    ? style.color
-    : statusDefaults[value]?.color || "#b4becb";
+  const archived =
+    animal?.archived_at &&
+    !["adopted", "source_missing", "deceased", "transferred"].includes(value);
+  const label = archived
+    ? "Archivé · statut à confirmer"
+    : style?.label?.trim() || statusDefaults[value]?.label || "À confirmer";
+  const color = archived
+    ? "#9fa6b2"
+    : /^#[a-fA-F0-9]{6}$/.test(style?.color || "")
+      ? style.color
+      : statusDefaults[value]?.color || "#b4becb";
   const origin = animal?.source_id?.startsWith("demo:")
     ? "Profil de démonstration"
     : value === "source_missing"

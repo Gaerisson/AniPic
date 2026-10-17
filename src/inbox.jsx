@@ -1,3 +1,5 @@
+import { UploadPreviews } from "./upload-feedback.jsx";
+import { uploadWithProgress } from "./api.js";
 import { useState, useEffect, useRef } from "react";
 import {
   Upload,
@@ -16,6 +18,7 @@ import {
 import { api, bytes, speciesName, imageUrl } from "./api.js";
 import { Button, Empty, Spinner, Modal } from "./ui.jsx";
 import { AnimalStatus } from "./animal-status.jsx";
+import { SpaPhoto } from "./spa-photo.jsx";
 const supported = (name) => /\.(jpe?g|png|webp|avif)$/i.test(name);
 const preview = (id, width = 640) => `/api/inbox/${id}/preview?width=${width}`;
 async function droppedFiles(transfer) {
@@ -66,6 +69,8 @@ export function Inbox({ user, canEdit, notify, reload, version, open }) {
     [assign, setAssign] = useState(false),
     [zoom, setZoom] = useState(null),
     [drag, setDrag] = useState(false);
+  const [uploadFiles, setUploadFiles] = useState([]),
+    [fileProgress, setFileProgress] = useState(0);
   const filesRef = useRef(),
     folderRef = useRef(),
     last = useRef(null),
@@ -133,6 +138,8 @@ export function Inbox({ user, canEdit, notify, reload, version, open }) {
       notify("500 photos maximum par dépôt.", "error");
       return;
     }
+    setUploadFiles(images.slice(0, 24).map((e) => e.file));
+    setFileProgress(0);
     importing.current = true;
     setBusy(true);
     stop.current = false;
@@ -147,9 +154,11 @@ export function Inbox({ user, canEdit, notify, reload, version, open }) {
         form.append("photo", file);
         const parts = path.replace(/\\/g, "/").split("/");
         parts.pop();
-        const result = await api(
+        setFileProgress(0);
+        const result = await uploadWithProgress(
           "/inbox/photos?folder=" + encodeURIComponent(parts.join("/")),
-          { method: "POST", body: form },
+          form,
+          setFileProgress,
         );
         result.duplicate ? duplicates++ : added++;
         completed++;
@@ -166,6 +175,7 @@ export function Inbox({ user, canEdit, notify, reload, version, open }) {
       importing.current = false;
       setBusy(false);
       setProgress(null);
+      setUploadFiles([]);
       refresh();
     }
   };
@@ -302,6 +312,15 @@ export function Inbox({ user, canEdit, notify, reload, version, open }) {
           }}
         />
       </section>
+      {progress && (
+        <UploadPreviews
+          files={uploadFiles}
+          busy={busy}
+          progress={Math.round(
+            ((progress.done + fileProgress / 100) / progress.total) * 100,
+          )}
+        />
+      )}
       {progress && (
         <div className="inbox-progress" role="status">
           <div>
@@ -592,10 +611,10 @@ function AssignInbox({ photos, close, notify, done }) {
                   {a.cover_id ? (
                     <img src={imageUrl(a.cover_id, 320)} alt="" />
                   ) : a.hasSpaPhoto ? (
-                    <img
-                      src={`/api/animals/${a.id}/source-photo?w=160`}
-                      alt=""
-                    />
+                    <span className="assign-animal-thumb">
+                      <SpaPhoto animal={a} compact />
+                      <i aria-hidden="true">SPA</i>
+                    </span>
                   ) : (
                     <Camera size={24} />
                   )}
@@ -646,6 +665,11 @@ function AssignInbox({ photos, close, notify, done }) {
             >
               {a.cover_id ? (
                 <img src={imageUrl(a.cover_id, 320)} alt="" />
+              ) : a.source_metadata?.thumbnail ? (
+                <span className="assign-animal-thumb">
+                  <SpaPhoto animal={a} compact />
+                  <i aria-hidden="true">SPA</i>
+                </span>
               ) : (
                 <span className="assign-placeholder">
                   <Camera size={23} />

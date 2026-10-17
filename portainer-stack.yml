@@ -1,8 +1,8 @@
-# Construire d'abord l'image anipic:3.2.0 sur le moteur Docker de Portainer.
+# Construire d'abord l'image anipic:3.3.0 sur le moteur Docker de Portainer.
 # Définir les variables dans Portainer > Stacks > Environment variables.
 services:
   anipic:
-    image: anipic:3.2.0
+    image: anipic:3.3.0
     pull_policy: never
     container_name: anipic
     init: true

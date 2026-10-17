@@ -70,6 +70,11 @@ export async function registerBroadcasts(app, { db, c }) {
                 updatedAt: stat.mtime.toISOString(),
                 format: ext.slice(1).toUpperCase(),
                 playable: ext !== ".mkv",
+                isMoree: relative
+                  .normalize("NFD")
+                  .replace(/[\u0300-\u036f]/g, "")
+                  .toLowerCase()
+                  .includes("moree"),
               });
             }
           }

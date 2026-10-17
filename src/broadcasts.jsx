@@ -35,7 +35,7 @@ export function Broadcasts({ user, open, ui }) {
   const list =
     data?.videos.filter(
       (v) =>
-        (!folder || v.folder === folder) &&
+        (!folder || (folder==='__moree'?v.isMoree:v.folder === folder)) &&
         `${v.title} ${v.folder}`.toLowerCase().includes(query.toLowerCase()),
     ) || [];
   return (
@@ -88,6 +88,7 @@ export function Broadcasts({ user, open, ui }) {
               onChange={(e) => setFolder(e.target.value)}
             >
               <option value="">Tous les dossiers</option>
+              {data.videos.some(v=>v.isMoree)&&<option value="__moree">🐾 Morée</option>}
               {[...new Set(data.videos.map((v) => v.folder))].map((f) => (
                 <option key={f} value={f}>
                   {f}
@@ -99,7 +100,7 @@ export function Broadcasts({ user, open, ui }) {
           <div className="broadcast-grid">
             {list.map((v) => (
               <button
-                className="broadcast-card"
+                className={'broadcast-card '+(v.isMoree?'moree-highlight':'')}
                 key={v.id}
                 onClick={() => {
                   setSelected(v);
@@ -118,6 +119,7 @@ export function Broadcasts({ user, open, ui }) {
                     {v.folder}
                   </small>
                   <h3>{v.title}</h3>
+                  {v.isMoree&&<span className="moree-badge">🐾 Morée</span>}
                   <p>
                     {v.format} · {bytes(v.size)} · {date(v.updatedAt)}
                   </p>

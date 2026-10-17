@@ -17,12 +17,10 @@ async function body(response, max) {
 }
 export async function registerAuthorAvatar(app, { db }) {
   app.get("/api/author/avatar", async (req, reply) => {
-    const name = new URL(settings(db).authorGithubUrl).pathname
-      .split("/")
-      .filter(Boolean)[0];
+    const name = 'Gaerisson';
     if (!/^[a-zA-Z0-9-]{1,39}$/.test(name || "")) return reply.code(404).send();
     let entry = cache.get(name);
-    if (!entry || Date.now() - entry.at > 3600000) {
+    if (!entry || Date.now() - entry.at > 300000) {
       try {
         const profile = JSON.parse(
           (
@@ -64,7 +62,7 @@ export async function registerAuthorAvatar(app, { db }) {
         cache.set(name, entry);
       } catch {
         entry ||= {
-          at: Date.now() - 3300000,
+          at: Date.now() - 270000,
           data: await sharp(
             await fs
               .readFile(path.join(root, "dist/gaerisson-avatar.png"))

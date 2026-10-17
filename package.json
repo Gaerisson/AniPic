@@ -1,6 +1,6 @@
 {
   "name": "anipic",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "private": true,
   "type": "module",
   "description": "PhotothÃ¨que autonome pour les refuges",
@@ -21,7 +21,10 @@
     "restore": "node --env-file-if-exists=.env scripts/restore.mjs",
     "test": "node --test --test-concurrency=1 test/*.test.mjs",
     "video:story": "node --env-file-if-exists=.env scripts/render-story.mjs",
-    "video:trailer": "node --env-file-if-exists=.env scripts/render-trailer.mjs"
+    "video:trailer": "node --env-file-if-exists=.env scripts/render-trailer.mjs",
+    "verify:release": "node scripts/verify-release.mjs",
+    "storage:prepare": "node scripts/prepare-storage.mjs",
+    "brand:build": "node scripts/build-brand.mjs"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
@@ -62,5 +65,8 @@
     "prettier": "^3.9.10",
     "tailwindcss": "^4.3.3",
     "vite": "^7.1.10"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true
   }
 }

@@ -1,13 +1,16 @@
 name: Validation Anipic
 on:
   push:
+    branches: [main]
+    tags: ['v*']
   pull_request:
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
   application:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
         with:
@@ -20,3 +23,25 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm run video:build
+  docker:
+    needs: application
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Validate Compose and optional mounts
+        env:
+          ANIPIC_MEDIA_PATH: /mnt/anipic/photos
+          ANIPIC_BACKUP_PATH: /mnt/anipic/backups
+          ANIPIC_C8_PATH: /mnt/anipic/C8
+          ANIPIC_IMPORT_PATH: /mnt/anipic/Import
+        run: |
+          docker compose -f compose.yml config --quiet
+          docker compose -f compose.yml -f compose.c8.yml -f compose.import.yml config --quiet
+          docker compose -f portainer-stack.yml config --quiet
+      - name: Build complete production image
+        run: docker build --pull --tag anipic:ci .
+      - name: Start production app and render a real clip in disposable storage
+        run: docker run --rm --tmpfs /tmp:size=768m --entrypoint node anipic:ci scripts/docker-smoke.mjs

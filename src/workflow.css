@@ -264,7 +264,11 @@
   background: var(--raised);
   color: var(--muted);
 }
-.assign-animals > button > span:not(.assign-placeholder):not(.animal-status) {
+.assign-animals
+  > button
+  > span:not(.assign-placeholder):not(.assign-animal-thumb):not(
+    .animal-status
+  ) {
   flex: 1;
   min-width: 0;
 }

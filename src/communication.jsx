@@ -53,7 +53,7 @@ export function AnimalCommunication({
           </span>
         </label>
       )}
-      {photo && (
+      {(photo || animal.source_metadata?.thumbnail) && (
         <Button
           icon={Printer}
           variant="secondary"
@@ -61,8 +61,8 @@ export function AnimalCommunication({
             open({
               type: "communication",
               animalId: animal.id,
-              photoId: photo.id,
-              photoIds: selected?.length ? selected : [photo.id],
+              photoId: photo?.id || "spa",
+              photoIds: selected?.length ? selected : [photo?.id || "spa"],
             })
           }
         >
@@ -127,7 +127,10 @@ export function CommunicationDialog({
     api(`/animals/${animalId}`)
       .then((a) => {
         setAnimal(a);
-        if (!chosen) setChosen(a.photos[0]?.id);
+        if (!chosen)
+          setChosen(
+            a.photos[0]?.id || (a.source_metadata?.thumbnail ? "spa" : ""),
+          );
       })
       .catch((e) => setError(e.message));
     return () => URL.revokeObjectURL(current.current);
@@ -422,6 +425,19 @@ export function CommunicationDialog({
             </select>
           </label>
           <div className="communication-photos">
+            {animal?.source_metadata?.thumbnail && (
+              <button
+                className={chosen === "spa" ? "selected" : ""}
+                onClick={() => setChosen("spa")}
+                aria-label="Utiliser la photo du site SPA sur l’affiche"
+              >
+                <img
+                  src={`/api/animals/${animal.id}/source-photo?w=320`}
+                  alt="Photo du site SPA"
+                />
+                <small>SPA</small>
+              </button>
+            )}
             {animal?.photos
               .filter((p) => !p.archived_at)
               .map((p) => (

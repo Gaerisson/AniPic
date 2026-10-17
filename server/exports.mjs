@@ -42,7 +42,7 @@ export async function exportPhoto(
       statusCode: 400,
     });
   return limit(async () => {
-    let image = sharp(path.join(c.mediaDir, photo.hash), {
+    let image = sharp(photo.buffer || path.join(c.mediaDir, photo.hash), {
       limitInputPixels: 40_000_000,
     }).rotate();
     const width = dimensions[size];
@@ -105,7 +105,7 @@ export async function presentationCard(c, animal, photo, input = {}) {
     height = o.format === "story" ? 1920 : o.format === "square" ? 1080 : 1350;
   const panel = o.format === "square" ? 300 : 390;
   return limit(async () => {
-    const image = await sharp(path.join(c.mediaDir, photo.hash), {
+    const image = await sharp(photo.buffer || path.join(c.mediaDir, photo.hash), {
       limitInputPixels: 40_000_000,
     })
       .rotate()

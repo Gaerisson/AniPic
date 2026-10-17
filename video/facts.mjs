@@ -1,5 +1,6 @@
+import {normalizeCompatibility} from '../shared/compatibility-text.mjs';
 export function compatibilityLabels(values = {}) {
-  return Object.entries(values).map(([key, value]) => {
+  return Object.entries(normalizeCompatibility(values)).map(([key, value]) => {
     const k = key.toLowerCase();
     const subject = /chat|cat/.test(k)
       ? "Chats"

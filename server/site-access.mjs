@@ -27,6 +27,26 @@ export function siteGateRequired(db, req) {
 }
 export function siteAccessHook(db, c) {
   return async (req, reply) => {
+    // Strict cookies are withheld on the first cross-site OAuth navigation.
+    // Recover only this GET callback from a short-lived, path-scoped Lax cookie.
+    // The route still checks role, one-time state, exact session and PKCE.
+    if (
+      !req.user &&
+      req.method === "GET" &&
+      req.url.split("?")[0] === "/api/canva/callback"
+    ) {
+      const returning = getSession(db, req.cookies.anipic_canva_return);
+      if (
+        returning &&
+        accountAllowsIP(db, returning.id, req.ip) &&
+        db
+          .prepare(
+            "SELECT 1 FROM canva_oauth WHERE session_hash=? AND user_id=? AND expires_at>?",
+          )
+          .get(returning.token_hash, returning.id, now())
+      )
+        req.user = returning;
+    }
     const cfg = settings(db),
       sid = req.user?.token_hash;
     if (sid) {
@@ -60,6 +80,7 @@ export function siteAccessHook(db, c) {
           secure: c.secureCookie,
           maxAge: 43200,
         });
+        req.cookies.anipic_session = session.token;
         req.user = getSession(db, session.token);
       }
     }

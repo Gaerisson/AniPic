@@ -463,15 +463,6 @@ export function InterfaceSettings({
       <section className="panel">
         <h2>Identité et stockage</h2>
         <label>
-          GitHub de l’auteur
-          <input
-            type="url"
-            value={v.authorGithubUrl || ""}
-            maxLength={300}
-            onChange={(e) => change("authorGithubUrl", e.target.value)}
-          />
-        </label>
-        <label>
           Nom du refuge
           <input
             value={v.refugeName}

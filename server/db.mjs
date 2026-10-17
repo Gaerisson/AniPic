@@ -9,7 +9,7 @@ export function openDb(c) {
     "PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;",
   );
   const version = db.prepare("PRAGMA user_version").get().user_version;
-  if (version > 14) throw new Error("Base créée par une version plus récente.");
+  if (version > 15) throw new Error("Base créée par une version plus récente.");
   if (version === 0)
     db.exec(`
     BEGIN;
@@ -137,6 +137,20 @@ export function openDb(c) {
     db.exec(
       `BEGIN;CREATE TABLE IF NOT EXISTS source_photo_matches(animal_id TEXT PRIMARY KEY REFERENCES animals(id) ON DELETE CASCADE,signature TEXT NOT NULL,result TEXT NOT NULL,checked_at TEXT NOT NULL);PRAGMA user_version=14;COMMIT;`,
     );
+  if (version < 15)
+    transaction(db, () => {
+      if (
+        !db
+          .prepare("PRAGMA table_info(album_photos)")
+          .all()
+          .some((c) => c.name === "deleted_at")
+      )
+        db.exec("ALTER TABLE album_photos ADD COLUMN deleted_at TEXT");
+      db.exec(`
+    CREATE TABLE IF NOT EXISTS diagnostic_log(id TEXT PRIMARY KEY,created_at TEXT NOT NULL,level TEXT NOT NULL,status INTEGER,user_id TEXT,method TEXT,path TEXT,code TEXT);
+    CREATE INDEX IF NOT EXISTS diagnostic_recent ON diagnostic_log(created_at);
+    PRAGMA user_version=15;`);
+    });
   db.prepare("DELETE FROM site_passes WHERE expires_at < ?").run(now());
   db.prepare("DELETE FROM sessions WHERE expires_at < ?").run(now());
   db.prepare("DELETE FROM canva_oauth WHERE expires_at < ?").run(now());
@@ -202,6 +216,7 @@ export function settings(db) {
         .all()
         .map((r) => [r.key, JSON.parse(r.value)]),
     ),
+    authorGithubUrl: "https://github.com/Gaerisson/",
   };
 }
 export function saveSettings(db, values) {

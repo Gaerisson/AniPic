@@ -12,7 +12,7 @@ Anipic reprend le projet GPIC SPA pour organiser les photos des animaux, prépar
 
 **Projet vibecodé par [Gaerisson](https://github.com/Gaerisson/), avec Codex, assistant d’OpenAI.** L’idée, les besoins métier, les choix visuels et la direction du projet viennent de Gaerisson.
 
-[Release 3.2](RELEASE_v3.2.md) · [Installation Docker / Portainer](docs/DEPLOIEMENT.md) · [Guide des nouveautés](NOUVEAUTES_V32.md) · [Tests et validation](VALIDATION.md)
+[Release 3.3](RELEASE_v3.3.md) · [Installation Docker / Portainer](docs/DEPLOIEMENT.md) · [Journal des versions](CHANGELOG.md) · [Tests et validation](VALIDATION.md)
 
 ![La photothèque AniPic](public/presentation-v32/home.png)
 
@@ -25,6 +25,12 @@ Deux montages de **24,5 secondes**, 30 images/s : portraits en relief et présen
 | [1080 × 1920 · MP4](docs/media/anipic-presentation-story.mp4) | [1920 × 1080 · MP4](docs/media/anipic-presentation-paysage.mp4) |
 
 [Composition et reproduction du montage](PRESENTATION.md).
+
+## Nouveautés 3.3
+
+Préparation des photos SPA avant lecture, cache partagé entre miniatures et vidéos, bilan annuel avec portraits espacés et message « Bonne année… ». Albums photos/vidéos avec déplacement et corbeille, imports avec progression, journal et diagnostic NAS, correction Canva avec PIN global.
+
+[Contrôles avant release et dépannage npm/Docker](docs/CONTROLES_RELEASE.md). La validation Compose est exécutée ; le build complet de l’image et le déploiement NAS/Portainer restent à réaliser sur un moteur Docker.
 
 ## Les espaces
 
@@ -41,7 +47,7 @@ Deux montages de **24,5 secondes**, 30 images/s : portraits en relief et présen
 
 ## Démarrer en local
 
-Node.js **24 ou plus récent**.
+Node.js **24** pour les builds reproductibles et la CI.
 
 ```sh
 npm ci
@@ -55,7 +61,13 @@ La démo s’ouvre sur `http://localhost:3036`. Son administration se lance depu
 
 ## Docker et NAS
 
-Copier `.env.example` vers `.env`, monter le NAS et renseigner les dossiers médias/sauvegardes et `APP_ORIGIN`. Créer le marqueur `.anipic-volume` dans ces deux dossiers, puis :
+Copier `.env.example` vers `.env` et monter le NAS sur l’hôte Docker. Initialiser les dossiers avec les droits du service (aucune écriture autorisée sur un montage local de remplacement) :
+
+```sh
+sudo node scripts/prepare-storage.mjs --mount /mnt/nas --root /mnt/nas/anipic --uid 1000 --gid 1000 --with-c8 --with-import
+```
+
+Reporter les chemins affichés dans `.env` et définir `APP_ORIGIN`, puis :
 
 ```sh
 docker compose -f compose.yml up -d --build
@@ -91,7 +103,7 @@ npm run video:build
 
 ## Documentation
 
-[Importer les photos](IMPORT_PHOTOS.md) · [Médias et TV](API_MEDIAS_TV.md) · [Données SPA / I-CAD](DONNEES_ANIMAUX.md) · [Exemples d’affichettes](docs/examples) · [Nouveautés 3.0](NOUVEAUTES_V30.md)
+[Importer les photos](IMPORT_PHOTOS.md) · [Médias et TV](API_MEDIAS_TV.md) · [Données SPA / I-CAD](DONNEES_ANIMAUX.md) · [Exemples d’affichettes](docs/examples) · [Nouveautés 3.0](docs/history/NOUVEAUTES_V30.md)
 
 ## Crédits
 
@@ -100,3 +112,5 @@ Géolocalisation : [IP Geolocation by DB-IP](https://db-ip.com), base City Lite 
 **Gaerisson** : conception, photographie, direction et projet d’origine. **Codex / OpenAI** : développement et vérifications avec Gaerisson. Logo et charte **La SPA** : éléments officiels fournis pour le refuge, conservés dans leurs proportions et couleurs. Les interfaces et modèles d’Anipic ne constituent pas une validation officielle de la SPA.
 
 Bibliothèques : React, Tailwind CSS, Fastify, SQLite, Sharp, Remotion, Lucide, Mediabunny, PDF-lib et QRCode. Polices et licences locales conservées. Les photos de démo et leurs sources sont documentées dans `demo/`. Les références d’interaction du carrousel et des cartes sont [Edmundo](https://codepen.io/edmundojr/pen/qdLWWx), [Robin Dela](https://codepen.io/robin-dela/pen/jVddbq) et [Nicolas Pavlotsky](https://codepen.io/nicolaspavlotsky/details/wqGgLO).
+
+Les anciennes notes sont rangées dans [docs/history](docs/history/README.md). Le logo se régénère avec `npm run brand:build` depuis une géométrie SVG commune aux variantes écran, favicon et PNG.

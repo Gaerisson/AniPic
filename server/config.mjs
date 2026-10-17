@@ -1,5 +1,11 @@
 import path from "node:path";
-import { mkdirSync, existsSync } from "node:fs";
+import {
+  mkdirSync,
+  existsSync,
+  lstatSync,
+  accessSync,
+  constants,
+} from "node:fs";
 import { validateNetwork } from "./ip-access.mjs";
 export const root = path.resolve(import.meta.dirname, "..");
 export function config(overrides = {}) {
@@ -49,7 +55,13 @@ export function config(overrides = {}) {
     requireMarker: process.env.REQUIRE_STORAGE_MARKER === "true",
     ...overrides,
   };
-  for (const p of [c.dbDir, c.mediaDir, c.cacheDir, c.backupDir])
+  // A missing NAS must never cause local media/backup directories to be created.
+  if (c.requireMarker) assertStorage(c);
+  for (const p of [
+    c.dbDir,
+    c.cacheDir,
+    ...(c.requireMarker ? [] : [c.mediaDir, c.backupDir]),
+  ])
     mkdirSync(p, { recursive: true });
   assertStorage(c);
   return c;
@@ -61,4 +73,12 @@ export function assertStorage(c) {
         throw new Error(
           "Volume de stockage absent : marqueur .anipic-volume introuvable. Vérifiez le montage NAS.",
         );
+      else {
+        const marker = lstatSync(path.join(directory, ".anipic-volume"));
+        if (!marker.isFile() || marker.isSymbolicLink())
+          throw new Error(
+            "Marqueur de stockage invalide : fichier régulier requis.",
+          );
+        accessSync(directory, constants.R_OK | constants.W_OK | constants.X_OK);
+      }
 }

@@ -1,3 +1,4 @@
+import { useImageReadiness, AssetLoading } from "./asset-readiness.jsx";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { Pause, Play, SkipBack, SkipForward, Maximize } from "lucide-react";
 import { SignageCanvas, BrandLogo } from "../shared/SignageCanvas.jsx";
@@ -7,7 +8,34 @@ import {
   sceneAt,
   scheduleOpen,
 } from "../shared/signage.mjs";
-export function ShowPlayer({ show, full = false, seekFrame, synced = false }) {
+export function ShowPlayer(props) {
+  const state = useImageReadiness(
+    (props.show.items || [])
+      .flatMap((a) =>
+        (a.media || []).filter((m) => m.kind === "photo").map((m) => m.src),
+      )
+      .concat("/spa-logo.png"),
+  );
+  const [loaded, setLoaded] = useState(null);
+  useEffect(() => {
+    if (state.ready) setLoaded(props.show);
+  }, [state.ready, props.show]);
+  if (!state.ready && !loaded) return <AssetLoading state={state} />;
+  return (
+    <>
+      <ReadyShowPlayer {...props} show={state.ready ? props.show : loaded} />
+      {!state.ready && !props.full && (
+        <div className="show-refresh-status" role="status">
+          Préparation de la nouvelle sélection · {state.done}/{state.total}
+          {state.failed.length > 0 && (
+            <button onClick={state.retry}>Réessayer</button>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+function ReadyShowPlayer({ show, full = false, seekFrame, synced = false }) {
   const wrap = useRef(),
     [scale, setScale] = useState(1),
     [frame, setFrame] = useState(0),

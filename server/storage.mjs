@@ -108,7 +108,13 @@ export async function ingest(
             : "SELECT id FROM photos WHERE animal_id=? AND hash=?",
       )
       .get(...(inbox ? [digest] : [albumId || animalId, digest]));
-    if (duplicate) return { id: duplicate.id, duplicate: true };
+    if (duplicate) {
+      if (albumId)
+        db.prepare("UPDATE album_photos SET deleted_at=NULL WHERE id=?").run(
+          duplicate.id,
+        );
+      return { id: duplicate.id, duplicate: true };
+    }
     transaction(db, () => {
       db.prepare("INSERT OR IGNORE INTO blobs VALUES (?,?,?,?,?,?)").run(
         digest,

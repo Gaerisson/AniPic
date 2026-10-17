@@ -1,4 +1,6 @@
 import { animalQrAddress, qrData } from "./qr.mjs";
+import { sourcePhotoBuffer } from "./source-photo.mjs";
+import { publicSpaImage } from "./animal-facts.mjs";
 import path from "node:path";
 import {
   promises as fs,
@@ -28,6 +30,10 @@ export const Film = z
     outro: z.string().max(120).default(""),
     template: z.enum(["presentation", "year"]).default("presentation"),
     annualStyle: z.enum(["mosaic", "slideshow"]).default("slideshow"),
+    annualMessage: z.string().max(120).default(""),
+    annualMessageSubtitle: z.string().max(180).default(""),
+    annualSidePhotos: z.boolean().default(true),
+    annualStats: z.boolean().default(true),
     aspect: z.enum(["landscape", "portrait", "square"]).default("landscape"),
     resolution: z.enum(["720", "1080"]).default("720"),
     look: z
@@ -95,7 +101,7 @@ export const Film = z
       .array(
         z.object({
           id: UUID.optional(),
-          kind: z.enum(["photo", "video"]),
+          kind: z.enum(["photo", "video", "spa"]),
           ref: UUID,
           seconds: z.number().min(1).max(12),
           trim: z.number().min(0).max(300).default(0),
@@ -253,13 +259,25 @@ export async function ingestAsset(db, c, readable, filename, kind, userId) {
 export function resolveFilm(db, c, input, assetURL) {
   const film = Film.parse(input);
   const clips = film.clips.map((clip) => {
-    if (clip.kind === "photo") {
-      const photo = db
-        .prepare(
-          "SELECT p.*,b.mime,a.name,a.species,a.sex,a.breed,a.birth_date,a.status,a.compatibility,a.tags,a.source_metadata,a.source_url FROM photos p JOIN animals a ON a.id=p.animal_id JOIN blobs b ON b.hash=p.hash WHERE p.id=?",
-        )
-        .get(clip.ref);
+    if (clip.kind === "photo" || clip.kind === "spa") {
+      const photo =
+        clip.kind === "spa"
+          ? db
+              .prepare(
+                "SELECT a.*,a.id animal_id,'image/webp' mime,'' hash FROM animals a WHERE a.id=?",
+              )
+              .get(clip.ref)
+          : db
+              .prepare(
+                "SELECT p.*,b.mime,a.name,a.species,a.sex,a.breed,a.birth_date,a.status,a.compatibility,a.tags,a.source_metadata,a.source_url FROM photos p JOIN animals a ON a.id=p.animal_id JOIN blobs b ON b.hash=p.hash WHERE p.id=?",
+              )
+              .get(clip.ref);
       if (!photo) throw fail("Une photo du montage est introuvable.");
+      if (
+        clip.kind === "spa" &&
+        !publicSpaImage(JSON.parse(photo.source_metadata).thumbnail)
+      )
+        throw fail("Photo SPA indisponible.");
       const sex =
         photo.sex === "female" ? "Femelle" : photo.sex === "male" ? "Mâle" : "";
       const age = photo.birth_date
@@ -267,6 +285,8 @@ export function resolveFilm(db, c, input, assetURL) {
         : "";
       return {
         ...clip,
+        kind: "photo",
+        sourcePhoto: clip.kind === "spa",
         id: clip.id || id(),
         animalId: photo.animal_id,
         qr: film.showQr ? qrData(animalQrAddress(photo).url) : null,
@@ -282,7 +302,12 @@ export function resolveFilm(db, c, input, assetURL) {
         ]
           .filter(Boolean)
           .join(" · "),
-        src: assetURL("photo", photo.id, photo.hash, photo.mime),
+        src: assetURL(
+          clip.kind === "spa" ? "spa" : "photo",
+          photo.id,
+          photo.hash,
+          photo.mime,
+        ),
         mime: photo.mime,
         ententes: compatibilityLabels(JSON.parse(photo.compatibility))
           .slice(0, 3)
@@ -351,6 +376,7 @@ export function resolveFilm(db, c, input, assetURL) {
           portraits: unique.length,
           dogs: unique.filter((c) => c.species === "dog").length,
           cats: unique.filter((c) => c.species === "cat").length,
+          other: unique.filter((c) => c.species === "other").length,
         }
       : null;
   return {
@@ -428,7 +454,23 @@ export function renderFilm(db, c, input, options = {}) {
     db,
     c,
     "AnimalFilm",
-    async (assets) => ({ film: resolveFilm(db, c, input, assets) }),
+    async (assets) => {
+      const film = Film.parse(input),
+        sources = new Map();
+      for (const clip of film.clips)
+        if (clip.kind === "spa" && !sources.has(clip.ref))
+          sources.set(
+            clip.ref,
+            `data:image/webp;base64,${(await sourcePhotoBuffer(db, c, clip.ref, 1280)).toString("base64")}`,
+          );
+      return {
+        film: resolveFilm(db, c, film, (kind, assetId, hash, mime) =>
+          kind === "spa"
+            ? sources.get(assetId)
+            : assets(kind, assetId, hash, mime),
+        ),
+      };
+    },
     options,
   );
 }
@@ -551,9 +593,11 @@ export async function registerVideo(app, { db, c, authorized, job }) {
   const all = ["admin", "editor", "agent", "viewer"];
   const preview = (input) =>
     resolveFilm(db, c, input, (kind, assetId) =>
-      kind === "photo"
-        ? `/media/${assetId}?w=1280`
-        : `/api/video/assets/${assetId}/file`,
+      kind === "spa"
+        ? `/api/animals/${assetId}/source-photo?w=1280`
+        : kind === "photo"
+          ? `/media/${assetId}?w=1280`
+          : `/api/video/assets/${assetId}/file`,
     );
   db.prepare(
     "UPDATE video_renders SET state='failed',error='Rendu interrompu. Relancez le projet.',finished_at=? WHERE state='running'",

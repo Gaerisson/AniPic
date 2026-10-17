@@ -329,7 +329,7 @@ export async function registerCanva(app, { db, c, authorized }) {
       preHandler: authorized(),
       config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
     },
-    async (req) => {
+    async (req, reply) => {
       ready();
       const { animalId } = z
         .object({ animalId: UUID.optional() })
@@ -364,12 +364,32 @@ export async function registerCanva(app, { db, c, authorized }) {
         state,
         redirect_uri: canvaConfiguration(c).redirectUri,
       });
+      reply.setCookie("anipic_canva_return", req.cookies.anipic_session, {
+        path: "/api/canva/callback",
+        httpOnly: true,
+        sameSite: "lax",
+        secure: c.secureCookie,
+        maxAge: 600,
+      });
       return { url: "https://www.canva.com/api/oauth/authorize?" + params };
     },
   );
   app.get(
     "/api/canva/callback",
-    { preHandler: authorized(), logLevel: "silent" },
+    {
+      preHandler: [
+        async (req, reply) => {
+          reply.clearCookie("anipic_canva_return", {
+            path: "/api/canva/callback",
+            httpOnly: true,
+            sameSite: "lax",
+            secure: c.secureCookie,
+          });
+        },
+        authorized(),
+      ],
+      logLevel: "silent",
+    },
     async (req, reply) => {
       reply.header("Referrer-Policy", "no-referrer");
       const { state, code, error } = z

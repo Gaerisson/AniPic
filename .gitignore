@@ -12,7 +12,14 @@ backups/
 video-bundle/
 browser-path.txt
 smoke-output/
+release-validation.json
 
 .mistral-key*
 !docs/media/
 !docs/media/*.mp4
+
+# Generated presentation exports belong in docs/media only when intentionally shared.
+outputs/
+/anipic-presentation-*.mp4
+/story-presentation.mp4
+/anipic-story-*.png

@@ -1,3 +1,4 @@
+import { DropArea } from "./upload-feedback.jsx";
 import { useEffect, useRef, useState } from "react";
 import { Download, ImagePlus, Monitor } from "lucide-react";
 import { api, imageUrl } from "./api.js";
@@ -5,8 +6,19 @@ import { Button, Empty } from "./ui.jsx";
 const load = (src) =>
   new Promise((resolve, reject) => {
     const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = reject;
+    const timer = setTimeout(() => {
+      image.onload = null;
+      image.onerror = null;
+      reject(Error("Chargement trop long."));
+    }, 25000);
+    image.onload = () => {
+      clearTimeout(timer);
+      resolve(image);
+    };
+    image.onerror = (e) => {
+      clearTimeout(timer);
+      reject(e);
+    };
     image.src = src;
   });
 const cover = (ctx, image, x, y, w, h) => {
@@ -37,17 +49,34 @@ export default function Wallpaper({ user, overview, notify }) {
     [logo, setLogo] = useState(true),
     [busy, setBusy] = useState(false),
     [ready, setReady] = useState(false),
+    [imageError, setImageError] = useState(""),
+    [retry, setRetry] = useState(0),
     [titleX, setTitleX] = useState(95),
     [titleY, setTitleY] = useState(94),
     [fontScale, setFontScale] = useState(3.2),
     [logoScale, setLogoScale] = useState(12);
   const uploadUrls = useRef([]);
+  const addImages = (input) => {
+    const files = Array.from(input)
+      .filter((f) => f.type.startsWith("image/") && f.size <= 20 * 1024 ** 2)
+      .slice(0, 24 - chosen.length - uploads.length);
+    const next = files.map((f) => ({
+      name: f.name,
+      url: URL.createObjectURL(f),
+    }));
+    uploadUrls.current.push(...next.map((u) => u.url));
+    setUploads((v) => [...v, ...next]);
+  };
+
   useEffect(() => {
     if (user)
-      api("/animals?photos=with&limit=60&sort=name")
+      api("/animals?limit=60&sort=name")
         .then((d) => {
-          setAnimals(d.items);
-          setChosen(d.items.slice(0, 6).map((a) => a.id));
+          const items = d.items.filter(
+            (a) => a.cover_id || a.source_metadata?.thumbnail,
+          );
+          setAnimals(items);
+          setChosen(items.slice(0, 6).map((a) => a.id));
         })
         .catch((e) => notify(e.message, "error"));
     return () => uploadUrls.current.forEach(URL.revokeObjectURL);
@@ -55,9 +84,10 @@ export default function Wallpaper({ user, overview, notify }) {
   useEffect(() => {
     let active = true;
     setReady(false);
+    setImageError("");
     const render = async () => {
       const [w, h] = size.split("x").map(Number),
-        c = canvas.current;
+        c = document.createElement("canvas");
       if (!c) return;
       c.width = w;
       c.height = h;
@@ -65,12 +95,14 @@ export default function Wallpaper({ user, overview, notify }) {
         photos = [
           ...animals
             .filter((a) => chosen.includes(a.id))
-            .map((a) => imageUrl(a.cover_id, 1280)),
+            .map((a) =>
+              a.cover_id
+                ? imageUrl(a.cover_id, 1280)
+                : `/api/animals/${a.id}/source-photo?w=1280`,
+            ),
           ...uploads.map((u) => u.url),
         ].slice(0, 24);
-      const images = await Promise.all(
-        photos.map((p) => load(p).catch(() => null)),
-      );
+      const images = await Promise.all(photos.map((p) => load(p)));
       if (!active) return;
       ctx.fillStyle = "#14161c";
       ctx.fillRect(0, 0, w, h);
@@ -83,7 +115,10 @@ export default function Wallpaper({ user, overview, notify }) {
         count = available.length,
         margin = w * 0.045,
         gap = w * 0.012,
-        bottom = h * 0.17;
+        bottom = Math.max(
+          h * 0.17,
+          logo && template !== "logo" ? h * (logoScale / 100 + 0.06) : 0,
+        );
       if (count && template !== "logo") {
         const columns =
             template === "gallery"
@@ -154,25 +189,13 @@ export default function Wallpaper({ user, overview, notify }) {
           ctx.restore();
         });
       }
-      if (template === "glass" && count) {
-        ctx.fillStyle = "#ffffff18";
-        ctx.strokeStyle = "#ffffff40";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.roundRect(
-          margin * 0.65,
-          h - bottom * 1.25,
-          w - margin * 1.3,
-          bottom * 0.95,
-          w * 0.015,
-        );
-        ctx.fill();
-        ctx.stroke();
-      }
       if (template === "logo" && count) {
         const mark = await load("/spa-logo.png");
         if (!active) return;
-        const lh = h * 0.78,
+        const lh = Math.min(
+            h * 0.78,
+            ((w - margin * 2) * mark.height) / mark.width,
+          ),
           lw = (lh * mark.width) / mark.height,
           lx = (w - lw) / 2,
           ly = h * 0.045;
@@ -206,7 +229,7 @@ export default function Wallpaper({ user, overview, notify }) {
         if (!active) return;
         const logoH = (h * logoScale) / 100,
           logoW = (logoH * mark.width) / mark.height;
-        const ly = h - bottom * 0.83;
+        const ly = h * 0.94 - logoH;
         ctx.drawImage(mark, margin, ly, logoW, logoH);
       }
       ctx.fillStyle = "#f7f3ee";
@@ -228,9 +251,18 @@ export default function Wallpaper({ user, overview, notify }) {
         h * 0.98,
       );
 
+      if (!active || !canvas.current) return;
+      canvas.current.width = w;
+      canvas.current.height = h;
+      canvas.current.getContext("2d").drawImage(c, 0, 0);
       setReady(true);
     };
-    render().catch(() => notify("Une image n’a pas pu être chargée.", "error"));
+    render().catch(() => {
+      if (active)
+        setImageError(
+          "Une photo n’a pas pu être chargée. Réessayez pour exporter un visuel complet.",
+        );
+    });
     return () => {
       active = false;
     };
@@ -247,6 +279,7 @@ export default function Wallpaper({ user, overview, notify }) {
     titleY,
     fontScale,
     logoScale,
+    retry,
   ]);
   if (!user)
     return (
@@ -289,6 +322,19 @@ export default function Wallpaper({ user, overview, notify }) {
       <div className="wallpaper-layout">
         <section className="panel wallpaper-preview">
           <canvas ref={canvas} aria-label="Aperçu du fond d’écran" />
+          {!ready && (
+            <div className="wallpaper-loading" role="status">
+              {imageError || "Chargement des photos…"}
+              {imageError && (
+                <Button
+                  variant="secondary"
+                  onClick={() => setRetry((v) => v + 1)}
+                >
+                  Réessayer
+                </Button>
+              )}
+            </div>
+          )}
           {!chosen.length && !uploads.length && (
             <p>Choisissez des photos pour commencer.</p>
           )}
@@ -324,7 +370,6 @@ export default function Wallpaper({ user, overview, notify }) {
               <option value="logo">Logo SPA · photos dans la silhouette</option>
               <option value="editorial">Éditorial · grand portrait</option>
               <option value="diagonal">Diagonales</option>
-              <option value="glass">Liquid glass</option>
               <option value="mosaic">Mosaïque</option>
               <option value="gallery">Galerie</option>
               <option value="polaroid">Tirages photo</option>
@@ -376,6 +421,7 @@ export default function Wallpaper({ user, overview, notify }) {
             />
             Logo SPA
           </label>
+          <DropArea onFiles={addImages} />
           <label className="button secondary">
             <ImagePlus size={17} />
             Ajouter mes images
@@ -385,15 +431,7 @@ export default function Wallpaper({ user, overview, notify }) {
               multiple
               hidden
               onChange={(e) => {
-                const files = [...e.target.files]
-                  .slice(0, 24 - chosen.length - uploads.length)
-                  .filter((f) => f.size <= 20 * 1024 ** 2);
-                const next = files.map((f) => ({
-                  name: f.name,
-                  url: URL.createObjectURL(f),
-                }));
-                uploadUrls.current.push(...next.map((u) => u.url));
-                setUploads((v) => [...v, ...next]);
+                addImages(e.target.files);
                 e.target.value = "";
               }}
             />
@@ -424,7 +462,15 @@ export default function Wallpaper({ user, overview, notify }) {
                   )
                 }
               />
-              <img src={imageUrl(a.cover_id, 320)} alt="" />
+              <img
+                src={
+                  a.cover_id
+                    ? imageUrl(a.cover_id, 320)
+                    : `/api/animals/${a.id}/source-photo?w=320`
+                }
+                alt=""
+              />
+              {!a.cover_id && <small className="source-origin-chip">SPA</small>}
               <span>{a.name}</span>
             </label>
           ))}

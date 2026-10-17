@@ -24,6 +24,30 @@ export function VideoPlayer({ src, id, title, onError }) {
     [resume, setResume] = useState(0),
     [error, setError] = useState("");
   const saved = useRef(0);
+  const hideTimer = useRef(),
+    [controlsVisible, setControlsVisible] = useState(true),
+    [full, setFull] = useState(false);
+  const reveal = () => {
+    setControlsVisible(true);
+    clearTimeout(hideTimer.current);
+    if (full && playing)
+      hideTimer.current = setTimeout(() => setControlsVisible(false), 2500);
+  };
+  useEffect(() => {
+    const changed = () => {
+      setFull(document.fullscreenElement === box.current);
+      setControlsVisible(true);
+    };
+    document.addEventListener("fullscreenchange", changed);
+    return () => {
+      document.removeEventListener("fullscreenchange", changed);
+      clearTimeout(hideTimer.current);
+    };
+  }, []);
+  useEffect(() => {
+    reveal();
+    return () => clearTimeout(hideTimer.current);
+  }, [full, playing]);
   const seek = (n) => {
     if (ref.current && Number.isFinite(ref.current.duration)) {
       ref.current.currentTime = Math.max(0, Math.min(ref.current.duration, n));
@@ -81,11 +105,17 @@ export function VideoPlayer({ src, id, title, onError }) {
   };
   return (
     <div
-      className="c8-player"
+      className={
+        "c8-player " +
+        (full && !controlsVisible && playing ? "controls-idle" : "")
+      }
       ref={box}
+      onPointerMove={reveal}
+      onFocusCapture={reveal}
       tabIndex={0}
       aria-label={"Lecteur vidéo " + title}
       onKeyDown={(e) => {
+        reveal();
         if (e.target.closest("input,select,button")) return;
         const k = e.key.toLowerCase();
         if ([" ", "arrowleft", "arrowright", "f", "m"].includes(k))

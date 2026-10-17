@@ -37,10 +37,23 @@ export function Button({
   icon: Icon,
   variant = "",
   className = "",
+  onClick,
+  onDoubleClick,
   ...props
 }) {
   return (
-    <button className={`button ${variant} ${className}`} {...props}>
+    <button
+      className={`button ${variant} ${className}`}
+      {...props}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick?.(e);
+      }}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        onDoubleClick?.(e);
+      }}
+    >
       {Icon && <Icon size={17} />}
       <span>{children}</span>
     </button>

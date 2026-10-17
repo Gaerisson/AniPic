@@ -14,3 +14,12 @@ test
 smoke-output
 *.zip
 *.tar.gz
+*.log
+*.sqlite*
+.mistral-key*
+release-validation.json
+
+outputs
+docs
+examples
+*.md

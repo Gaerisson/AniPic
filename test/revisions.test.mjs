@@ -32,7 +32,7 @@ test("v6 role migration preserves sessions and task account references", async (
   );
   db.exec("DROP TABLE animal_status_events; PRAGMA user_version=5;");
   const upgraded = openDb(c);
-  assert.equal(upgraded.prepare("PRAGMA user_version").get().user_version, 14);
+  assert.equal(upgraded.prepare("PRAGMA user_version").get().user_version, 15);
   assert.deepEqual(upgraded.prepare("PRAGMA foreign_key_check").all(), []);
   assert.equal(upgraded.prepare("SELECT COUNT(*) n FROM sessions").get().n, 1);
   assert.equal(
@@ -41,7 +41,7 @@ test("v6 role migration preserves sessions and task account references", async (
   );
   upgraded.close();
   const reopened = openDb(c);
-  assert.equal(reopened.prepare("PRAGMA user_version").get().user_version, 14);
+  assert.equal(reopened.prepare("PRAGMA user_version").get().user_version, 15);
   reopened.close();
   assert.equal(
     (await app.inject({ url: "/api/session", headers })).json().user.role,

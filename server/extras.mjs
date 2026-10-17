@@ -14,6 +14,7 @@ import { exportPhoto, albumZip, presentationCard } from "./exports.mjs";
 import { validateNetwork, matchesNetwork } from "./ip-access.mjs";
 import { forecast } from "./weather.mjs";
 import { localPost, aiPost } from "./social.mjs";
+import { sourcePhotoBuffer } from "./source-photo.mjs";
 import { registerVisitors } from "./visitors.mjs";
 import { pageAccessGuard } from "./page-access.mjs";
 import { registerAudioSettings } from "./audio-settings.mjs";
@@ -171,14 +172,22 @@ export async function registerExtras(app, { db, c, authorized, job }) {
     { preHandler: authorized(all) },
     async (req, reply) => {
       const animal = findAnimal(req.params.id);
-      const photo = req.query.photoId
-        ? findPhoto(req.query.photoId, req.user)
-        : db
-            .prepare(
-              "SELECT * FROM photos WHERE animal_id=? ORDER BY hidden,archived_at IS NOT NULL,created_at DESC LIMIT 1",
-            )
-            .get(animal.id);
-      if (!photo || photo.animal_id !== animal.id)
+      let photo =
+        req.query.photoId === "spa"
+          ? null
+          : req.query.photoId
+            ? findPhoto(req.query.photoId, req.user)
+            : db
+                .prepare(
+                  "SELECT * FROM photos WHERE animal_id=? ORDER BY hidden,archived_at IS NOT NULL,created_at DESC LIMIT 1",
+                )
+                .get(animal.id);
+      if (!photo)
+        photo = {
+          buffer: await sourcePhotoBuffer(db, c, animal.id, 1280),
+          animal_id: animal.id,
+        };
+      if (photo.animal_id !== animal.id)
         throw fail("Choisissez une photo de cet animal.");
       reply.header(
         "Content-Disposition",

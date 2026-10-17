@@ -1,3 +1,5 @@
+import { normalizeCompatibility } from "../shared/compatibility-text.mjs";
+import { NavLink } from "./nav-link.jsx";
 import { PhotoUpdate } from "./photo-update.jsx";
 import { useState, useEffect, useRef } from "react";
 import {
@@ -57,6 +59,13 @@ export function Library({
   video,
   ui,
 }) {
+  const [archiveFolders, setArchiveFolders] = useState([]);
+  useEffect(() => {
+    if (page === "archives")
+      api("/archive/folders")
+        .then(setArchiveFolders)
+        .catch(() => {});
+  }, [page, version]);
   const [year, setYear] = useState(0);
   const [recentOnly, setRecentOnly] = useState(false);
   const [mediaTag, setMediaTag] = useState("");
@@ -212,13 +221,68 @@ export function Library({
         />
       )}
       {page === "archives" && (
-        <div className="notice">
-          <Archive size={19} />
-          <span>
-            L’archivage conserve les photos sans copier les fichiers. Vous
-            pouvez restaurer chaque album à tout moment.
-          </span>
-        </div>
+        <section aria-label="Dossiers d’archives">
+          <nav className="archive-breadcrumb">
+            <button
+              onClick={() => {
+                setSpecies("all");
+                setYear(0);
+              }}
+            >
+              Archives
+            </button>
+            {species !== "all" && (
+              <>
+                <ChevronRight size={14} />
+                <button onClick={() => setYear(0)}>
+                  {speciesName[species]}
+                </button>
+              </>
+            )}
+            {!!year && (
+              <>
+                <ChevronRight size={14} />
+                <strong>{year}</strong>
+              </>
+            )}
+          </nav>
+          {!year && (
+            <div className="archive-folder-grid">
+              {species === "all"
+                ? ["dog", "cat", "other"].map((key) => (
+                    <button
+                      key={key}
+                      onClick={() => {
+                        setSpecies(key);
+                        setYear(0);
+                      }}
+                    >
+                      <Archive size={23} />
+                      <span>
+                        {speciesName[key]}
+                        <small>
+                          {archiveFolders
+                            .filter((f) => f.species === key)
+                            .reduce((n, f) => n + f.count, 0)}{" "}
+                          albums
+                        </small>
+                      </span>
+                    </button>
+                  ))
+                : archiveFolders
+                    .filter((f) => f.species === species)
+                    .map((f) => (
+                      <button key={f.year} onClick={() => setYear(f.year)}>
+                        <Archive size={23} />
+                        <span>
+                          {f.year}
+                          <small>{f.count} albums</small>
+                        </span>
+                      </button>
+                    ))}
+            </div>
+          )}
+        </section>
       )}
       {page === "departures" && (
         <div className="departure-toolbar">
@@ -475,7 +539,8 @@ export function Library({
               {data.items.map((a) => (
                 <tr key={a.id}>
                   <td>
-                    <button
+                    <NavLink
+                      href={"#animal/" + a.id}
                       className="table-animal"
                       onClick={() => open({ type: "animal", id: a.id })}
                     >
@@ -489,7 +554,7 @@ export function Library({
                         </span>
                       )}
                       <strong>{a.name}</strong>
-                    </button>
+                    </NavLink>
                   </td>
                   <td>
                     <span>
@@ -633,7 +698,8 @@ function AnimalCard({
               onOpen={() => open({ type: "animal", id: a.id })}
             />
           ) : (
-            <button
+            <NavLink
+              href={"#animal/" + a.id}
               className="photo-link"
               aria-label={`Voir l’album de ${a.name}`}
               onClick={() => open({ type: "animal", id: a.id })}
@@ -646,7 +712,7 @@ function AnimalCard({
                   <span>Aucune photo locale</span>
                 </span>
               )}
-            </button>
+            </NavLink>
           )}
           <span className="card-reflection" aria-hidden="true" />
           <button
@@ -702,7 +768,7 @@ function AnimalCard({
           <p>{a.description || "Une personnalité à découvrir au refuge."}</p>
           {a.breed && <strong>{a.breed}</strong>}
           <div>
-            {Object.entries(a.compatibility || {})
+            {Object.entries(normalizeCompatibility(a.compatibility))
               .slice(0, 3)
               .map(([k, v]) => (
                 <span key={k}>
@@ -729,7 +795,8 @@ function AnimalCard({
       <div className="animal-card-body">
         <div>
           <div className="animal-name-line">
-            <button
+            <NavLink
+              href={"#animal/" + a.id}
               onClick={() => open({ type: "animal", id: a.id })}
               className="animal-name"
             >
@@ -737,7 +804,7 @@ function AnimalCard({
               <span className="sex">
                 {a.sex === "female" ? "♀" : a.sex === "male" ? "♂" : ""}
               </span>
-            </button>
+            </NavLink>
             <AnimalStatus animal={a} compact />
             {a.publication && (
               <span

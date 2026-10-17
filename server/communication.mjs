@@ -36,7 +36,7 @@ const esc = (v) =>
 const fail = (message, statusCode = 400) =>
   Object.assign(new Error(message), { statusCode });
 export const communicationOptions = z.object({
-  photoId: UUID,
+  photoId: z.union([UUID, z.literal("spa")]),
   accent: z
     .string()
     .regex(/^#[a-fA-F0-9]{6}$/)
@@ -312,11 +312,16 @@ export async function registerCommunication(app, { db, c, authorized }) {
       );
     active++;
   };
-  function selection(animalId, photoId) {
+  async function selection(animalId, photoId) {
     const animal = db
       .prepare("SELECT * FROM animals WHERE id=?")
       .get(UUID.parse(animalId));
     if (!animal) throw fail("Animal introuvable.", 404);
+    if (photoId === "spa")
+      return {
+        animal,
+        photo: { buffer: await sourcePhotoBuffer(db, c, animal.id, 1280) },
+      };
     const photo = db
       .prepare(
         "SELECT * FROM photos WHERE id=? AND animal_id=? AND archived_at IS NULL",
@@ -413,7 +418,7 @@ export async function registerCommunication(app, { db, c, authorized }) {
           customLayout: settings(db).posterLayout,
           ...req.body,
         }),
-        { animal, photo } = selection(req.params.id, input.photoId);
+        { animal, photo } = await selection(req.params.id, input.photoId);
       acquire();
       try {
         const png = await posterImage(
@@ -446,7 +451,7 @@ export async function registerCommunication(app, { db, c, authorized }) {
       const input = z
         .object({
           photoIds: z
-            .array(UUID)
+            .array(z.union([UUID, z.literal("spa")]))
             .min(1)
             .max(8)
             .refine((v) => new Set(v).size === v.length),
@@ -455,9 +460,11 @@ export async function registerCommunication(app, { db, c, authorized }) {
           template: communicationOptions.shape.template,
         })
         .parse(req.body);
-      const { animal } = selection(req.params.id, input.photoIds[0]);
-      const photos = input.photoIds.map(
-        (value) => selection(animal.id, value).photo,
+      const { animal } = await selection(req.params.id, input.photoIds[0]);
+      const photos = await Promise.all(
+        input.photoIds.map(
+          async (value) => (await selection(animal.id, value)).photo,
+        ),
       );
       acquire();
       try {
@@ -491,7 +498,7 @@ export async function registerCommunication(app, { db, c, authorized }) {
           );
         if (input.includePoster) {
           const opts = communicationOptions.parse({
-            photoId: photos[0].id,
+            photoId: photos[0].id || "spa",
             accent: input.accent,
             template: input.template,
           });

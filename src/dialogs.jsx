@@ -52,6 +52,8 @@ import { MediaTags, AnimalVideos } from "./animal-media.jsx";
 import { PhotoComments } from "./photo-comments.jsx";
 import { AnimalCommunication } from "./communication.jsx";
 import { AnimalHistory } from "./animal-history.jsx";
+import { UploadPreviews } from "./upload-feedback.jsx";
+import { uploadWithProgress } from "./api.js";
 
 export function Login({ onClose, session, onLogin, notify }) {
   const [busy, setBusy] = useState(false);
@@ -292,13 +294,23 @@ export function AnimalDetail({
                   moved.current = false;
                 }}
                 style={{ touchAction: zoom > 1 ? "none" : "pan-y" }}
-                onDoubleClick={() => {
+                onDoubleClick={(e) => {
+                  if (
+                    e.target.closest('button,a,input,select,[role="button"]')
+                  ) {
+                    e.stopPropagation();
+                    return;
+                  }
                   setZoom((z) => (z > 1 ? 1 : 2));
                   setPan({ x: 0, y: 0 });
                 }}
                 onPointerDown={(e) => {
                   moved.current = false;
-                  if (zoom <= 1 || e.target.closest("button")) return;
+                  if (
+                    zoom <= 1 ||
+                    e.target.closest('button,a,input,select,[role="button"]')
+                  )
+                    return;
                   e.currentTarget.setPointerCapture(e.pointerId);
                   drag.current = { x: e.clientX, y: e.clientY, pan };
                 }}
@@ -954,10 +966,11 @@ export function UploadForm({ animalId, close, notify, reload, open }) {
     const data = new FormData();
     for (const f of files) data.append("photos", f);
     try {
-      const result = await api(`/animals/${target}/photos`, {
-        method: "POST",
-        body: data,
-      });
+      const result = await uploadWithProgress(
+        `/animals/${target}/photos`,
+        data,
+        setProgress,
+      );
       setProgress(100);
       const duplicates = result.items.filter((i) => i.duplicate).length;
       notify(
@@ -1038,6 +1051,9 @@ export function UploadForm({ animalId, close, notify, reload, open }) {
             onChange={(e) => pick(e.target.files)}
           />
         </div>
+        {files.length > 0 && (
+          <UploadPreviews files={files} busy={busy} progress={progress} />
+        )}
         {files.length > 0 && (
           <div className="upload-summary">
             <span>

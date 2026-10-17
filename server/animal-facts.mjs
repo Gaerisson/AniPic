@@ -1,4 +1,8 @@
 import * as cheerio from "cheerio";
+import {
+  labelledCompatibility,
+  normalizeCompatibility,
+} from "../shared/compatibility-text.mjs";
 const text = (value, max = 150, allowBoolean = false) => {
   if (value && typeof value === "object")
     value = value.rendered ?? value.label ?? value.name;
@@ -123,30 +127,32 @@ export function publicSpaImage(value) {
     return "";
   }
 }
-export function publicCompatibility(record = {}) {
+export function publicCompatibility(record = {}, description = "") {
   if (!record || typeof record !== "object" || Array.isArray(record)) return {};
-  return Object.fromEntries(
-    Object.entries(record)
-      .slice(0, 12)
-      .map(([key, value]) => [
-        text(key, 40),
-        typeof value === "boolean" ? (value ? "Oui" : "Non") : text(value, 100),
-      ])
-      .filter(([k, v]) => k && v),
+  const result = normalizeCompatibility(
+    Object.fromEntries(
+      Object.entries(record)
+        .slice(0, 12)
+        .map(([key, value]) => [
+          text(key, 40),
+          typeof value === "boolean"
+            ? value
+              ? "Oui"
+              : "Non"
+            : text(value, 500),
+        ])
+        .filter(([k, v]) => k && v),
+    ),
   );
-}
-export function compatibilityFromText(value) {
-  const description = text(value, 15000);
-  if (!/entente/i.test(description)) return {};
-  const result = {};
-  for (const match of description.matchAll(
-    /\b(chat|chien|enfant)s?\s*:\s*([^;\n.]{1,180})/gi,
+  // Repair earlier imports whose value swallowed the following labelled field.
+  for (const [key, value] of Object.entries(
+    compatibilityFromText(description),
   )) {
-    result[match[1].toLowerCase()] = match[2]
-      .replace(/\*/g, "")
-      .trim()
-      .slice(0, 100)
-      .replace(/^a tester$/i, "À tester");
+    if (!result[key] || /\bentente\b/i.test(String(result[key])))
+      result[key] = value;
   }
   return result;
+}
+export function compatibilityFromText(value) {
+  return labelledCompatibility(text(value, 15000));
 }

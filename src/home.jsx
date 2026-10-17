@@ -470,13 +470,25 @@ export function HoverPhoto({
       onPointerLeave={() => setHover(false)}
     >
       {onOpen ? (
-        <button
+        <a
           className="photo-link"
+          href={"#animal/" + animal.id}
           aria-label={`Voir l’album de ${animal.name}`}
-          onClick={onOpen}
+          onClick={(e) => {
+            if (
+              e.button === 0 &&
+              !e.ctrlKey &&
+              !e.metaKey &&
+              !e.shiftKey &&
+              !e.altKey
+            ) {
+              e.preventDefault();
+              onOpen();
+            }
+          }}
         >
           {picture}
-        </button>
+        </a>
       ) : (
         picture
       )}

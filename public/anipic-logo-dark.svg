@@ -1,1 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 350 96"><defs><linearGradient id="orange" x2="1" y2="1"><stop stop-color="#ffac5d"/><stop offset="1" stop-color="#e96a25"/></linearGradient><linearGradient id="photo" x2="1" y2="1"><stop stop-color="#333b43"/><stop offset="1" stop-color="#11171e"/></linearGradient></defs><g transform="translate(11 8) rotate(-7 37 42)"><rect x="2" y="8" width="55" height="69" rx="7" fill="none" stroke="#282624" stroke-width="5"/><path d="M2 61h55" stroke="#282624" stroke-width="4"/></g><g transform="translate(25 6) rotate(7 35 40)"><rect x="2" y="3" width="57" height="73" rx="7" fill="url(#orange)"/><rect x="8" y="10" width="45" height="49" rx="3" fill="url(#photo)"/><g fill="#fff4e8"><ellipse cx="21" cy="28" rx="3.5" ry="5" transform="rotate(-20 21 28)"/><ellipse cx="30" cy="23" rx="3.5" ry="5"/><ellipse cx="40" cy="26" rx="3.5" ry="5" transform="rotate(18 40 26)"/><path d="M19 43c-2-6 3-8 7-14 3-4 7-1 8 4 1 4 9 7 6 12-3 4-7 0-11 1-5 3-9 1-10-3Z"/></g><rect x="17" y="65" width="27" height="3" rx="1.5" fill="#fff4e8"/></g><text x="103" y="66" fill="#282624" font-family="Inter,Arial,sans-serif" font-size="55" font-weight="730" letter-spacing="-2.8">AniPic<tspan fill="#ec7935">.</tspan></text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 96" role="img" aria-labelledby="title"><title id="title">AniPic</title><defs>
+  <linearGradient id="orange" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffad62"/><stop offset="1" stop-color="#e96b29"/></linearGradient>
+  <linearGradient id="photo" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#303943"/><stop offset="1" stop-color="#1b222a"/></linearGradient>
+</defs>
+<g transform="rotate(-10 37 49)">
+  <rect x="12" y="17" width="52" height="66" rx="7" fill="#f8efe4"/>
+  <rect x="17" y="23" width="42" height="44" rx="3" fill="#39424a"/>
+</g>
+<g transform="rotate(7 56 45)">
+  <rect x="29" y="10" width="54" height="71" rx="7" fill="url(#orange)"/>
+  <rect x="35" y="17" width="42" height="47" rx="3" fill="url(#photo)"/>
+  <g fill="#fff8ef" transform="translate(40 24) scale(.5)">
+    <ellipse cx="12" cy="27" rx="5.4" ry="7.2" transform="rotate(-28 12 27)"/>
+    <ellipse cx="24" cy="15" rx="5.4" ry="7.2" transform="rotate(-10 24 15)"/>
+    <ellipse cx="40" cy="15" rx="5.4" ry="7.2" transform="rotate(10 40 15)"/>
+    <ellipse cx="52" cy="27" rx="5.4" ry="7.2" transform="rotate(28 52 27)"/>
+    <path d="M18 43C21 38 26 33 32 33S43 38 46 43C50 49 47 55 42 55C38 55 36 52 32 52S26 55 22 55C17 55 14 49 18 43Z"/>
+  </g>
+  <rect x="45" y="71" width="22" height="3" rx="1.5" fill="#fff8ef"/>
+</g><text x="103" y="66" fill="#282624" font-family="Inter,Arial,sans-serif" font-size="55" font-weight="750" letter-spacing="-2.8">AniPic<tspan fill="#ec7935">.</tspan></text></svg>

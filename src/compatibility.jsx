@@ -1,6 +1,7 @@
 import { CheckCircle2, XCircle, HelpCircle } from "lucide-react";
 import { CompatibilityIcon } from "../shared/compatibility-icons.mjs";
 import { compatibilityLabels } from "../video/facts.mjs";
+import {normalizeCompatibility} from '../shared/compatibility-text.mjs';
 
 export function AnimalCompatibility({ values }) {
   return (
@@ -10,7 +11,7 @@ export function AnimalCompatibility({ values }) {
     >
       <h3>Ses ententes</h3>
       <dl className="entente-grid">
-        {Object.entries(values).map(([key, value]) => {
+        {Object.entries(normalizeCompatibility(values)).map(([key, value]) => {
           const { subject, label } = compatibilityLabels({ [key]: value })[0];
           const raw = String(value ?? "").trim();
           const yes = /^(ok|oui|yes|true|1)$/i.test(raw);

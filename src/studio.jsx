@@ -1,6 +1,9 @@
+import { DropArea, UploadPreviews } from "./upload-feedback.jsx";
+import { uploadWithProgress } from "./api.js";
 import { useState, useEffect, useRef } from "react";
 import { Player } from "@remotion/player";
 import { AnimalFilm } from "../video/AnimalFilm.jsx";
+import { ImageReady } from "./asset-readiness.jsx";
 import {
   dimensions,
   filmDuration,
@@ -179,7 +182,7 @@ export default function Studio({
       motion: p.motion,
       showFacts: p.showFacts,
       clips: f.clips.map((c) =>
-        c.kind === "photo"
+        c.kind === "photo" || c.kind === "spa"
           ? {
               ...c,
               seconds: p.seconds,
@@ -188,6 +191,8 @@ export default function Studio({
           : c,
       ),
     }));
+  const [mediaFiles, setMediaFiles] = useState([]),
+    [mediaProgress, setMediaProgress] = useState(0);
   const uploadRef = useRef(),
     playerRef = useRef();
   const refresh = () =>
@@ -204,6 +209,29 @@ export default function Studio({
       setStatus(s);
       setRenders(r);
     });
+  const uploadMedia = async (file) => {
+    if (!file || !canEdit || busy) return;
+    setMediaFiles([file]);
+    setMediaProgress(0);
+    setBusy("upload");
+    try {
+      const kind = /\.(mp3|wav|m4a)$/i.test(file.name) ? "audio" : "video",
+        form = new FormData();
+      form.append("file", file);
+      await uploadWithProgress(
+        "/video/assets?kind=" + kind,
+        form,
+        setMediaProgress,
+      );
+      await refresh();
+      setMediaFiles([]);
+      notify("Média ajouté au studio.");
+    } catch (error) {
+      notify(error.message, "error");
+    } finally {
+      setBusy("");
+    }
+  };
   useEffect(() => {
     if (user) refresh().catch((e) => setError(e.message));
   }, [user?.id]);
@@ -235,11 +263,21 @@ export default function Studio({
   const chooseAnimal = async (id) => {
     try {
       const a = await api("/animals/" + id);
-      setPhotos(
-        a.photos
+      setPhotos([
+        ...a.photos
           .filter((p) => !p.archived_at)
           .map((p) => ({ ...p, animal_name: a.name })),
-      );
+        ...(a.source_metadata?.thumbnail
+          ? [
+              {
+                id: a.id,
+                spa: true,
+                animal_name: a.name,
+                filename: "Référence du site SPA",
+              },
+            ]
+          : []),
+      ]);
       return a;
     } catch (e) {
       notify(e.message, "error");
@@ -256,12 +294,19 @@ export default function Studio({
             " · " +
             (overview?.interface.textDefaults?.title ||
               "Une nouvelle rencontre"),
-          clips: a.photos
+          clips: (a.photos.some((p) => !p.archived_at)
+            ? a.photos
+            : [
+                ...(a.source_metadata?.thumbnail
+                  ? [{ id: a.id, spa: true }]
+                  : []),
+              ]
+          )
             .filter((p) => !p.archived_at)
             .slice(0, 12)
             .map((p, i) => ({
               id: uid(),
-              kind: "photo",
+              kind: p.spa ? "spa" : "photo",
               ref: p.id,
               seconds: 4,
               trim: 0,
@@ -350,7 +395,7 @@ export default function Studio({
         ...f.clips,
         {
           id: uid(),
-          kind: "photo",
+          kind: photo.spa ? "spa" : "photo",
           ref: photo.id,
           seconds: 4,
           trim: 0,
@@ -542,27 +587,33 @@ export default function Studio({
         <section className="studio-screen">
           <div className="player-surface">
             {preview && !error ? (
-              <Player
-                ref={playerRef}
-                key={film.aspect + "-" + film.resolution}
-                component={AnimalFilm}
-                inputProps={{ film: preview }}
-                durationInFrames={filmDuration(preview)}
-                compositionWidth={
-                  dimensions(film.aspect, film.resolution).width
-                }
-                compositionHeight={
-                  dimensions(film.aspect, film.resolution).height
-                }
-                fps={FPS}
-                initialFrame={FPS}
-                controls
-                style={{
-                  width: "100%",
-                  maxHeight: 550,
-                  aspectRatio: `${dimensions(film.aspect, film.resolution).width}/${dimensions(film.aspect, film.resolution).height}`,
-                }}
-              />
+              <ImageReady
+                urls={preview.clips
+                  .filter((c) => c.kind === "photo" || c.kind === "spa")
+                  .map((c) => c.src)}
+              >
+                <Player
+                  ref={playerRef}
+                  key={film.aspect + "-" + film.resolution}
+                  component={AnimalFilm}
+                  inputProps={{ film: preview }}
+                  durationInFrames={filmDuration(preview)}
+                  compositionWidth={
+                    dimensions(film.aspect, film.resolution).width
+                  }
+                  compositionHeight={
+                    dimensions(film.aspect, film.resolution).height
+                  }
+                  fps={FPS}
+                  initialFrame={FPS}
+                  controls
+                  style={{
+                    width: "100%",
+                    maxHeight: 550,
+                    aspectRatio: `${dimensions(film.aspect, film.resolution).width}/${dimensions(film.aspect, film.resolution).height}`,
+                  }}
+                />
+              </ImageReady>
             ) : (
               <div className="player-empty">
                 <Film size={54} />
@@ -653,16 +704,88 @@ export default function Studio({
         <section className="panel studio-settings form-stack">
           <h2>La présentation</h2>
           {film.template === "year" && (
-            <label>
-              Animation du bilan
-              <select
-                value={film.annualStyle || "slideshow"}
-                onChange={(e) => update("annualStyle", e.target.value)}
-              >
-                <option value="mosaic">Portraits → logo SPA</option>
-                <option value="slideshow">Diaporama classique</option>
-              </select>
-            </label>
+            <>
+              <label>
+                Animation du bilan
+                <select
+                  value={film.annualStyle || "slideshow"}
+                  onChange={(e) => update("annualStyle", e.target.value)}
+                >
+                  <option value="mosaic">Portraits → logo SPA</option>
+                  <option value="slideshow">Diaporama classique</option>
+                </select>
+              </label>
+              <label>
+                Message de fin
+                <input
+                  value={film.annualMessage || ""}
+                  maxLength={120}
+                  disabled={!canEdit}
+                  placeholder={`Bonne année ${Number(film.year || year) + 1}`}
+                  onChange={(e) =>
+                    setFilm((f) => ({
+                      ...f,
+                      annualMessage: e.target.value,
+                      outro:
+                        e.target.value ||
+                        "Merci à toute l’équipe et aux familles.",
+                    }))
+                  }
+                />
+              </label>
+              <label>
+                Sous-texte du message
+                <input
+                  value={film.annualMessageSubtitle || ""}
+                  maxLength={180}
+                  disabled={!canEdit}
+                  placeholder="Merci aux familles, bénévoles et agents du refuge"
+                  onChange={(e) =>
+                    update("annualMessageSubtitle", e.target.value)
+                  }
+                />
+              </label>
+              <div className="annual-message-presets">
+                {[
+                  `Bonne année ${Number(film.year || year) + 1}`,
+                  "Merci pour toutes ces belles rencontres",
+                  "Une nouvelle année, de nouvelles histoires",
+                ].map((text) => (
+                  <button
+                    type="button"
+                    key={text}
+                    disabled={!canEdit}
+                    onClick={() =>
+                      setFilm((f) => ({
+                        ...f,
+                        annualMessage: text,
+                        outro: text,
+                      }))
+                    }
+                  >
+                    {text}
+                  </button>
+                ))}
+              </div>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={film.annualSidePhotos !== false}
+                  disabled={!canEdit}
+                  onChange={(e) => update("annualSidePhotos", e.target.checked)}
+                />
+                Bandes de photos animées
+              </label>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={film.annualStats !== false}
+                  disabled={!canEdit}
+                  onChange={(e) => update("annualStats", e.target.checked)}
+                />
+                Statistiques à la fin
+              </label>
+            </>
           )}
           <div className="form-row">
             <label>
@@ -790,7 +913,7 @@ export default function Studio({
                     disabled={
                       !canEdit ||
                       !film.clips.some(
-                        (clip) => clip.kind === "photo" && clip.seconds < 12,
+                        (clip) => clip.kind !== "video" && clip.seconds < 12,
                       )
                     }
                     onClick={() =>
@@ -976,7 +1099,9 @@ export default function Studio({
                   setFilm((f) => ({
                     ...f,
                     clips: f.clips.map((c) =>
-                      c.kind === "photo" ? { ...c, seconds } : c,
+                      c.kind === "photo" || c.kind === "spa"
+                        ? { ...c, seconds }
+                        : c,
                     ),
                   }))
                 }
@@ -1010,8 +1135,15 @@ export default function Studio({
                 </button>
               </div>
               <div className="timeline-media-preview">
-                {clip.kind === "photo" ? (
-                  <img src={imageUrl(clip.ref, 320)} alt="Plan photo" />
+                {clip.kind !== "video" ? (
+                  <img
+                    src={
+                      clip.kind === "spa"
+                        ? `/api/animals/${clip.ref}/source-photo?w=320`
+                        : imageUrl(clip.ref, 320)
+                    }
+                    alt="Plan photo"
+                  />
                 ) : (
                   <Video size={27} aria-label="Plan vidéo" />
                 )}
@@ -1021,7 +1153,7 @@ export default function Studio({
                   Titre
                   <input
                     value={clip.title}
-                    disabled={!canEdit || clip.kind === "photo"}
+                    disabled={!canEdit || clip.kind !== "video"}
                     maxLength={100}
                     onChange={(e) =>
                       patchClip(index, { title: e.target.value })
@@ -1220,7 +1352,15 @@ export default function Studio({
                 disabled={!canEdit}
                 onClick={() => addPhoto(p)}
               >
-                <img src={imageUrl(p.id, 320)} alt={"Ajouter " + p.filename} />
+                <img
+                  src={
+                    p.spa
+                      ? `/api/animals/${p.id}/source-photo?w=320`
+                      : imageUrl(p.id, 320)
+                  }
+                  alt={"Ajouter " + p.filename}
+                />
+                {p.spa && <small className="source-origin-chip">SPA</small>}
                 <Plus size={18} />
               </button>
             ))}
@@ -1242,28 +1382,10 @@ export default function Studio({
               hidden
               type="file"
               accept=".mp4,.webm,.mp3,.wav,.m4a"
-              onChange={async (e) => {
+              onChange={(e) => {
                 const file = e.target.files[0];
-                if (!file) return;
-                setBusy("upload");
-                try {
-                  const kind = /\.(mp3|wav|m4a)$/i.test(file.name)
-                    ? "audio"
-                    : "video";
-                  const form = new FormData();
-                  form.append("file", file);
-                  await api("/video/assets?kind=" + kind, {
-                    method: "POST",
-                    body: form,
-                  });
-                  await refresh();
-                  notify("Média ajouté au studio.");
-                } catch (error) {
-                  notify(error.message, "error");
-                } finally {
-                  setBusy("");
-                  e.target.value = "";
-                }
+                e.target.value = "";
+                uploadMedia(file);
               }}
             />
           </div>
@@ -1271,6 +1393,17 @@ export default function Studio({
             MP4/WebM pour la vidéo · MP3/WAV/M4A pour le son · 100 Mo par
             fichier.
           </p>
+          {canEdit && (
+            <DropArea
+              disabled={!!busy}
+              onFiles={(files) => uploadMedia(files[0])}
+            />
+          )}
+          <UploadPreviews
+            files={mediaFiles}
+            busy={busy === "upload"}
+            progress={mediaProgress}
+          />
           <MusicCatalog
             canEdit={canEdit}
             notify={notify}

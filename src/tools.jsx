@@ -500,14 +500,21 @@ export function SocialDraft({ animal, photoId, close, notify, overview }) {
       refuge: overview?.refugeName || "Refuge de Morée",
       facts: "1",
     }),
-    [posterPhoto, setPosterPhoto] = useState(photoId || animal.cover_id || ""),
+    [posterPhoto, setPosterPhoto] = useState(
+      photoId ||
+        animal.cover_id ||
+        (animal.source_metadata?.thumbnail ? "spa" : ""),
+    ),
     [posterPhotos, setPosterPhotos] = useState(animal.photos || []);
   useEffect(() => {
     api("/animals/" + animal.id)
       .then((a) => {
         setPosterPhotos(a.photos.filter((p) => !p.archived_at));
         if (!posterPhoto)
-          setPosterPhoto(a.photos.find((p) => !p.archived_at)?.id || "");
+          setPosterPhoto(
+            a.photos.find((p) => !p.archived_at)?.id ||
+              (a.source_metadata?.thumbnail ? "spa" : ""),
+          );
       })
       .catch(() => {});
   }, [animal.id]);
@@ -574,6 +581,9 @@ export function SocialDraft({ animal, photoId, close, notify, overview }) {
                 value={posterPhoto}
                 onChange={(e) => setPosterPhoto(e.target.value)}
               >
+                {animal.source_metadata?.thumbnail && (
+                  <option value="spa">Photo du site SPA · référence</option>
+                )}
                 {posterPhotos.map((p, i) => (
                   <option key={p.id} value={p.id}>
                     Photo {i + 1} · {p.filename}

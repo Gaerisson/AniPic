@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { DropArea, UploadPreviews } from "./upload-feedback.jsx";
+import { uploadWithProgress } from "./api.js";
 import { Film, Upload, Trash2, Tag, Plus, Save } from "lucide-react";
 import { api, bytes } from "./api.js";
 import { Button } from "./ui.jsx";
@@ -79,6 +81,8 @@ export function MediaTags({ kind, id, canEdit, notify }) {
   );
 }
 export function AnimalVideos({ animalId, canEdit, notify }) {
+  const [files, setFiles] = useState([]),
+    [progress, setProgress] = useState(0);
   const [items, setItems] = useState([]),
     [assets, setAssets] = useState([]),
     [pick, setPick] = useState(""),
@@ -101,14 +105,21 @@ export function AnimalVideos({ animalId, canEdit, notify }) {
     setPick("");
   };
   const upload = async (file) => {
-    if (!file) return;
+    if (!file || busy) return;
+    setFiles([file]);
+    setProgress(0);
     setBusy(true);
     try {
       const body = new FormData();
       body.append("file", file);
-      const v = await api("/video/assets?kind=video", { method: "POST", body });
+      const v = await uploadWithProgress(
+        "/video/assets?kind=video",
+        body,
+        setProgress,
+      );
       await attach(v.id);
       notify("Vidéo ajoutée à la fiche, privée par défaut.");
+      setFiles([]);
     } catch (e) {
       notify(e.message, "error");
     } finally {
@@ -128,6 +139,12 @@ export function AnimalVideos({ animalId, canEdit, notify }) {
   };
   return (
     <section className="animal-videos panel">
+      {canEdit && (
+        <>
+          <DropArea onFiles={(f) => upload(f[0])} disabled={busy} />
+          <UploadPreviews files={files} busy={busy} progress={progress} />
+        </>
+      )}
       <div className="section-heading">
         <div>
           <h3>

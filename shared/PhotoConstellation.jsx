@@ -17,16 +17,17 @@ export function PhotoConstellation({
   animation = "fade",
   particleDensity = 35,
   particleSpeed = 40,
+  logoScale = 1,
 }) {
   const t = frame / fps,
     portrait = h > w,
     u = Math.min(w, h) / 1080;
   const gather = motion ? ease((t - duration * 0.32) / (duration * 0.3)) : 1;
   const reveal = motion ? ease((t - duration * 0.69) / (duration * 0.2)) : 1;
-  const logoW = Math.min(w * 0.6, h * 0.62),
+  const logoW = Math.min(w * 0.6, h * 0.62) * Math.max(.5,Math.min(1,logoScale)),
     logoH = (logoW * 599) / 542;
   const ox = (w - logoW) / 2,
-    oy = (h - logoH) / 2 - 35 * u,
+    oy = (h - logoH) / 2 + 10 * u,
     tile = logoW / 12.4;
   if (animation === "fade") {
     const fade = motion ? ease(t / Math.min(1.1, duration * 0.19)) : 1,

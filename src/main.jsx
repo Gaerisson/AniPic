@@ -12,6 +12,7 @@ import {
 } from "react";
 import {
   PawPrint,
+  Clock,
   Images,
   Heart,
   Archive,
@@ -147,6 +148,7 @@ const pages = {
   api: { name: "API & connexions", icon: RefreshCw, group: "admin" },
   feed: { name: "Le fil du refuge", icon: Rss, group: "library" },
   dashboard: { name: "Vue d’ensemble", icon: LayoutDashboard, group: "admin" },
+  journal: { name: "Journal", icon: Clock, group: "admin" },
   sync: { name: "Synchronisation", icon: RefreshCw, group: "admin" },
   storage: { name: "Stockage", icon: HardDrive, group: "admin" },
   backups: { name: "Sauvegardes", icon: ShieldCheck, group: "admin" },
@@ -539,6 +541,7 @@ function App() {
                         "messages",
                         "displaySettings",
                         "visitors",
+                        "journal",
                       ],
                     ],
                     [
@@ -581,11 +584,23 @@ function App() {
                   .map((key) => {
                     const item = pages[key];
                     return (
-                      <button
+                      <a
                         key={key}
+                        href={"#" + key}
                         className={"nav-item " + (page === key ? "active" : "")}
                         aria-current={page === key ? "page" : undefined}
-                        onClick={() => go(key)}
+                        onClick={(e) => {
+                          if (
+                            e.button === 0 &&
+                            !e.ctrlKey &&
+                            !e.metaKey &&
+                            !e.shiftKey &&
+                            !e.altKey
+                          ) {
+                            e.preventDefault();
+                            go(key);
+                          }
+                        }}
                       >
                         <item.icon {...iconProps} />
                         <span>{item.name}</span>
@@ -599,7 +614,7 @@ function App() {
                             {overview.stats.archived}
                           </span>
                         )}
-                      </button>
+                      </a>
                     );
                   })}
               </details>
@@ -930,3 +945,4 @@ function App() {
 createRoot(document.getElementById("root")).render(<App />);
 
 import "./update32.css";
+import "./update33.css";

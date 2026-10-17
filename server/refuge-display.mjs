@@ -112,7 +112,10 @@ export async function buildDisplay(
       status: a.status,
       sos: JSON.parse(a.tags || "[]").some((t) => /^sos(?:\s|$)/i.test(t)),
       age: meta.ageLabel || "",
-      compatibility: publicCompatibility(JSON.parse(a.compatibility || "{}")),
+      compatibility: publicCompatibility(
+        JSON.parse(a.compatibility || "{}"),
+        a.description,
+      ),
       photo: media.find((m) => m.kind === "photo")?.src,
       media,
       sourcePhoto: !!media[0].source,

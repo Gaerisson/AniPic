@@ -1,8 +1,6 @@
 import React from "react";
 import { Composition, registerRoot } from "remotion";
-import { ToolStory } from "./ToolStory.jsx";
 import { ToolShowcase } from "./ToolShowcase.jsx";
-import { ToolTrailer, TRAILER_FRAMES } from "./ToolPresentation.jsx";
 import { AnimalFilm } from "./AnimalFilm.jsx";
 import { dimensions, filmDuration, FPS } from "./timing.mjs";
 import { RefugeShow } from "./RefugeShow.jsx";
@@ -36,22 +34,6 @@ function Root() {
           ...showSize(props.show.program.orientation),
           durationInFrames: showTimeline(props.show).frames,
         })}
-      />
-      <Composition
-        id="ToolTrailer"
-        component={ToolTrailer}
-        width={1080}
-        height={1920}
-        fps={24}
-        durationInFrames={TRAILER_FRAMES}
-      />
-      <Composition
-        id="ToolStory"
-        component={ToolStory}
-        width={1080}
-        height={1920}
-        fps={24}
-        durationInFrames={672}
       />
       <Composition
         id="AnimalFilm"

@@ -1,0 +1,46 @@
+import { promises as fs } from "node:fs";
+import path from "node:path";
+import sharp from "sharp";
+
+const output = path.resolve(import.meta.dirname, "../public");
+// One geometry for the app, favicon and downloadable PNGs. The four toes and
+// central pad remain separate shapes at small sizes.
+const mark = `<defs>
+  <linearGradient id="orange" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffad62"/><stop offset="1" stop-color="#e96b29"/></linearGradient>
+  <linearGradient id="photo" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#303943"/><stop offset="1" stop-color="#1b222a"/></linearGradient>
+</defs>
+<g transform="rotate(-10 37 49)">
+  <rect x="12" y="17" width="52" height="66" rx="7" fill="#f8efe4"/>
+  <rect x="17" y="23" width="42" height="44" rx="3" fill="#39424a"/>
+</g>
+<g transform="rotate(7 56 45)">
+  <rect x="29" y="10" width="54" height="71" rx="7" fill="url(#orange)"/>
+  <rect x="35" y="17" width="42" height="47" rx="3" fill="url(#photo)"/>
+  <g fill="#fff8ef" transform="translate(40 24) scale(.5)">
+    <ellipse cx="12" cy="27" rx="5.4" ry="7.2" transform="rotate(-28 12 27)"/>
+    <ellipse cx="24" cy="15" rx="5.4" ry="7.2" transform="rotate(-10 24 15)"/>
+    <ellipse cx="40" cy="15" rx="5.4" ry="7.2" transform="rotate(10 40 15)"/>
+    <ellipse cx="52" cy="27" rx="5.4" ry="7.2" transform="rotate(28 52 27)"/>
+    <path d="M18 43C21 38 26 33 32 33S43 38 46 43C50 49 47 55 42 55C38 55 36 52 32 52S26 55 22 55C17 55 14 49 18 43Z"/>
+  </g>
+  <rect x="45" y="71" width="22" height="3" rx="1.5" fill="#fff8ef"/>
+</g>`;
+function svg(wordmark = false, ink = "#f6f1ea") {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${wordmark ? 300 : 96} 96" role="img" aria-labelledby="title"><title id="title">AniPic</title>${mark}${wordmark ? `<text x="103" y="66" fill="${ink}" font-family="Inter,Arial,sans-serif" font-size="55" font-weight="750" letter-spacing="-2.8">AniPic<tspan fill="#ec7935">.</tspan></text>` : ""}</svg>\n`;
+}
+for (const [file, data] of [
+  ["anipic-icon.svg", svg()],
+  ["favicon.svg", svg()],
+  ["anipic-logo.svg", svg(true)],
+  ["anipic-logo-dark.svg", svg(true, "#282624")],
+])
+  await fs.writeFile(path.join(output, file), data);
+await sharp(Buffer.from(svg()))
+  .resize(384, 384)
+  .png()
+  .toFile(path.join(output, "anipic-icon.png"));
+await sharp(Buffer.from(svg(true)))
+  .resize(1200, 384)
+  .png()
+  .toFile(path.join(output, "anipic-logo.png"));
+console.log("Logo AniPic et favicon régénérés depuis la même géométrie.");

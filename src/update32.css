@@ -1,4 +1,40 @@
 /* Access settings, editable broadcast track and audience dashboard. */
+.assign-animals > button > .assign-animal-thumb,
+.assign-suggestions button > .assign-animal-thumb {
+  position: relative;
+  display: block;
+  width: 52px;
+  height: 58px;
+  flex: 0 0 52px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.assign-animal-thumb .spa-source-photo {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}
+.assign-animal-thumb .spa-source-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.assign-animal-thumb .spa-reference-mark,
+.assign-animal-thumb .spa-source-photo > span {
+  display: none;
+}
+.assign-animal-thumb > i {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  padding: 2px 3px;
+  border-radius: 3px;
+  background: #13151cdb;
+  color: #fff;
+  font:
+    600 8px Arial,
+    sans-serif;
+}
 .page-access-settings {
   padding: 24px;
   display: grid;

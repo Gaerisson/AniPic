@@ -48,6 +48,14 @@ export function AssistantAvatarSettings({ url, onUpdate, notify }) {
   return (
     <section
       className="panel assistant-avatar-settings"
+      onDragOver={(e) => {
+        if (!busy && e.dataTransfer.types.includes("Files")) e.preventDefault();
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        if (!busy)
+          choose({ target: { files: e.dataTransfer.files, value: "" } });
+      }}
       aria-labelledby="avatar-title"
     >
       <div className="avatar-settings-heading">

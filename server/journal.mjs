@@ -1,0 +1,67 @@
+import { id, now } from "./db.mjs";
+export function recordError(db, req, error, status) {
+  // Never persist query strings, bodies, cookies, OAuth codes, keys or stack traces.
+  const code = /^[A-Z0-9_]{1,60}$/.test(error.code || "")
+    ? error.code
+    : status >= 500
+      ? "SERVER_ERROR"
+      : "REQUEST_REJECTED";
+  db.prepare("INSERT INTO diagnostic_log VALUES (?,?,?,?,?,?,?,?)").run(
+    id(),
+    now(),
+    status >= 500 ? "error" : "warning",
+    status,
+    req.user?.id || null,
+    req.method,
+    req.url.split("?")[0].slice(0, 180),
+    code,
+  );
+  db.exec(
+    "DELETE FROM diagnostic_log WHERE id IN (SELECT id FROM diagnostic_log ORDER BY created_at DESC LIMIT -1 OFFSET 2000)",
+  );
+}
+export async function registerJournal(app, { db, authorized }) {
+  app.get(
+    "/api/admin/journal",
+    { preHandler: authorized(["admin"]) },
+    async (req) => {
+      const errors = req.query.kind === "errors",
+        limit = 200;
+      const failures = db
+        .prepare(
+          "SELECT d.*,u.name AS user_name FROM diagnostic_log d LEFT JOIN users u ON u.id=d.user_id ORDER BY d.created_at DESC LIMIT ?",
+        )
+        .all(limit)
+        .map((r) => ({
+          ...r,
+          kind: r.level,
+          title: `HTTP ${r.status} · ${r.code}`,
+          detail: r.method + " " + r.path,
+        }));
+      if (errors) return failures;
+      const actions = db
+        .prepare(
+          "SELECT a.*,u.name AS user_name FROM audit a LEFT JOIN users u ON u.id=a.user_id ORDER BY a.created_at DESC LIMIT ?",
+        )
+        .all(limit)
+        .map((r) => ({
+          ...r,
+          kind: "action",
+          title: r.action,
+          detail: r.detail,
+        }));
+      const jobs = db
+        .prepare("SELECT * FROM jobs ORDER BY created_at DESC LIMIT ?")
+        .all(100)
+        .map((r) => ({
+          ...r,
+          kind: r.state === "failed" ? "error" : "job",
+          title: r.kind + " · " + r.state,
+          detail: r.detail,
+        }));
+      return [...failures, ...actions, ...jobs]
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .slice(0, limit);
+    },
+  );
+}
