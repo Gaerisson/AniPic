@@ -78,6 +78,7 @@ function Stat({ value, label, progress }) {
           fontWeight: 800,
           fontVariantNumeric: "tabular-nums",
           letterSpacing: -3,
+          color: white,
         }}
       >
         {Math.round((value || 0) * progress)}
@@ -319,6 +320,8 @@ export function SignageCanvas({
               </span>
               <h1
                 style={{
+                  color: ink,
+                  fontFamily: "inherit",
                   fontSize:
                     (portrait
                       ? 92
@@ -348,6 +351,7 @@ export function SignageCanvas({
             {p.showFacts && (
               <p
                 style={{
+                  color: ink,
                   fontSize: (portrait ? 27 : 25) * u,
                   lineHeight: 1.6,
                   margin: 0,
@@ -519,6 +523,8 @@ export function SignageCanvas({
               </p>
               <h1
                 style={{
+                  color: white,
+                  fontFamily: "inherit",
                   fontSize: portrait ? 90 : 100,
                   lineHeight: 1.1,
                   maxWidth: 1000,

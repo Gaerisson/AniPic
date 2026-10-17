@@ -2,11 +2,13 @@
 
 Vérification du 15 octobre 2026. Les informations des animaux restent issues de la source ; aucun formulaire de modification manuelle des faits n’a été ajouté.
 
+Pour les routes actuelles, les exemples de requêtes et l’authentification, voir le [guide API SPA / AniPic](docs/API_ANIMAUX.md), complété avec une réponse SPA réelle lors de la correction 3.5.4.
+
 ## SPA
 
 L’ancienne API fournie utilise `https://www.la-spa.fr/app/wp-json/spa/v1/animals/search/`. Ses fichiers PHP ont été relus, sans modification. Les exports JSON présents dans `SPA_API/data` étaient vides. Le mode strict d’Anipic s’arrête avant cette route exclue par [robots.txt](https://www.la-spa.fr/robots.txt). La V2.5 propose aussi un mode explicite de lecture directe, limité à cet endpoint public. Le test réel du 15 octobre 2026 à 19:50 a reçu 65 fiches sur trois passages identiques, sans importer les animaux dans la démo. Voir le rapport dans API & connexions et [le guide V2.5](docs/history/NOUVEAUTES_V25.md).
 
-Le schéma actuel est reconnu : `ID`, `name`, `description`, `full_url`, `image`, `sex`, `races_label`, `age_number` et établissement. L’âge textuel de la SPA est conservé sans créer une fausse date de naissance. Les ententes avec réserves sont affichées intégralement. La photo source est strictement une référence signalée, grisée et mise en cache, jamais comptée comme une photo locale.
+Le schéma actuel est reconnu : `ID`, `name`, `description`, `full_url`, `image`, `sex`, `races_label`, `age_number` et établissement. L’âge textuel de la SPA est conservé sans créer une fausse date de naissance. Les ententes avec réserves sont affichées intégralement. La photo source est une référence signalée et mise en cache, jamais comptée comme une photo locale.
 
 Les adaptateurs reprennent les champs historiques : race, sexe, naissance, taille, description et ententes explicitement libellées dans la description. Les libellés HTML `{rendered: ...}`, dates ISO et français, booléens explicites et réservation entre parenthèses dans un titre CMS sont reconnus. Une mention ambiguë dans un texte libre n’est pas transformée en entente ou adoption.
 

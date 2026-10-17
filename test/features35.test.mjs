@@ -37,11 +37,17 @@ test("qualified ententes are amber, missing values are omitted, theme choice sur
     "Non, pour la rencontre prévoir un accompagnement",
     "Oui. Mais pas de jeunes enfants",
     "OK sous surveillance",
+    "Mâle oui selon profil",
+    "Femelle : non avec les chats",
+    "Selon le profil : oui",
+    "Pour les enfants, non",
   ])
     assert.equal(compatibilityState(s), "conditional");
   assert.equal(compatibilityState("Non testé"), "unknown");
   assert.equal(compatibilityState("Non."), "no");
   assert.equal(compatibilityState("Oui !"), "yes");
+  for (const value of ["Épanoui", "Nonchalant", "À tester", "Non renseigné"])
+    assert.equal(compatibilityState(value), "unknown");
   for (const value of ["N/A", "n.a", "Non renseigné", null, "—"])
     assert.equal(hasAnimalInfo(value), false);
   assert.equal(hasAnimalInfo("3 ans"), true);
@@ -90,7 +96,7 @@ test("SOS and compatibility filters match visible facts with pagination and comb
     a,
   );
   db.prepare("UPDATE animals SET compatibility=? WHERE id=?").run(
-    '{"cats":"Oui si habitué"}',
+    '{"cats":"Oui si habitué","chien":"Mâle oui selon profil"}',
     b,
   );
   db.prepare("UPDATE animals SET description=? WHERE id=?").run(
@@ -110,6 +116,11 @@ test("SOS and compatibility filters match visible facts with pagination and comb
   assert.equal(r.json().total, 2);
   r = await app.inject("/api/animals?dogs=conditional&sos=yes");
   assert.equal(r.json().items[0].id, a);
+  r = await app.inject("/api/animals?dogs=conditional&sos=no");
+  assert.deepEqual(
+    r.json().items.map((item) => item.id),
+    [b],
+  );
   r = await app.inject("/api/animals?cats=no");
   assert.equal(r.json().total, 0);
 });

@@ -1,4 +1,20 @@
-# Vérifications — AniPic 3.5.3
+# Vérifications — AniPic 3.5.4
+
+## V3.5.4 — 17 octobre 2026
+
+Suite complète : **172 tests réussis**, aucun échec ni test ignoré. Les 11 tests ciblés initiaux photos/TV/ententes/filtres/affiches/registre avaient également réussi.
+
+Deux nouvelles régressions automatisées : (1) une image JPEG réelle de 2 400 × 1 600 produit un aperçu de 1 280 px et un original inline identique octet par octet, sans recompression ; refus de l’original à un visiteur, même avec le seul cookie PIN, y compris si l’album devient public ; session Lecteur valide acceptée, expirée refusée et téléchargement attachment conservé. (2) rendu réel des composants TV en HTML, par Vite SSR/React : titres et descriptions des quatre styles en portrait et paysage, titres/compteurs statistiques, messages saisonniers, informations SPA et horaires possèdent leurs couleurs explicites. Cela vérifie le rendu des composants, sans prétendre à un essai visuel dans le navigateur ou sur une TV physique.
+
+Ententes : cas « Mâle oui selon profil », « Femelle : non avec les chats » et réponses avec oui/non dans une phrase classés en conditional. Texte conservé, oui/non simples inchangés, « Non testé » inconnu. Absence de faux positif sur « Épanoui » ou « Nonchalant ». Le filtre serveur chiens=conditional retrouve la fiche portant la nouvelle formulation.
+
+API SPA : une requête publique réelle confirme HTTP 200 JSON, results/nb_pages/total ; 31 chiens annoncés sur 2 pages à Morée, première page de 18. Aucun inventaire appliqué à AniPic. API locale : lecture réelle du catalogue paginé, d’une fiche, des changements publics avec baseline et du fil paginé ; formes de réponse conformes aux exemples du nouveau guide. Aucune clé API Bearer inventée : documentation des sessions, PIN et restrictions d’accès existantes.
+
+Installation propre Node.js 24.18.1 : **npm ci réussi**, 409 packages installés, 410 audités, zéro vulnérabilité signalée. Manifeste et lockfile synchronisés à 3.5.4 via npm, sans nouvelle dépendance ni version transitive modifiée manuellement. Frontend et composition vidéo compilés. Client Compose officiel : base, C8+Import et Portainer contrôlés ; montages et politiques d’image inchangés. git diff --check réussi. Liens de documentation et intégrité ZIP contrôlés.
+
+Serveur de test relancé sur http://localhost:3036, health ok version 3.5.4. SQLite : intégrité ok, schéma 17 sans migration, 79 animaux, 14 photos, 2 photos à trier et 4 projets vidéo conservés. Les tests utilisent des bases et images isolées. Aucun original utilisateur, compte, PIN ou volume NAS réécrit par ces vérifications.
+
+**Non exécuté :** contrôle visuel interactif du navigateur, TV physique, build/démarrage Docker et smoke test de l’image (moteur Docker absent), CI GitHub et déploiement Portainer/NAS réel. La validation Compose porte sur la configuration, pas sur un déploiement. Aucun appel payant IA ni envoi réel Canva.
 
 ## V3.5.3 — 17 octobre 2026
 

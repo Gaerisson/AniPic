@@ -10,6 +10,7 @@ import {
   FolderInput,
   Video,
   Settings2,
+  LoaderCircle,
 } from "lucide-react";
 import { api, imageUrl, bytes, date, uploadWithProgress } from "./api.js";
 import { Button, Modal, Empty } from "./ui.jsx";
@@ -17,6 +18,65 @@ import { VideoPlayer } from "./video-player.jsx";
 import { UploadPreviews, DropArea } from "./upload-feedback.jsx";
 export const albumMediaUrl = (p, w = 640) =>
   p.kind === "private" ? `/api/album-media/${p.id}?w=${w}` : imageUrl(p.id, w);
+function AlbumImage({ photo, user, style }) {
+  const [loaded, setLoaded] = useState(false),
+    [failed, setFailed] = useState(false),
+    [attempt, setAttempt] = useState(0);
+  const full = user
+    ? photo.kind === "private"
+      ? `/api/album-media/${photo.id}?full=1`
+      : `/media/${photo.id}?full=1`
+    : null;
+  return (
+    <>
+      <div className="album-image-plane" style={style}>
+        <img
+          draggable={false}
+          src={albumMediaUrl(photo, 1280)}
+          alt={photo.caption || photo.filename}
+        />
+        {full && (
+          <img
+            key={attempt}
+            className="album-image-original"
+            draggable={false}
+            src={full}
+            alt=""
+            aria-hidden="true"
+            decoding="async"
+            style={{ opacity: loaded ? 1 : 0 }}
+            onLoad={() => setLoaded(true)}
+            onError={() => setFailed(true)}
+          />
+        )}
+      </div>
+      {full && !loaded && (
+        <div className="album-image-status" role="status">
+          {failed ? (
+            <>
+              Aperçu affiché · original indisponible
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFailed(false);
+                  setAttempt((v) => v + 1);
+                }}
+              >
+                Réessayer
+              </button>
+            </>
+          ) : (
+            <>
+              <LoaderCircle className="spin" size={15} />
+              Chargement haute définition…
+            </>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
 export async function dropIntoAlbum(e, destinationId, notify, reload) {
   const raw =
     e.dataTransfer.getData("application/x-anipic-album") ||
@@ -542,10 +602,10 @@ export function ManagedAlbumPhoto({
           }}
           style={{ touchAction: zoom > 1 ? "none" : "pan-y" }}
         >
-          <img
-            draggable={false}
-            src={albumMediaUrl(p, 1280)}
-            alt={p.caption || p.filename}
+          <AlbumImage
+            key={p.id + ":" + (user?.id || "public")}
+            photo={p}
+            user={user}
             style={{
               transform: `translate(${pan.x}px,${pan.y}px) scale(${zoom})`,
               transition: drag.current ? "none" : "transform 160ms ease-out",

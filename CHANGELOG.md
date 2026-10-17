@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 3.5.4 — 17 octobre 2026
+
+Originaux chargés progressivement dans les albums pour un zoom net, sans ouvrir leur accès public. Couleurs de texte TV indépendantes du thème de l’interface, y compris messages, statistiques et aperçu du bilan annuel. Ententes avec « oui/non » dans une phrase classées en orange. Guide des API SPA/AniPic avec exemples vérifiés. [Détail](RELEASE_v3.5.4.md).
+
 ## 3.5.3 — 17 octobre 2026
 
 Autorisation PIN sans expiration côté AniPic, conservée après redémarrage. Les anciens accès encore valides sont prolongés sans redemander le code ; changer le PIN révoque toujours les accès précédents. [Détail](RELEASE_v3.5.3.md).

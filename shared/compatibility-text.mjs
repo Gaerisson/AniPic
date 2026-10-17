@@ -53,5 +53,9 @@ export function compatibilityState(value) {
   if (/^(non|ko|no|false|0|pas ok)$/.test(raw)) return "no";
   if (/^(oui|non|ok|ko|yes|no|pas ok)\b[\s,:;.!–—-]+\S/.test(raw))
     return "conditional";
+  // A yes/no embedded in a longer answer is qualified, even if the source
+  // starts with a sex or another note (e.g. "Mâle oui selon profil").
+  if (/(?:^|[^\p{L}\p{N}_])(?:oui|non)(?=$|[^\p{L}\p{N}_])/u.test(raw))
+    return "conditional";
   return "unknown";
 }

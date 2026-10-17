@@ -12,7 +12,7 @@ Anipic reprend le projet GPIC SPA pour organiser les photos des animaux, prépar
 
 **Projet vibecodé par [Gaerisson](https://github.com/Gaerisson/), avec Codex, assistant d’OpenAI.** L’idée, les besoins métier, les choix visuels et la direction du projet viennent de Gaerisson.
 
-[Release 3.5.3](RELEASE_v3.5.3.md) · [Installation Docker / Portainer](docs/DEPLOIEMENT.md) · [Journal des versions](CHANGELOG.md) · [Tests et validation](VALIDATION.md)
+[Release 3.5.4](RELEASE_v3.5.4.md) · [Installation Docker / Portainer](docs/DEPLOIEMENT.md) · [Journal des versions](CHANGELOG.md) · [API SPA / AniPic](docs/API_ANIMAUX.md) · [Tests et validation](VALIDATION.md)
 
 ![La photothèque AniPic](public/presentation-v32/home.png)
 
@@ -111,7 +111,7 @@ npm run build
 npm run video:build
 ```
 
-**170 tests passent** lors de la validation locale de cette version. Les essais couvrent notamment les droits, le PIN et les IP, la confidentialité, les homonymes, les dates, la comparaison de photos, les sauvegardes, la TV et les connecteurs simulés. [Détails et limites des essais](VALIDATION.md).
+**172 tests passent** lors de la validation locale de cette version. Les essais couvrent notamment les droits, le PIN et les IP, la confidentialité, les homonymes, les dates, la comparaison de photos, les sauvegardes, la TV et les connecteurs simulés. [Détails et limites des essais](VALIDATION.md).
 
 ## Documentation
 

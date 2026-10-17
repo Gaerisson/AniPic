@@ -93,6 +93,8 @@ export function MessageScene({
         </span>
         <h1
           style={{
+            color: "#fff8f1",
+            fontFamily: "inherit",
             fontSize: (hours ? 70 : portrait ? 84 : 102) * u,
             lineHeight: 1.08,
             letterSpacing: -2.5 * u,

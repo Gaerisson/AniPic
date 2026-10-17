@@ -193,6 +193,8 @@ export function AnnualMosaic({ film }) {
                 </span>
                 <h1
                   style={{
+                    color: "#faf7f1",
+                    fontFamily: "inherit",
                     fontSize: Math.min(
                       (portrait ? 68 : 66) * u,
                       (layout.main.width /

@@ -291,10 +291,12 @@ export async function registerAlbums(app, { db, c, authorized }) {
           .refine((n) => [320, 640, 1280].includes(n))
           .default(640),
         original: z.enum(["1"]).optional(),
+        full: z.enum(["1"]).optional(),
         download: z.enum(["1"]).optional(),
       })
       .parse(req.query);
-    if (q.original && !req.user)
+    const original = q.original || q.full;
+    if (original && !req.user)
       throw fail("Connexion requise pour les originaux.", 401);
     if (p.mime.startsWith("video/")) {
       if (q.download || q.original)
@@ -304,12 +306,12 @@ export async function registerAlbums(app, { db, c, authorized }) {
         );
       return rangeReply(req, reply, path.join(c.mediaDir, p.hash), p.mime);
     }
-    if (q.original || q.download)
+    if (original || q.download)
       reply.header(
         "Content-Disposition",
-        `attachment; filename*=UTF-8''${encodeURIComponent(q.original ? p.filename : path.parse(p.filename).name + ".jpg")}`,
+        `${q.full ? "inline" : "attachment"}; filename*=UTF-8''${encodeURIComponent(original ? p.filename : path.parse(p.filename).name + ".jpg")}`,
       );
-    if (q.original)
+    if (original)
       return reply
         .type(p.mime)
         .send(createReadStream(path.join(c.mediaDir, p.hash)));

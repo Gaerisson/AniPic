@@ -155,3 +155,43 @@ html[data-theme]:is([data-theme="sage"], [data-theme="spa"])
   td {
   color: var(--ink);
 }
+/* Keep the preview visible while the original loads, without changing zoom. */
+.managed-album-view .album-lightbox {
+  position: relative;
+}
+.album-image-plane {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+.album-image-plane > img {
+  display: block;
+}
+.album-image-plane > .album-image-original {
+  position: absolute;
+  inset: 0;
+}
+.album-image-status {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  max-width: calc(100% - 24px);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px solid #ffffff30;
+  border-radius: 12px;
+  background: #111317e8;
+  color: #fff8f1;
+  font-size: 12px;
+  pointer-events: none;
+}
+html[data-theme] .album-image-status button {
+  color: #ffc18e;
+  text-decoration: underline;
+  pointer-events: auto;
+}
