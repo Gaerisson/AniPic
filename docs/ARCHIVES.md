@@ -1,5 +1,10 @@
 # Corbeille et compression des archives
 
+**Archives** regroupe les animaux partis et leurs albums dans une seule page,
+avec dossiers par espèce et année, filtre d’année et accès au bilan annuel.
+Les anciens liens « Animaux partis » ouvrent cette page. Un archivage n’est
+pas automatiquement présenté comme une adoption : le statut reste explicite.
+
 ## Retirer une photo
 
 Sur une fiche animal, **Supprimer · corbeille** retire la photo des sélections et de la diffusion. Les photos déjà archivées ont aussi un bouton Supprimer. La corbeille de la fiche et celle de la page Archives permettent de restaurer les références. Les fichiers et les liens d’albums sont conservés ; une photo retirée n’est plus proposée dans les albums. Les membres autorisés peuvent encore voir sa miniature dans la corbeille.

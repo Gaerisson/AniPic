@@ -3,6 +3,7 @@ import {
   labelledCompatibility,
   normalizeCompatibility,
 } from "../shared/compatibility-text.mjs";
+import { hasAnimalInfo } from "../shared/animal-info.mjs";
 const text = (value, max = 150, allowBoolean = false) => {
   if (value && typeof value === "object")
     value = value.rendered ?? value.label ?? value.name;
@@ -11,12 +12,13 @@ const text = (value, max = 150, allowBoolean = false) => {
     (typeof value === "boolean" && !allowBoolean)
   )
     return "";
-  return cheerio
+  const clean = cheerio
     .load("<body>" + String(value) + "</body>")("body")
     .text()
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, max);
+  return hasAnimalInfo(clean) ? clean : "";
 };
 const first = (record, keys, max, allowBoolean = false) => {
   for (const key of keys) {

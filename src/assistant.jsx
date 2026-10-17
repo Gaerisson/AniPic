@@ -1,4 +1,5 @@
 import { NavLink } from "./nav-link.jsx";
+import { appVersion } from "../shared/version.mjs";
 import { AssistantChat } from "./assistant-chat.jsx";
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
@@ -139,7 +140,9 @@ export function QuickAssistant({
       .filter(
         ([key, p]) =>
           key !== "print" &&
+          (key !== "register" || ["admin", "agent"].includes(user?.role)) &&
           (p.group !== "admin" || user?.role === "admin") &&
+          (!p.roles || p.roles.includes(user?.role)) &&
           (key !== "inbox" || canEdit),
       )
       .map(([key, p]) => ({
@@ -429,19 +432,6 @@ export function QuickAssistant({
           {/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘ K" : "Ctrl K"}
         </kbd>
       </button>
-      {user && (
-        <button
-          className="chat-launcher"
-          aria-label="Discuter avec le chatbot"
-          onClick={() => {
-            setMode("chat");
-            setOpened(true);
-          }}
-        >
-          <FoxAvatar decorative src={overview?.assistantAvatarUrl} />
-          <MessageCircle size={15} />
-        </button>
-      )}
     </div>
   );
 }
@@ -472,7 +462,7 @@ export function About({ overview, go, user, voice }) {
     <div className="about-page">
       <div className="page-heading">
         <h1>À propos</h1>
-        <span className="about-version">Version 3.4.0</span>
+        <span className="about-version">Version {appVersion}</span>
       </div>
       <section className="panel about-author">
         <FoxAvatar

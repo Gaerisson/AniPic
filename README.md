@@ -12,7 +12,7 @@ Anipic reprend le projet GPIC SPA pour organiser les photos des animaux, prépar
 
 **Projet vibecodé par [Gaerisson](https://github.com/Gaerisson/), avec Codex, assistant d’OpenAI.** L’idée, les besoins métier, les choix visuels et la direction du projet viennent de Gaerisson.
 
-[Release 3.4](RELEASE_v3.4.md) · [Installation Docker / Portainer](docs/DEPLOIEMENT.md) · [Journal des versions](CHANGELOG.md) · [Tests et validation](VALIDATION.md)
+[Release 3.5.3](RELEASE_v3.5.3.md) · [Installation Docker / Portainer](docs/DEPLOIEMENT.md) · [Journal des versions](CHANGELOG.md) · [Tests et validation](VALIDATION.md)
 
 ![La photothèque AniPic](public/presentation-v32/home.png)
 
@@ -25,6 +25,10 @@ Deux montages de **24,5 secondes**, 30 images/s : portraits en relief et présen
 | [1080 × 1920 · MP4](docs/media/anipic-presentation-story.mp4) | [1920 × 1080 · MP4](docs/media/anipic-presentation-paysage.mp4) |
 
 [Composition et reproduction du montage](PRESENTATION.md).
+
+## Nouveautés 3.5
+
+Grandes affiches multi-animaux avec quatre modèles, thèmes clairs revus dont SPA avec verre, choix du thème par navigateur, prénoms à thème et assistant unique. Filtres SOS/ententes, ententes nuancées en orange, photos privées plus visibles, demandes photo retirables avec annulation, portraits de séance agrandis et sélection de tous les animaux pour les affichettes. Registre interne réservé aux administrations/agents avec import Excel/CSV et aperçu. [Utilisation du registre et des affiches](docs/REGISTRE_AFFICHES.md).
 
 ## Nouveautés 3.4
 
@@ -90,9 +94,9 @@ Pour une stack Git dans Portainer, sélectionner `compose.yml` et laisser **Re-p
 - **Mistral** : clé, modèles de voix / transcription et voix par défaut dans API & connexions → Audio. Une clé d’environnement reste prioritaire. Les appels audio partent seulement à la demande.
 - **Gemini / Token Harbor** : clés dans l’environnement ; modèles dans l’interface. Rédaction et assistant optionnels.
 - **Canva** : connexion OAuth par compte et présentation éditable. [Guide Canva](CANVA.md).
-- **TV** : configurer et enregistrer le programme, puis ouvrir `APP_ORIGIN/#display` sur le téléviseur. Les réglages enregistrés sont relus chaque minute.
+- **TV** : les comptes Agent SPA et Administrateur peuvent configurer et enregistrer le programme dans Le refuge → Écran du refuge, puis ouvrir `APP_ORIGIN/#display` sur le téléviseur. Les réglages enregistrés sont relus chaque minute.
 - **Visiteurs** : données accessibles aux administrateurs, IP, compte, navigateur, appareil, pages et sessions estimées. Conservation 30 jours. Géolocalisation indicative hors ligne avec DB-IP City Lite : pays, drapeau, région et ville si connus. Mise à jour MMDB depuis les paramètres ; aucune IP envoyée à un service GeoIP externe.
-- **Accès** : PIN et connexion automatique d’un compte **agent** par IP désactivés initialement. Configuration depuis les paramètres, avec changement de compte toujours disponible. La TV et les pages publiques restent soumises au PIN global s’il est activé.
+- **Accès** : PIN et connexion automatique d’un compte **agent** par IP désactivés initialement. Configuration depuis les paramètres, avec changement de compte toujours disponible. La TV et les pages publiques restent soumises au PIN global s’il est activé. Après déverrouillage, l’autorisation du navigateur n’expire plus côté AniPic, tant que ses cookies sont conservés (cookie persistant renouvelé lors des visites et de la diffusion TV) ; changer le PIN révoque les anciennes autorisations.
 - **Accueil** : ordre et visibilité des widgets, aperçu TV, thèmes, effets et textes configurables côté serveur.
 
 ## Données et accès
@@ -107,7 +111,7 @@ npm run build
 npm run video:build
 ```
 
-**125 tests passent** lors de la validation locale de cette version. Les essais couvrent notamment les droits, le PIN et les IP, la confidentialité, les homonymes, les dates, la comparaison de photos, les sauvegardes, la TV et les connecteurs simulés. [Détails et limites des essais](VALIDATION.md).
+**170 tests passent** lors de la validation locale de cette version. Les essais couvrent notamment les droits, le PIN et les IP, la confidentialité, les homonymes, les dates, la comparaison de photos, les sauvegardes, la TV et les connecteurs simulés. [Détails et limites des essais](VALIDATION.md).
 
 ## Documentation
 

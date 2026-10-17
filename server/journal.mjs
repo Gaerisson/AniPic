@@ -1,5 +1,12 @@
 import { id, now } from "./db.mjs";
 const names = {
+  register_created: "Entrée du registre ajoutée",
+  register_updated: "Entrée du registre modifiée",
+  register_removed: "Entrée du registre retirée",
+  register_imported: "Import du registre interne",
+  task_removed: "Demande photo retirée",
+  task_restored: "Demande photo restaurée",
+  group_poster_exported: "Grande affiche exportée",
   sync: "Synchronisation SPA",
   json_imported: "Import des fiches SPA",
   backup: "Sauvegarde",

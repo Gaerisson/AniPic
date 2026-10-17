@@ -3413,7 +3413,7 @@ textarea {
 .team-list small,
 .import-preview > div,
 .import-preview code {
-  color: #6f7b65;
+  color: var(--muted);
 }
 .stat-label,
 .storage-legend > div,

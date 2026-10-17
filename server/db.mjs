@@ -9,7 +9,7 @@ export function openDb(c) {
     "PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;",
   );
   const version = db.prepare("PRAGMA user_version").get().user_version;
-  if (version > 16) throw new Error("Base créée par une version plus récente.");
+  if (version > 17) throw new Error("Base créée par une version plus récente.");
   if (version === 0)
     db.exec(`
     BEGIN;
@@ -171,7 +171,16 @@ export function openDb(c) {
       CREATE TABLE IF NOT EXISTS archive_compactions(id TEXT PRIMARY KEY,backup_id TEXT NOT NULL REFERENCES backups(id),created_at TEXT NOT NULL,detail TEXT NOT NULL);
       PRAGMA user_version=16;`);
     });
-  db.prepare("DELETE FROM site_passes WHERE expires_at < ?").run(now());
+  if (version < 17)
+    transaction(db, () => {
+      db.exec(`CREATE TABLE IF NOT EXISTS task_deletions(task_id TEXT PRIMARY KEY REFERENCES shoot_tasks(id) ON DELETE CASCADE,deleted_at TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS internal_register(id TEXT PRIMARY KEY,name TEXT NOT NULL,contact TEXT NOT NULL DEFAULT '',reason TEXT NOT NULL DEFAULT '',instructions TEXT NOT NULL DEFAULT '',review_date TEXT NOT NULL DEFAULT '',created_by TEXT NOT NULL REFERENCES users(id),created_at TEXT NOT NULL,updated_at TEXT NOT NULL,deleted_at TEXT);
+      CREATE INDEX IF NOT EXISTS internal_register_recent ON internal_register(deleted_at,updated_at);
+      PRAGMA user_version=17;`);
+    });
+  db.prepare(
+    "DELETE FROM site_passes WHERE expires_at<>'' AND expires_at < ?",
+  ).run(now());
   db.prepare("DELETE FROM sessions WHERE expires_at < ?").run(now());
   db.prepare("DELETE FROM canva_oauth WHERE expires_at < ?").run(now());
   return db;

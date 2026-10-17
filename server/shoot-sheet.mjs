@@ -17,12 +17,12 @@ export async function registerShootSheet(app, { db, authorized }) {
         .parse(req.query);
       const animals = db
         .prepare(
-          "SELECT a.*,(SELECT COUNT(*) FROM photos p WHERE p.animal_id=a.id AND p.archived_at IS NULL) photo_count FROM animals a WHERE a.archived_at IS NULL AND a.status!='adopted' ORDER BY a.name COLLATE NOCASE,a.id",
+          "SELECT a.*,(SELECT COUNT(*) FROM photos p WHERE p.animal_id=a.id AND p.archived_at IS NULL AND p.deleted_at IS NULL) photo_count FROM animals a WHERE a.archived_at IS NULL AND a.status!='adopted' ORDER BY a.name COLLATE NOCASE,a.id",
         )
         .all();
       const tasks = db
         .prepare(
-          "SELECT t.*,u.name assignee FROM shoot_tasks t LEFT JOIN users u ON u.id=t.assigned_to WHERE t.state!='done' ORDER BY CASE priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END,created_at",
+          "SELECT t.*,u.name assignee FROM shoot_tasks t LEFT JOIN users u ON u.id=t.assigned_to WHERE t.state!='done' AND NOT EXISTS(SELECT 1 FROM task_deletions d WHERE d.task_id=t.id) ORDER BY CASE priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END,created_at",
         )
         .all();
       const rank = priorityRank,

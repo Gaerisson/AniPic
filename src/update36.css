@@ -1,0 +1,157 @@
+/* Portals sit above a dark scrim, not the page canvas. Their reading surface
+   must stay opaque at every glass setting, including nested dialogs. */
+html[data-theme]:is([data-theme="sage"], [data-theme="spa"]) body .modal,
+html[data-theme]:is([data-theme="sage"], [data-theme="spa"])[data-glass="on"]
+  body
+  .modal {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  box-shadow:
+    0 24px 90px #39281430,
+    inset 0 1px 0 #fff;
+  backdrop-filter: none;
+}
+html[data-theme]:is([data-theme="sage"], [data-theme="spa"])
+  body
+  .modal-backdrop {
+  background: #25212a66;
+}
+html[data-theme]:is([data-theme="sage"], [data-theme="spa"])
+  body
+  :is(
+    .modal-title,
+    .detail-facts,
+    .detail-facts > div,
+    .identity-box,
+    .photo-management
+  ) {
+  border-color: var(--border);
+}
+html[data-theme]:is([data-theme="sage"], [data-theme="spa"])
+  body
+  .modal
+  :is(
+    .detail-description,
+    .detail-facts span,
+    .detail-info label,
+    .detail-disclaimer,
+    .photo-management,
+    .small-note,
+    .fineprint
+  ) {
+  color: var(--muted);
+}
+html[data-theme]:is([data-theme="sage"], [data-theme="spa"])
+  body
+  .modal
+  :is(h2, h3, .detail-facts strong) {
+  color: var(--ink);
+}
+html[data-theme]:is([data-theme="sage"], [data-theme="spa"])[data-glass="on"]
+  body
+  :is(.assistant-panel, .assistant-chat-panel, .site-gate .panel) {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--border);
+}
+/* Keep glass on page surfaces, with enough body to maintain text contrast. */
+html[data-theme]:is([data-theme="sage"], [data-theme="spa"])[data-glass="on"]
+  body
+  :is(
+    .panel,
+    .stat-card,
+    .sidebar,
+    .topbar,
+    .workspace,
+    .table-wrap,
+    .request-search,
+    .utility-grid > section
+  ) {
+  background: color-mix(
+    in srgb,
+    var(--surface) max(86%, var(--glass-opacity)),
+    transparent
+  );
+  border-color: var(--border);
+}
+html[data-theme]:is([data-theme="sage"], [data-theme="spa"])[data-glass="on"]
+  body
+  :is(
+    .animal-card,
+    .task-card,
+    .inbox-card,
+    .timeline-clip,
+    .feed-entry,
+    .collection-card,
+    .role-grid > div,
+    .album-card,
+    .studio-projectbar
+  ) {
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent) 5%, transparent),
+      transparent 55%
+    ),
+    color-mix(
+      in srgb,
+      var(--surface) max(86%, var(--glass-opacity)),
+      transparent
+    );
+  border-color: var(--border);
+}
+html[data-theme]:is([data-theme="sage"], [data-theme="spa"])
+  body
+  :is(.modal, .assistant-panel)
+  :is(
+    input:not([type="checkbox"]):not([type="range"]):not([type="radio"]),
+    select,
+    textarea
+  ) {
+  background: var(--raised);
+  color: var(--ink);
+  border-color: var(--border);
+}
+.name-catalogue-status {
+  padding: 12px 14px;
+  margin: 16px 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--raised);
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.name-catalogue-status > strong {
+  display: block;
+  color: var(--ink);
+}
+.name-catalogue-status > small {
+  display: block;
+  margin-top: 8px;
+}
+.name-catalogue-status progress {
+  width: 100%;
+  accent-color: var(--accent);
+}
+.name-catalogue-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.name-catalogue-status.has-error {
+  border-color: #d79838;
+}
+html[data-theme]:is([data-theme="sage"], [data-theme="spa"])
+  body
+  :is(.collection-card h3, .source-origin-chip) {
+  color: var(--accent-readable);
+}
+html[data-theme]:is([data-theme="sage"], [data-theme="spa"])
+  body
+  .data-table
+  td {
+  color: var(--ink);
+}

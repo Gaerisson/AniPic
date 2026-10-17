@@ -189,7 +189,7 @@ test("TV admin preview is private and does not publish unsaved configuration", a
   assert.equal(
     (await call(app, agent.headers, "POST", "/api/admin/display/preview", cfg))
       .statusCode,
-    403,
+    200,
   );
   const r = await call(
     app,

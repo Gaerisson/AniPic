@@ -1,5 +1,21 @@
 # Journal des versions
 
+## 3.5.3 — 17 octobre 2026
+
+Autorisation PIN sans expiration côté AniPic, conservée après redémarrage. Les anciens accès encore valides sont prolongés sans redemander le code ; changer le PIN révoque toujours les accès précédents. [Détail](RELEASE_v3.5.3.md).
+
+## 3.5.2 — 17 octobre 2026
+
+Configuration TV ouverte aux agents SPA via une API dédiée, sans accès aux paramètres généraux. PIN mémorisé dans un cookie persistant de 30 jours, renouvelé lors des visites et de la diffusion, indépendant de la session de compte et révocable. [Détail](RELEASE_v3.5.2.md).
+
+## 3.5.1 — 17 octobre 2026
+
+Fenêtres claires opaques sur le voile sombre, verre lisible et textes secondaires suivant le thème. Prénoms filtrés sur les animaux présents et le catalogue national SPA vérifié, avec réutilisation des noms après départ. Navigation Archives unifiée, anciens liens conservés. [Détail](RELEASE_v3.5.1.md).
+
+## 3.5.0 — 17 octobre 2026
+
+Grandes affiches multi-animaux SPA/glass/éditorial/polaroids, thèmes clairs et mobile, persistance navigateur, prénoms à thème, assistant unique, filtres SOS/ententes, nuances orange, informations absentes masquées, visibilité privée des photos, retrait/annulation du planning, feuille de séance enrichie et sélection complète des affichettes. Registre interne protégé avec aperçu d’import Excel/CSV. Migration additive 16 → 17. [Détail](RELEASE_v3.5.md).
+
 ## 3.4.0 — 17 octobre 2026
 
 Affiches avec origine des photos et chargements visibles, ouverture du design Canva, erreurs IA explicites, assistant conversationnel et raccourcis corrigés. Thèmes et particules saisonniers réellement appliqués aux messages/infos TV, horaires en grille, lecture web interpolée, nouveaux styles de logo et bannières personnalisables.

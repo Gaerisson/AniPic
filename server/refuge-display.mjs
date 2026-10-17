@@ -1,3 +1,5 @@
+import { hasAnimalInfo } from "../shared/animal-info.mjs";
+import { displayManagerRoles } from "../shared/page-access.mjs";
 import { textDefaults, seasonDefaults } from "../shared/content-defaults.mjs";
 import { z } from "zod";
 import QRCode from "qrcode";
@@ -107,7 +109,7 @@ export async function buildDisplay(
       name: a.name,
       species: a.species,
       sex: a.sex,
-      breed: a.breed,
+      breed: hasAnimalInfo(a.breed) ? a.breed : "",
       description: a.description.slice(0, 600),
       status: a.status,
       sos: JSON.parse(a.tags || "[]").some((t) => /^sos(?:\s|$)/i.test(t)),
@@ -209,7 +211,7 @@ export async function buildDisplay(
 export async function registerDisplay(app, { db, c, authorized }) {
   app.get(
     "/api/admin/display",
-    { preHandler: authorized(["admin"]) },
+    { preHandler: authorized(displayManagerRoles) },
     async () => {
       const cfg = settings(db);
       return {
@@ -223,9 +225,13 @@ export async function registerDisplay(app, { db, c, authorized }) {
   );
   app.put(
     "/api/admin/display",
-    { preHandler: authorized(["admin"]) },
+    { preHandler: authorized(displayManagerRoles) },
     async (req) => {
-      const values = input.parse(req.body);
+      const values = (
+        req.user.role === "admin"
+          ? input
+          : input.omit({ publicHistoryEnabled: true })
+      ).parse(req.body);
       if (req.body.displayProgram)
         values.displayProgram = parseShow(req.body.displayProgram);
       if (values.displayProgram)
@@ -245,7 +251,7 @@ export async function registerDisplay(app, { db, c, authorized }) {
   );
   app.post(
     "/api/admin/display/preview",
-    { preHandler: authorized(["admin"]) },
+    { preHandler: authorized(displayManagerRoles) },
     async (req) => {
       const values = input.parse(req.body);
       values.displayProgram = parseShow(req.body.displayProgram);

@@ -1,4 +1,4 @@
-# Déploiement AniPic 3.4.0
+# Déploiement AniPic 3.5.3
 
 ## Installer sur Debian avec Docker
 
@@ -33,10 +33,10 @@ sudo node scripts/prepare-storage.mjs --mount /mnt/nas --root /mnt/nas/anipic --
 Node.js 24 est nécessaire pour ce script. Sans Node sur l’hôte, construire d’abord l’image puis utiliser son runtime, en montant le parent NAS existant :
 
 ```sh
-docker build -t anipic:3.4.0 .
+docker build -t anipic:3.5.3 .
 docker run --rm --read-only --user 1000:1000 \
   --mount type=bind,src=/mnt/nas,dst=/mnt/nas \
-  --entrypoint node anipic:3.4.0 scripts/prepare-storage.mjs \
+  --entrypoint node anipic:3.5.3 scripts/prepare-storage.mjs \
   --mount /mnt/nas --root /mnt/nas/anipic --uid 1000 --gid 1000 --with-c8 --with-import
 ```
 
@@ -50,7 +50,7 @@ Cette préparation est couverte par des simulations de montage absent, permissio
 
 ## Portainer et Apache
 
-AniPic utilise une image **locale** `anipic:3.4.0`. Aucune image de ce nom n’est publiée sur Docker Hub. Le code sur GitHub et une image téléchargeable dans un registre sont deux livraisons distinctes.
+AniPic utilise une image **locale** `anipic:3.5.3`. Aucune image de ce nom n’est publiée sur Docker Hub. Le code sur GitHub et une image téléchargeable dans un registre sont deux livraisons distinctes.
 
 ### Stack Git sur Docker Standalone
 
@@ -65,8 +65,8 @@ Ne pas utiliser `portainer-stack.yml` pour une compilation automatique depuis Gi
 Après avoir récupéré les nouveaux fichiers du projet, construire l’image sur **le moteur Docker utilisé par Portainer**, depuis le répertoire contenant le Dockerfile :
 
 ```sh
-docker build -t anipic:3.4.0 .
-docker image inspect anipic:3.4.0 --format '{{.Id}}'
+docker build -t anipic:3.5.3 .
+docker image inspect anipic:3.5.3 --format '{{.Id}}'
 ```
 
 Redéployer ensuite la stack existante avec `portainer-stack.yml`, en conservant **Re-pull image désactivé**. Ce fichier garde `pull_policy: never` et exige que l’image existe déjà sur ce moteur. Si Portainer ne construit pas depuis Git, cette procédure permet de préparer l’image sur l’hôte puis de la déployer. Swarm nécessite aussi une image déjà construite, accessible à chacun des nœuds concernés ; un build Compose n’est pas un mécanisme de déploiement Swarm.

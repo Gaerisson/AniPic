@@ -1,3 +1,10 @@
+import {
+  nameCatalogueService,
+  localTakenNames,
+  nameKey,
+  nameKeys,
+} from "./name-catalogue.mjs";
+import { themedNames, nameThemes } from "../shared/name-themes.mjs";
 import { registerAuthorAvatar } from "./author-avatar.mjs";
 import { registerSourceMatches } from "./source-match.mjs";
 import { registerGeoIP } from "./geoip.mjs";
@@ -8,7 +15,7 @@ import { promises as fs } from "node:fs";
 import { spawn } from "node:child_process";
 import { pipeline } from "node:stream/promises";
 import { Transform } from "node:stream";
-import { id, now, audit, settings } from "./db.mjs";
+import { id, now, audit, settings, transaction } from "./db.mjs";
 import { assertStorage, root } from "./config.mjs";
 import { exportPhoto, albumZip, presentationCard } from "./exports.mjs";
 import { validateNetwork, matchesNetwork } from "./ip-access.mjs";
@@ -225,7 +232,7 @@ export async function registerExtras(app, { db, c, authorized, job }) {
   app.get("/api/tasks", { preHandler: authorized(all) }, async () =>
     db
       .prepare(
-        "SELECT t.*,a.name animal_name,a.species,a.cover_id,a.source_metadata,u.name author,v.name assignee FROM shoot_tasks t JOIN animals a ON a.id=t.animal_id LEFT JOIN users u ON u.id=t.created_by LEFT JOIN users v ON v.id=t.assigned_to WHERE a.archived_at IS NULL OR t.state='done' ORDER BY t.state='done',CASE t.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END,t.created_at DESC LIMIT 500",
+        "SELECT t.*,a.name animal_name,a.species,a.cover_id,a.source_metadata,u.name author,v.name assignee FROM shoot_tasks t JOIN animals a ON a.id=t.animal_id LEFT JOIN users u ON u.id=t.created_by LEFT JOIN users v ON v.id=t.assigned_to WHERE NOT EXISTS(SELECT 1 FROM task_deletions d WHERE d.task_id=t.id) AND (a.archived_at IS NULL OR t.state='done') ORDER BY t.state='done',CASE t.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END,t.created_at DESC LIMIT 500",
       )
       .all()
       .map((t) => ({
@@ -281,7 +288,10 @@ export async function registerExtras(app, { db, c, authorized, job }) {
         "Cette demande a été modifiée par un autre membre. Actualisez le planning.",
         409,
       );
-    const parsed = Task.omit({ animalId: true }).partial().parse(req.body);
+    const parsed = Task.omit({ animalId: true })
+      .partial()
+      .extend({ deleted: z.boolean().optional() })
+      .parse(req.body);
     const update = Object.fromEntries(
       Object.entries(parsed).filter(([key]) => Object.hasOwn(req.body, key)),
     );
@@ -292,20 +302,40 @@ export async function registerExtras(app, { db, c, authorized, job }) {
         .get(update.assignedTo)
     )
       throw fail("Membre introuvable.");
-    db.prepare(
-      "UPDATE shoot_tasks SET title=?,note=?,priority=?,state=?,assigned_to=?,updated_at=? WHERE id=?",
-    ).run(
-      update.title ?? t.title,
-      update.note ?? t.note,
-      update.priority ?? t.priority,
-      update.state ?? t.state,
-      update.assignedTo === undefined ? t.assigned_to : update.assignedTo,
-      new Date(
-        Math.max(Date.now(), Date.parse(t.updated_at) + 1),
-      ).toISOString(),
-      taskId,
+    transaction(db, () => {
+      if (parsed.deleted !== undefined) {
+        if (parsed.deleted)
+          db.prepare("INSERT OR REPLACE INTO task_deletions VALUES (?,?)").run(
+            taskId,
+            now(),
+          );
+        else
+          db.prepare("DELETE FROM task_deletions WHERE task_id=?").run(taskId);
+      }
+      db.prepare(
+        "UPDATE shoot_tasks SET title=?,note=?,priority=?,state=?,assigned_to=?,updated_at=? WHERE id=?",
+      ).run(
+        update.title ?? t.title,
+        update.note ?? t.note,
+        update.priority ?? t.priority,
+        update.state ?? t.state,
+        update.assignedTo === undefined ? t.assigned_to : update.assignedTo,
+        new Date(
+          Math.max(Date.now(), Date.parse(t.updated_at) + 1),
+        ).toISOString(),
+        taskId,
+      );
+    });
+    audit(
+      db,
+      req.user,
+      parsed.deleted === true
+        ? "task_removed"
+        : parsed.deleted === false
+          ? "task_restored"
+          : "task_updated",
+      { id: taskId, state: update.state },
     );
-    audit(db, req.user, "task_updated", { id: taskId, state: update.state });
     return {
       ok: true,
       updatedAt: db
@@ -377,6 +407,20 @@ export async function registerExtras(app, { db, c, authorized, job }) {
     },
   );
   app.get("/api/weather", async () => forecast(c.weatherFetcher));
+  const nameCatalogue = await nameCatalogueService(app, db, c);
+  app.get(
+    "/api/tools/names/catalogue",
+    { preHandler: authorized(["admin", "editor", "agent"]) },
+    async () => nameCatalogue.status(),
+  );
+  app.post(
+    "/api/tools/names/refresh",
+    {
+      preHandler: authorized(["admin", "editor", "agent"]),
+      config: { rateLimit: { max: 3, timeWindow: "1 minute" } },
+    },
+    async () => nameCatalogue.start(),
+  );
   app.get("/api/tools/names", async (req) => {
     const q = z
       .object({
@@ -385,6 +429,7 @@ export async function registerExtras(app, { db, c, authorized, job }) {
           .string()
           .regex(/^[A-Za-zÀ-ÿ]?$/)
           .default(""),
+        theme: z.enum(Object.keys(nameThemes)).default("all"),
         count: z.coerce.number().int().min(1).max(24).default(12),
       })
       .parse(req.query);
@@ -506,21 +551,22 @@ export async function registerExtras(app, { db, c, authorized, job }) {
       "Ziggy",
       "Zorro",
     ];
-    const taken = new Set(
-      db
-        .prepare("SELECT name FROM animals WHERE archived_at IS NULL")
-        .all()
-        .map((a) => a.name.toLocaleLowerCase("fr")),
-    );
+    const taken = localTakenNames(db);
+    for (const name of nameCatalogue.names())
+      for (const key of nameKeys(name)) taken.add(key);
+    const national = nameCatalogue.status();
     const choices = (
-      q.sex === "female"
-        ? female
-        : q.sex === "male"
-          ? male
-          : [...new Set([...female, ...male])]
+      q.theme !== "all"
+        ? themedNames(q.theme, q.sex)
+        : q.sex === "female"
+          ? female
+          : q.sex === "male"
+            ? male
+            : [...new Set([...female, ...male])]
     ).filter(
       (name) =>
-        !taken.has(name.toLocaleLowerCase("fr")) &&
+        national.ready &&
+        !taken.has(nameKey(name)) &&
         (!q.letter ||
           name
             .normalize("NFD")
@@ -537,7 +583,14 @@ export async function registerExtras(app, { db, c, authorized, job }) {
       const j = Math.floor(Math.random() * (i + 1));
       [choices[i], choices[j]] = [choices[j], choices[i]];
     }
-    return { names: choices.slice(0, q.count), avoidsExisting: true };
+    return {
+      names: choices.slice(0, q.count),
+      avoidsExisting: true,
+      national,
+      excludesDeparted: false,
+      theme: q.theme,
+      themes: nameThemes,
+    };
   });
   app.get("/api/social/status", { preHandler: authorized() }, async () => ({
     gemini: !!process.env.GEMINI_API_KEY,

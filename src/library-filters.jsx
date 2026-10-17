@@ -5,6 +5,8 @@ import { statusKeys } from "../shared/animal-status.mjs";
 export function LibraryFilters({
   page,
   status,
+  compat,
+  setCompat,
   photos,
   year,
   recent,
@@ -43,6 +45,40 @@ export function LibraryFilters({
         </select>
       </label>
       <label>
+        SOS
+        <select
+          aria-label="Filtrer les SOS"
+          value={compat.sos}
+          onChange={(e) => setCompat((v) => ({ ...v, sos: e.target.value }))}
+        >
+          <option value="all">Tous les animaux</option>
+          <option value="yes">SOS uniquement</option>
+          <option value="no">Hors SOS</option>
+        </select>
+      </label>
+      {[
+        ["cats", "Chats"],
+        ["dogs", "Chiens"],
+        ["children", "Enfants"],
+      ].map(([key, label]) => (
+        <label key={key}>
+          Entente {label.toLowerCase()}
+          <select
+            aria-label={"Entente " + label.toLowerCase()}
+            value={compat[key]}
+            onChange={(e) =>
+              setCompat((v) => ({ ...v, [key]: e.target.value }))
+            }
+          >
+            <option value="all">Toutes</option>
+            <option value="yes">Oui · sans réserve</option>
+            <option value="conditional">À nuancer / sous conditions</option>
+            <option value="no">Non</option>
+            <option value="unknown">Non renseignée / à tester</option>
+          </select>
+        </label>
+      ))}
+      <label>
         Photos locales
         <select
           aria-label="Filtrer par photos locales"
@@ -54,7 +90,7 @@ export function LibraryFilters({
           <option value="without">Sans photo</option>
         </select>
       </label>
-      {page !== "departures" && (
+      {page !== "archives" && (
         <label>
           {page === "archives" ? "Année d’archive" : "Année des photos"}
           <select

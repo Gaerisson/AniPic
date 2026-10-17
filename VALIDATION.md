@@ -1,4 +1,62 @@
-# Vérifications — AniPic 3.4.0
+# Vérifications — AniPic 3.5.3
+
+## V3.5.3 — 17 octobre 2026
+
+Suite complète : **170 tests réussis**, aucun échec ni test ignoré. Les 19 tests ciblés accès/PIN/Canva avaient également réussi.
+
+PIN : autorisation créée sans échéance côté SQLite ; cookie persistant HttpOnly, SameSite=Strict et Secure en HTTPS, renouvelé pour 400 jours. Retour avec une ancienne autorisation encore valide : conversion en autorisation permanente sans nouvelle saisie. Les accès expirés ou révoqués restent refusés. Changement du PIN, expiration de la session de compte, droits TV des agents et scénarios OAuth Canva avec/sans PIN vérifiés. Une simulation explicite de date à +50 ans et une fermeture/réouverture réelle de l’application sur la même base de test confirment que le nettoyage au démarrage conserve les autorisations permanentes. Cette simulation vérifie le serveur ; elle ne prétend pas garantir la conservation des cookies par chaque navigateur pendant cinquante ans. Aucun PIN stocké dans le navigateur.
+
+Installation propre avec Node.js 24.18.1 : **npm ci réussi**, 409 packages installés, 410 audités, zéro vulnérabilité signalée. Manifeste et lockfile synchronisés à 3.5.3 via npm, aucune nouvelle dépendance ni modification manuelle des versions transitives. Builds frontend et vidéo réussis. Client Compose officiel : configurations de base, C8+Import et Portainer validées ; montages persistants et protections NAS conservés. git diff --check réussi. Liens de documentation et intégrité de l’archive ZIP contrôlés.
+
+Serveur de test relancé sur http://localhost:3036, health ok version 3.5.3. SQLite : intégrité ok, schéma 17 sans migration, 79 animaux, 14 photos, 2 photos à trier et 4 projets vidéo conservés. Tests de PIN réalisés dans des bases isolées ; aucun changement du PIN ou des comptes du serveur habituel. Aucun volume NAS ni original utilisateur modifié.
+
+**Non exécuté :** nouvelle vérification visuelle du navigateur pour ce changement, build/démarrage Docker complet et smoke test de l’image (moteur Docker absent), CI GitHub, déploiement Portainer/NAS réel et TV physique. La validation Compose porte sur les fichiers de configuration, pas sur un déploiement réel. Aucun appel payant IA ni envoi réel Canva.
+
+## V3.5.2 — 17 octobre 2026
+
+Suite complète finale : **169 tests réussis**, aucun échec ni test ignoré, 92,4 s. L’exécution précédant l’interruption de la conversation n’a pas été retenue comme validation ; elle a été relancée entièrement. Les 28 tests ciblés initiaux avaient également réussi.
+
+Cinq nouveaux scénarios couvrent : lecture/aperçu/enregistrement TV par un agent SPA ; impossibilité de modifier le PIN, les comptes ou l’historique public par cette API ; audit attribué au bon agent ; refus des visiteurs, lecteurs et photographes ; CSRF absent, session expirée et données invalides refusés. Connexion automatique par IP du refuge testée avec un compte agent et session liée au réseau. L’aperçu ne publie aucun réglage non enregistré.
+
+PIN : cookie HttpOnly, SameSite=Strict, Secure en HTTPS, expiration persistante et Max-Age ; aucun PIN dans le cookie. Autorisation conservée après expiration d’une session de compte, puis après fermeture et réouverture réelles de l’application sur la même base SQLite de test. L’autorisation PIN seule ne crée pas de compte et n’ouvre pas la configuration TV. Renouvellement d’un jeton valide lors du retour et de la lecture continue de la TV ; refus de prolonger les jetons expirés ou révoqués par changement du PIN. Tests OAuth Canva avec et sans PIN toujours réussis, y compris session/state/PKCE/expiration et isolation des utilisateurs.
+
+**Installation propre Node.js 24.18.1** : npm ci dans un dossier neuf, 409 packages installés, 410 audités, zéro vulnérabilité signalée. Versions package.json/package-lock.json synchronisées via npm à 3.5.2, aucune dépendance ajoutée ni version transitive modifiée manuellement. Builds frontend et vidéo réussis. Client Compose officiel : base, C8+Import et portainer-stack contrôlés, volumes et politiques d’image locale conservés. git diff --check réussi.
+
+**Navigateur** : instance isolée distincte des données et des cookies du serveur habituel. Premier écran PIN et déverrouillage correct vérifiés dans l’interface. La vérification de fermeture/réouverture d’onglet puis de la page TV sous le compte Agent SPA a été interrompue ; la reprise de l’onglet inaccessible a ensuite été bloquée par la politique de sécurité du navigateur. Elle n’est donc pas présentée comme une validation visuelle finalisée. Les accès agent et la persistance/révocation sont vérifiés par les tests d’intégration ci-dessus. Les captures antérieures de thème clair restent celles de 3.5.1.
+
+**Serveur habituel** relancé sur http://localhost:3036, API health ok version 3.5.2. Aucune migration (schéma 17), intégrité SQLite ok et 79 animaux, 14 photos, 2 photos à trier, 4 projets vidéo conservés. Les comptes, le PIN et la configuration TV du serveur habituel n’ont pas été modifiés par la vérification isolée. Aucun volume NAS ni original utilisateur modifié.
+
+**Non exécuté :** build/démarrage Docker complet et smoke test de l’image (moteur Docker absent), CI GitHub, déploiement Portainer/NAS réel, tests sur TV physique, appel payant IA ou envoi réel Canva.
+
+## V3.5.1 — 17 octobre 2026
+
+Suite complète : **164 tests réussis**, aucun échec ni test ignoré (90,7 s). Après les derniers ajustements du catalogue, **16 tests ciblés réussis**, dont les sept nouveaux scénarios sur les prénoms. Exclusion des noms actifs locaux, accents/casse/ponctuation, identifiants et annotations de titres SPA ; noms archivés, adoptés ou remplacés réutilisables. Catalogue national : toutes les pages et totaux contrôlés ; pagination répétée, partielle, modifiée, trop grande et données malformées refusées. Cache périmé sans suggestions non vérifiées, panne réseau visible, partage d’une collecte concurrente, remplacement du relevé précédent, aucun import d’animal. Routes d’actualisation protégées par session d’équipe, rôle et CSRF, session expirée refusée.
+
+**Lecture nationale réelle** de l’API publique SPA : 248 pages, 4 457 fiches, 3 865 noms distincts, relevé terminé le 17/10/2026 à 19:53:40 (Europe/Paris). Aucun doublon d’identifiant ni différence entre le total annoncé et les fiches lues. Catalogue séparé des animaux du refuge, fourni dans shared/spa-names.json et actualisable depuis l’interface. Validité 24 h ; seuls les noms actuellement publiés et les noms locaux actifs sont exclus, sans historique d’exclusion permanent.
+
+**Installation propre Node.js 24.18.1** : npm ci dans un dossier sans node_modules, 409 packages installés, 410 audités, zéro vulnérabilité signalée. Versions package.json/package-lock.json synchronisées à 3.5.1 via npm, sans retouche de versions transitives et sans nouvelle dépendance. Builds frontend et vidéo réussis. Configurations réelles avec le client Compose officiel : base, C8+Import et portainer-stack, politiques de construction locale et volumes vérifiés. git diff --check réussi.
+
+**Navigateur** : parcours des pages de photothèque, albums, planning, imports, créations, refuge et administration dans les deux thèmes clairs. Surfaces calculées contrôlées avec le verre à 35 %, puis album vérifié dans les deux thèmes avec verre désactivé et réactivé. Modals blanc opaque (rgb 255,255,255), texte et séparateurs adaptés au thème. Vérifications visuelles détaillées de la fiche animal, synchronisation, outils/prénoms, téléchargement et mobile à 390 px (document 390 px, modal 374 px). Contrôle sombre sans application de surfaces blanches. L’ancien lien #departures redirige réellement vers #archives, sans seconde entrée dans le menu ; dossiers et bilan accessibles. Les captures prises pendant les transitions d’entrée n’ont pas été considérées comme des validations visuelles finales. Les réglages de verre ont été restaurés après les essais.
+
+**Données de démonstration** : aucune migration nécessaire (schéma 17), intégrité SQLite ok ; 79 animaux, 14 photos, 2 photos à trier et 4 projets vidéo conservés. Aucun original ni volume utilisateur modifié. Serveur de test sur http://localhost:3036.
+
+**Non exécuté :** build/démarrage Docker complet et smoke test de l’image, CI GitHub, déploiement Portainer/NAS réel (aucun moteur Docker disponible). Aucun envoi réel Canva, appel payant IA ou essai sur TV physique. L’extension Edge/Argos reste reportée à la demande de l’utilisateur.
+
+## V3.5 — 17 octobre 2026
+
+Suite complète : **156 tests réussis**, aucun échec ni test ignoré (83,8 s). Après le dernier ajustement de composition et l’ajout du scénario d’attente des photos SPA, **9 tests ciblés réussis** (dont l’import multipart réel, la session expirée et les droits du registre). Les nouveaux fichiers de test comptent neuf scénarios ; ne pas additionner les exécutions comme des scénarios distincts.
+
+Installation propre **npm ci avec Node.js 24.18.1** dans un dossier sans node_modules : **409 packages, audit 410, zéro vulnérabilité signalée**. Version package.json et package-lock.json synchronisée à 3.5.0 par npm, sans modification manuelle des dépendances transitives. Builds frontend et vidéo réussis. Client Compose officiel : base, C8+Import et portainer-stack vérifiés, avec politiques d’image locale et volumes persistants inchangés. Aucune nouvelle dépendance.
+
+Scénarios vérifiés : filtres SOS et ententes combinés, comptage/pagination serveur, qualificatifs oui/non en état orange, valeurs N/A, choix du thème et stockage indisponible, noms par thème/sexe/lettre et exclusion des noms existants. Retrait/restauration d’une demande avec contrôle de version, compteurs et feuille de séance. Photos privées exclues des routes publiques, d’un album public et de la composition collective. Registre refusé aux visiteurs, lecteurs et photographes, CSRF, édition concurrente, retrait/restauration, doublons, aperçu d’import sans écriture et session expirée. Excel avec première feuille ciblée par relation, chaînes partagées/inline, formules ignorées, XML externe et fichiers trop volumineux refusés. Génération des quatre affiches, PDF physique A4, erreur nommée si la photo manque ; attente de toutes les références SPA sans ajout aux photos locales.
+
+Rendus des quatre grandes affiches et PDF A3 réel inspectés (Poppler), dimensions physiques vérifiées avec pypdf. Le rendu final centre la dernière rangée, conserve le logo transparent et sépare les noms, le pied de page et le QR code. Photos de démonstration utilisées. Le document A3 fait 841,89 × 1190,55 points.
+
+Navigateur : thème SPA clair conservé après rechargement, assistant unique avec recherche/chat et panneau mobile contenu dans le viewport, prénoms Halloween, registre interne vide et import masqué derrière son bouton. Génération réelle d’une affiche de cinq portraits depuis l’interface, loader pendant la préparation et image décodée de 868 px après réponse. Vérification de débordement à 390 px et à la largeur du navigateur ; feuille de séance avec portraits agrandis. Les modèles disposent de contrôles, source locale/SPA, sélection et export fonctionnels, sans image publique générée automatiquement.
+
+Base de démo sauvegardée avant migration **16 → 17**, intégrité SQLite **ok**, **79 animaux, 14 photos, 2 photos à trier et 4 projets vidéo** conservés ; registre resté vide. Aucun original utilisateur compressé, effacé ou déplacé. Migration additive et annulation des demandes par table de retraits, sans changer la structure des demandes existantes. Démonstration sur http://localhost:3036.
+
+**Non exécuté :** build complet et démarrage de l’image Docker, exécution de la CI sur GitHub, déploiement Portainer/NAS réel (moteur Docker absent ici). Aucun appel payant à l’IA, aucun envoi réel Canva, aucun test sur une TV physique. L’extension Edge/Argos reste reportée avec l’accord de l’utilisateur.
 
 ## V3.4 — 17 octobre 2026
 

@@ -1,4 +1,4 @@
-import { CheckCircle2, XCircle, HelpCircle } from "lucide-react";
+import { CheckCircle2, XCircle, HelpCircle, AlertTriangle } from "lucide-react";
 import { CompatibilityIcon } from "../shared/compatibility-icons.mjs";
 import { compatibilityLabels } from "../video/facts.mjs";
 import {
@@ -26,7 +26,13 @@ export function AnimalCompatibility({ values }) {
               : raw
                 ? raw[0].toLocaleUpperCase("fr") + raw.slice(1)
                 : "À préciser";
-          const Status = yes ? CheckCircle2 : no ? XCircle : HelpCircle;
+          const Status = yes
+            ? CheckCircle2
+            : no
+              ? XCircle
+              : state === "conditional"
+                ? AlertTriangle
+                : HelpCircle;
           return (
             <div
               key={key}

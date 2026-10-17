@@ -1,4 +1,5 @@
 import { PhotoTrash } from "./photo-trash.jsx";
+import { hasAnimalInfo } from "../shared/animal-info.mjs";
 import { normalizeCompatibility } from "../shared/compatibility-text.mjs";
 import { NavLink } from "./nav-link.jsx";
 import { PhotoUpdate } from "./photo-update.jsx";
@@ -40,7 +41,6 @@ const titles = {
   archives: ["Archives", ""],
   favorites: ["Mes favoris", ""],
   todo: ["À photographier", ""],
-  departures: ["Animaux partis", ""],
 };
 export function Library({
   page,
@@ -71,6 +71,12 @@ export function Library({
   const [recentOnly, setRecentOnly] = useState(false);
   const [mediaTag, setMediaTag] = useState("");
   const [publication, setPublication] = useState("all");
+  const [compat, setCompat] = useState({
+    sos: "all",
+    cats: "all",
+    dogs: "all",
+    children: "all",
+  });
   const [status, setStatus] = useState("all"),
     [photos, setPhotos] = useState("all"),
     [filtersOpen, setFiltersOpen] = useState(false);
@@ -110,6 +116,7 @@ export function Library({
     year,
     recentOnly,
     status,
+    compat,
     photos,
     publication,
     mediaTag,
@@ -118,6 +125,7 @@ export function Library({
     let cancelled = false;
     setLoading(true);
     const params = new URLSearchParams({
+      ...compat,
       q: debounced,
       species,
       status,
@@ -126,7 +134,7 @@ export function Library({
       mediaTag: user ? mediaTag : "",
       sort,
       page: String(number),
-      archive: page === "archives" || page === "departures" ? "1" : "0",
+      archive: page === "archives" ? "1" : "0",
       missing: page === "todo" ? "1" : "0",
       favorites: page === "favorites" && user ? "1" : "0",
       limit: String(ui?.cardsPerPage || 24),
@@ -156,40 +164,40 @@ export function Library({
     year,
     recentOnly,
     status,
+    compat,
     photos,
     publication,
     mediaTag,
     ui?.cardsPerPage,
   ]);
   useEffect(() => {
-    setYear(page === "departures" ? new Date().getFullYear() : 0);
+    setYear(0);
     setRecentOnly(false);
+    setCompat({ sos: "all", cats: "all", dogs: "all", children: "all" });
     setStatus("all");
     setPhotos("all");
     setPublication("all");
     setMediaTag("");
-    setSort(
-      page === "archives" || page === "departures"
-        ? "archive"
-        : ui?.defaultSort || "recent",
-    );
+    setSort(page === "archives" ? "archive" : ui?.defaultSort || "recent");
   }, [page, ui?.defaultSort]);
   useEffect(() => setView(ui?.defaultView || "grid"), [ui?.defaultView]);
   const title = titles[page] || titles.gallery;
   const filterCount =
+    Object.values(compat).filter((v) => v !== "all").length +
     Number(status !== "all") +
     Number(publication !== "all") +
     Number(!!mediaTag) +
     Number(photos !== "all") +
     Number(recentOnly) +
-    Number(page !== "departures" && year !== 0);
+    Number(year !== 0);
   const hasFilters = Boolean(q || species !== "all" || filterCount);
   const resetFilters = () => {
     setPublication("all");
     setMediaTag("");
+    setCompat({ sos: "all", cats: "all", dogs: "all", children: "all" });
     setStatus("all");
     setPhotos("all");
-    setYear(page === "departures" ? new Date().getFullYear() : 0);
+    setYear(0);
     setRecentOnly(false);
     setSpecies("all");
     setQ("");
@@ -288,11 +296,12 @@ export function Library({
           )}
         </section>
       )}
-      {page === "departures" && (
+      {page === "archives" && (
         <div className="departure-toolbar">
           <label>
-            Année
+            Année d’archive
             <select
+              aria-label="Année des archives"
               value={year}
               onChange={(e) => {
                 setYear(Number(e.target.value));
@@ -300,27 +309,27 @@ export function Library({
               }}
             >
               <option value={0}>Toutes les années</option>
-              {Array.from(
-                { length: 27 },
-                (_, i) => new Date().getFullYear() - i,
-              ).map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
+              {Array.from(new Set(archiveFolders.map((f) => f.year)))
+                .sort((a, b) => b - a)
+                .map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
             </select>
           </label>
           {canEdit && (
             <Button
               icon={Video}
               variant="secondary"
-              disabled={!year}
-              onClick={() => video({ year })}
+              onClick={() => video({ year: year || new Date().getFullYear() })}
             >
-              Créer le film de {year || "l’année"}
+              Créer le bilan de {year || new Date().getFullYear()}
             </Button>
           )}
-          <span>« Absent de la source » ne confirme pas une adoption.</span>
+          <span>
+            Animaux partis et albums conservés, classés par espèce et par année.
+          </span>
         </div>
       )}
       {page === "favorites" && !user && (
@@ -421,7 +430,7 @@ export function Library({
               <option value="oldest">Photos les plus anciennes</option>
               <option value="name_desc">Nom : Z à A</option>
               <option value="arrival">Fiches ajoutées récemment</option>
-              {(page === "archives" || page === "departures") && (
+              {page === "archives" && (
                 <option value="archive">Archivage le plus récent</option>
               )}
             </select>
@@ -449,6 +458,8 @@ export function Library({
         <LibraryFilters
           page={page}
           status={status}
+          compat={compat}
+          setCompat={setCompat}
           photos={photos}
           mediaTag={mediaTag}
           publication={publication}
@@ -519,7 +530,7 @@ export function Library({
               favorites={user ? [] : favorites}
               favorite={favorite}
               open={open}
-              archived={page === "archives" || page === "departures"}
+              archived={page === "archives"}
               animations={animations}
               profile={page === "animals"}
               ui={ui}
@@ -827,7 +838,7 @@ function AnimalCard({
                 (birth < 1
                   ? "Moins d’un an"
                   : birth + " an" + (birth > 1 ? "s" : ""))
-              : a.source_metadata?.ageLabel
+              : hasAnimalInfo(a.source_metadata?.ageLabel)
                 ? " · " + a.source_metadata.ageLabel
                 : ""}
           </span>
@@ -836,10 +847,8 @@ function AnimalCard({
               Photographié · en traitement
             </span>
           )}
-          {profile && (
-            <span className="animal-breed">
-              {a.breed || "Race non renseignée"}
-            </span>
+          {profile && hasAnimalInfo(a.breed) && (
+            <span className="animal-breed">{a.breed}</span>
           )}
         </div>
         <button

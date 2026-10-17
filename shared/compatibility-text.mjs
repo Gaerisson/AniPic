@@ -43,9 +43,15 @@ export function compatibilityState(value) {
     .trim()
     .toLocaleLowerCase("fr")
     .replace(/[.!\s]+$/g, "");
-  if (/^(non testé|non teste|pas testé|pas teste|inconnu|à tester)/.test(raw))
+  if (
+    /^(non test[ée]|pas test[ée]|non renseign|non d[ée]termin|inconnu|unknown|[àa] tester|n\/a|null)/.test(
+      raw,
+    )
+  )
     return "unknown";
   if (/^(oui|ok|yes|true|1)$/.test(raw)) return "yes";
   if (/^(non|ko|no|false|0|pas ok)$/.test(raw)) return "no";
+  if (/^(oui|non|ok|ko|yes|no|pas ok)\b[\s,:;.!–—-]+\S/.test(raw))
+    return "conditional";
   return "unknown";
 }

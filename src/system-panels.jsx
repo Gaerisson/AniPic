@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { appVersion } from "../shared/version.mjs";
 import { OperationSummary } from "./operation-summary.jsx";
 import {
   RefreshCw,
@@ -87,11 +88,11 @@ export function Journal() {
       <section className="panel journal-release">
         <BookOpen size={23} />
         <div>
-          <h2>AniPic 3.4 · Journal des évolutions</h2>
+          <h2>AniPic {appVersion} · Journal des évolutions</h2>
           <p>
-            Assistant conversationnel, ambiances saisonnières, horaires TV,
-            aperçus C8, avatars, dernières connexions et suivi détaillé.
-            Compression des archives après sauvegarde vérifiée et protégée.
+            Configuration de l’écran du refuge accessible aux agents SPA.
+            Autorisation PIN sans expiration dans AniPic, indépendante de la
+            session du compte et révoquée au changement du code.
           </p>
           <a
             href="https://github.com/Gaerisson/AniPic"

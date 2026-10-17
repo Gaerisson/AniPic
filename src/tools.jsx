@@ -14,6 +14,8 @@ import {
   Archive,
   Users,
   Printer,
+  Trash2,
+  LoaderCircle,
 } from "lucide-react";
 import { copyText, api, date, speciesName, imageUrl } from "./api.js";
 import { Button, Empty, Spinner, Modal } from "./ui.jsx";
@@ -151,7 +153,7 @@ export function ShootBoard({
         headers: { "X-Anipic-Version": task.updated_at },
       });
       const previous = Object.fromEntries(
-        Object.keys(body).map((k) => [k, task[k]]),
+        Object.keys(body).map((k) => [k, k === "deleted" ? false : task[k]]),
       );
       pushUndo?.({
         label: `Planning · ${task.animal_name}`,
@@ -165,7 +167,11 @@ export function ShootBoard({
             headers: { "X-Anipic-Version": revision || result.updatedAt },
           }),
       });
-      notify("Planning mis à jour.");
+      notify(
+        body.deleted
+          ? "Demande retirée. Vous pouvez l’annuler avec Ctrl+Z."
+          : "Planning mis à jour.",
+      );
       reload();
     } catch (e) {
       notify(e.message, "error");
@@ -259,6 +265,15 @@ export function ShootBoard({
                 key={task.id}
                 className={"task-card priority-" + task.priority}
               >
+                {canEdit && (
+                  <button
+                    className="task-remove icon-button"
+                    aria-label={"Supprimer la demande pour " + task.animal_name}
+                    onClick={() => update(task, { deleted: true })}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
                 <div className="task-top">
                   <span className={"priority-pill " + task.priority}>
                     {
@@ -399,18 +414,33 @@ export function ShootBoard({
     </>
   );
 }
-export function AgentTools({ notify, open, go }) {
+export function AgentTools({ notify, open, go, user }) {
   const [sex, setSex] = useState("any"),
+    [theme, setTheme] = useState("all"),
+    [themes, setThemes] = useState({ all: "Toutes les inspirations" }),
     [letter, setLetter] = useState(""),
     [names, setNames] = useState([]),
+    [national, setNational] = useState(null),
     [busy, setBusy] = useState(false);
-  const generate = async () => {
+  const generate = async (refresh = false) => {
     setBusy(true);
     try {
+      if (refresh) {
+        setNames([]);
+        setNational(await api("/tools/names/refresh", { method: "POST" }));
+        return;
+      }
       const data = await api(
-        "/tools/names?sex=" + sex + "&letter=" + encodeURIComponent(letter),
+        "/tools/names?sex=" +
+          sex +
+          "&letter=" +
+          encodeURIComponent(letter) +
+          "&theme=" +
+          theme,
       );
       setNames(data.names);
+      setThemes(data.themes);
+      setNational(data.national);
     } catch (e) {
       notify(e.message, "error");
     } finally {
@@ -420,6 +450,30 @@ export function AgentTools({ notify, open, go }) {
   useEffect(() => {
     generate();
   }, []);
+  useEffect(() => {
+    if (!national?.running) return;
+    let cancelled = false,
+      timer;
+    const poll = async () => {
+      try {
+        const status = await api("/tools/names/catalogue");
+        if (cancelled) return;
+        setNational(status);
+        if (status.running) timer = setTimeout(poll, 1500);
+        else if (status.ready) generate();
+      } catch (e) {
+        if (!cancelled) {
+          setNational((s) => ({ ...s, running: false, error: e.message }));
+          notify(e.message, "error");
+        }
+      }
+    };
+    timer = setTimeout(poll, 1500);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [national?.running, sex, letter, theme]);
   return (
     <>
       <div className="page-heading">
@@ -430,6 +484,24 @@ export function AgentTools({ notify, open, go }) {
         </div>
       </div>
       <TeamUtilities go={go} />
+      <div className="tool-links">
+        {["admin", "agent"].includes(user?.role) && (
+          <Button
+            variant="secondary"
+            icon={Users}
+            onClick={() => go("register")}
+          >
+            Registre interne
+          </Button>
+        )}
+        <Button
+          variant="secondary"
+          icon={Printer}
+          onClick={() => go("groupPoster")}
+        >
+          Grande affiche du refuge
+        </Button>
+      </div>
       <div className="tools-grid">
         <section className="panel names-tool">
           <div className="panel-heading">
@@ -437,8 +509,10 @@ export function AgentTools({ notify, open, go }) {
             <Sparkles size={23} />
           </div>
           <p>
-            Des idées selon le sexe et une lettre. Les prénoms déjà présents au
-            refuge sont exclus.
+            Les noms des animaux encore présents au refuge et actuellement
+            publiés sur le site national SPA sont exclus, sans distinction
+            d’accents ou de ponctuation. Les noms des animaux partis peuvent
+            être réutilisés.
           </p>
           <div className="form-row">
             <label>
@@ -459,9 +533,92 @@ export function AgentTools({ notify, open, go }) {
               />
             </label>
           </div>
-          <Button icon={RefreshCw} disabled={busy} onClick={generate}>
-            Trouver des prénoms
-          </Button>
+          <label className="name-theme">
+            Univers des prénoms
+            <select value={theme} onChange={(e) => setTheme(e.target.value)}>
+              {Object.entries(themes).map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          {national && (
+            <div
+              className={
+                "name-catalogue-status " + (national.error ? "has-error" : "")
+              }
+              role="status"
+            >
+              <strong>
+                {national.running
+                  ? "Vérification du catalogue national SPA…"
+                  : national.ready
+                    ? "Catalogue national vérifié"
+                    : "Vérification nationale nécessaire"}
+              </strong>
+              {national.running && national.progress ? (
+                <>
+                  <progress
+                    value={national.progress.page}
+                    max={national.progress.pages}
+                  />
+                  {national.progress.animals} / {national.progress.total} fiches
+                  lues
+                </>
+              ) : national.checkedAt ? (
+                <span>
+                  {national.names.toLocaleString("fr-FR")} noms connus · relevé
+                  du {new Date(national.checkedAt).toLocaleString("fr-FR")}
+                </span>
+              ) : (
+                <span>
+                  Une première lecture des noms publics SPA prend quelques
+                  minutes. Vous pouvez quitter cette page.
+                </span>
+              )}
+              {national.error && <p>{national.error}</p>}
+              {!national.ready && !national.running && (
+                <p>
+                  Aucun prénom n’est proposé tant que le catalogue n’est pas à
+                  jour.
+                </p>
+              )}
+              <small>
+                Le catalogue national est valable 24 h. Il couvre les fiches
+                publiques du site SPA ; les noms absents du nouveau relevé
+                redeviennent disponibles.
+              </small>
+            </div>
+          )}
+          <div className="name-catalogue-actions">
+            <Button
+              icon={busy || national?.running ? LoaderCircle : RefreshCw}
+              disabled={
+                busy ||
+                national?.running ||
+                (!national?.ready &&
+                  !["admin", "editor", "agent"].includes(user?.role))
+              }
+              onClick={() => generate(!national?.ready)}
+            >
+              {national?.running
+                ? "Vérification en cours…"
+                : national?.ready
+                  ? "Trouver des prénoms"
+                  : "Vérifier les noms SPA"}
+            </Button>
+            {national?.ready &&
+              ["admin", "editor", "agent"].includes(user?.role) && (
+                <button
+                  className="text-link"
+                  disabled={busy || national.running}
+                  onClick={() => generate(true)}
+                >
+                  Actualiser le catalogue SPA
+                </button>
+              )}
+          </div>
           <div className="name-chips">
             {names.map((name) => (
               <button
@@ -477,9 +634,10 @@ export function AgentTools({ notify, open, go }) {
               </button>
             ))}
           </div>
-          {!names.length && !busy && (
+          {!names.length && !busy && national?.ready && !national.running && (
             <p>
-              Aucun prénom trouvé pour cette lettre. Essayez une autre initiale.
+              Tous les prénoms de cette sélection sont déjà utilisés. Essayez
+              une autre initiale ou un autre univers.
             </p>
           )}
         </section>

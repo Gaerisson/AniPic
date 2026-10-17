@@ -1,14 +1,7 @@
 import { UserPicture } from "./user-avatar.jsx";
 import { ArchiveCompression } from "./archive-storage.jsx";
 import { OperationSummary } from "./operation-summary.jsx";
-import {
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-  lazy,
-  Suspense,
-} from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   PawPrint,
   Images,
@@ -38,15 +31,11 @@ import { ApiSettings, InterfaceSettings } from "./preferences.jsx";
 import { LegacyImport } from "./legacy.jsx";
 import { AdminMessages } from "./messages.jsx";
 import { AccessPanel } from "./access.jsx";
-const DisplaySettings = lazy(() =>
-  import("./refuge-display.jsx").then((m) => ({ default: m.DisplaySettings })),
-);
 import { ImportAutomation } from "./import-automation.jsx";
 import { SimilarPhotos } from "./similar-photos.jsx";
 import { StorageChecks, Journal } from "./system-panels.jsx";
 
 const adminTitles = {
-  displaySettings: ["Écran du refuge", ""],
   messages: ["Messages de l’équipe", ""],
   migration: ["Import GPIC", ""],
   api: ["API & connexions", ""],
@@ -146,40 +135,38 @@ export function Admin({
     data?.jobs?.some((j) => j.kind === kind && j.state === "running");
   return (
     <>
-      {page !== "displaySettings" && (
-        <div className="page-heading">
-          <div>
-            <div className="eyebrow">
-              <span /> L’ATELIER · ADMINISTRATION
-            </div>
-            <h1>{title[0]}</h1>
-            <p>{title[1]}</p>
+      <div className="page-heading">
+        <div>
+          <div className="eyebrow">
+            <span /> L’ATELIER · ADMINISTRATION
           </div>
-          {page === "backups" ? (
-            <Button
-              icon={jobRunning("backup") ? LoaderCircle : ShieldCheck}
-              disabled={busy || jobRunning("backup")}
-              onClick={() => run("backup")}
-            >
-              {jobRunning("backup")
-                ? "Sauvegarde en cours…"
-                : "Créer une sauvegarde"}
-            </Button>
-          ) : page === "sync" ? (
-            <Button
-              icon={jobRunning("sync") ? LoaderCircle : RefreshCw}
-              disabled={busy || jobRunning("sync")}
-              onClick={() => run("sync")}
-            >
-              Synchroniser maintenant
-            </Button>
-          ) : page === "dashboard" ? (
-            <Button icon={Upload} onClick={() => open({ type: "upload" })}>
-              Importer des photos
-            </Button>
-          ) : null}
+          <h1>{title[0]}</h1>
+          <p>{title[1]}</p>
         </div>
-      )}
+        {page === "backups" ? (
+          <Button
+            icon={jobRunning("backup") ? LoaderCircle : ShieldCheck}
+            disabled={busy || jobRunning("backup")}
+            onClick={() => run("backup")}
+          >
+            {jobRunning("backup")
+              ? "Sauvegarde en cours…"
+              : "Créer une sauvegarde"}
+          </Button>
+        ) : page === "sync" ? (
+          <Button
+            icon={jobRunning("sync") ? LoaderCircle : RefreshCw}
+            disabled={busy || jobRunning("sync")}
+            onClick={() => run("sync")}
+          >
+            Synchroniser maintenant
+          </Button>
+        ) : page === "dashboard" ? (
+          <Button icon={Upload} onClick={() => open({ type: "upload" })}>
+            Importer des photos
+          </Button>
+        ) : null}
+      </div>
       {error ? (
         <Empty
           icon={AlertCircle}
@@ -189,10 +176,6 @@ export function Admin({
         />
       ) : !data || data.page !== page ? (
         <Spinner />
-      ) : page === "displaySettings" ? (
-        <Suspense fallback={<Spinner />}>
-          <DisplaySettings notify={notify} user={user} />
-        </Suspense>
       ) : page === "dashboard" ? (
         <Dashboard data={data} overview={overview} open={open} />
       ) : page === "journal" ? (

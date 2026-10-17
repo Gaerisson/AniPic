@@ -3,6 +3,9 @@ export const pageAccessDefaults = Object.freeze({
   stats: "team",
   activity: "public",
 });
+export const displayManagerRoles = Object.freeze(["admin", "agent"]);
+export const canManageDisplay = (user) =>
+  displayManagerRoles.includes(user?.role);
 export const pageAccessLabels = {
   broadcasts: "Vidéo C8",
   stats: "Statistiques des animaux",

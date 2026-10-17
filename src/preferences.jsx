@@ -262,6 +262,7 @@ export function InterfaceSettings({
               <option value="night">Studio nuit</option>
               <option value="amber">Ambre SPA</option>
               <option value="sage">Lumière</option>
+              <option value="spa">SPA · clair & verre</option>
             </select>
           </label>
           <label>

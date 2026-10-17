@@ -1,4 +1,12 @@
+import {
+  compatibilityState,
+  normalizeCompatibility,
+} from "../shared/compatibility-text.mjs";
+import { hasAnimalInfo } from "../shared/animal-info.mjs";
+import { registerInternalRegister } from "./internal-register.mjs";
+import { registerGroupPosters } from "./group-posters.mjs";
 import { registerArchiveCompression } from "./archive-compression.mjs";
+import { appVersion } from "../shared/version.mjs";
 import { mediaMaintenance } from "./media-maintenance.mjs";
 import { createHash } from "node:crypto";
 import { registerArchiveFolders } from "./archive-folders.mjs";
@@ -73,7 +81,7 @@ const Settings = z.object({
   archiveMissing: z.boolean(),
   backupIntervalHours: z.number().int().min(0).max(168),
   backupKeep: z.number().int().min(1).max(30),
-  themeDefault: z.enum(["night", "amber", "sage"]).default("night"),
+  themeDefault: z.enum(["night", "amber", "sage", "spa"]).default("night"),
   accentColor: z
     .string()
     .regex(/^#[a-fA-F0-9]{6}$/)
@@ -227,7 +235,7 @@ export async function createApp(overrides = {}) {
   app.get("/api/health", async (req, reply) => {
     try {
       assertStorage(c);
-      return { ok: true, version: "3.4.0" };
+      return { ok: true, version: appVersion };
     } catch {
       return reply
         .code(503)
@@ -332,7 +340,7 @@ export async function createApp(overrides = {}) {
             photoWorkflow:
               db
                 .prepare(
-                  "SELECT state FROM shoot_tasks WHERE animal_id=? AND state!='done' ORDER BY state='progress' DESC,updated_at DESC LIMIT 1",
+                  "SELECT state FROM shoot_tasks WHERE animal_id=? AND NOT EXISTS(SELECT 1 FROM task_deletions d WHERE d.task_id=shoot_tasks.id) AND state!='done' ORDER BY state='progress' DESC,updated_at DESC LIMIT 1",
                 )
                 .get(row.id)?.state || null,
             publication:
@@ -352,6 +360,17 @@ export async function createApp(overrides = {}) {
       ),
       source_metadata: publicAnimalMetadata(JSON.parse(row.source_metadata)),
       photo_count: photos.length,
+      ...(req.user
+        ? {
+            public_cover_id:
+              (
+                photos.find((p) => !p.hidden && p.id === row.cover_id) ||
+                photos.find((p) => !p.hidden)
+              )?.id || null,
+            private_photo_count: photos.filter((p) => p.hidden).length,
+          }
+        : {}),
+      breed: hasAnimalInfo(row.breed) ? row.breed : "",
       preview_ids: photos.slice(0, 6).map((p) => p.id),
       latest_photo_at: db
         .prepare(
@@ -436,13 +455,48 @@ export async function createApp(overrides = {}) {
         openTasks: req.user
           ? db
               .prepare(
-                "SELECT COUNT(*) count FROM shoot_tasks t JOIN animals a ON a.id=t.animal_id WHERE t.state!='done' AND a.archived_at IS NULL",
+                "SELECT COUNT(*) count FROM shoot_tasks t JOIN animals a ON a.id=t.animal_id WHERE t.state!='done' AND NOT EXISTS(SELECT 1 FROM task_deletions d WHERE d.task_id=t.id) AND a.archived_at IS NULL",
               )
               .get().count
           : 0,
       },
       demo: c.demo,
     };
+  });
+  db.function(
+    "compatibility_state",
+    { deterministic: true },
+    (raw, subject, description) => {
+      let values;
+      try {
+        values = publicCompatibility(
+          JSON.parse(raw || "{}"),
+          description || "",
+        );
+      } catch {
+        return "unknown";
+      }
+      const aliases = {
+        cats: /^(chats?|cats?)$/i,
+        dogs: /^(chiens?|dogs?)$/i,
+        children: /^(enfants?|children|kids?)$/i,
+      };
+      const value = Object.entries(values).find(([key]) =>
+        aliases[subject]?.test(key),
+      )?.[1];
+      return compatibilityState(value);
+    },
+  );
+  db.function("animal_sos", { deterministic: true }, (raw) => {
+    try {
+      return Number(
+        JSON.parse(raw || "[]").some((t) =>
+          /^sos(?:\s|$|[!:.–—-])/i.test(String(t).trim()),
+        ),
+      );
+    } catch {
+      return 0;
+    }
   });
   app.get("/api/animals", async (req) => {
     const q = z
@@ -455,6 +509,16 @@ export async function createApp(overrides = {}) {
         photos: z.enum(["all", "with", "without"]).default("all"),
         publication: z.enum(["all", "yes", "no"]).default("all"),
         mediaTag: z.string().trim().max(40).default(""),
+        sos: z.enum(["all", "yes", "no"]).default("all"),
+        cats: z
+          .enum(["all", "yes", "no", "conditional", "unknown"])
+          .default("all"),
+        dogs: z
+          .enum(["all", "yes", "no", "conditional", "unknown"])
+          .default("all"),
+        children: z
+          .enum(["all", "yes", "no", "conditional", "unknown"])
+          .default("all"),
         archive: z.enum(["0", "1"]).default("0"),
         missing: z.enum(["0", "1"]).default("0"),
         recent: z.enum(["0", "1"]).default("0"),
@@ -552,6 +616,16 @@ export async function createApp(overrides = {}) {
         "EXISTS(SELECT 1 FROM favorites f WHERE f.animal_id=a.id AND f.user_id=?)",
       );
       params.push(req.user.id);
+    }
+    if (q.sos !== "all") {
+      where.push("animal_sos(a.tags)=?");
+      params.push(q.sos === "yes" ? 1 : 0);
+    }
+    for (const subject of ["cats", "dogs", "children"]) {
+      if (q[subject] !== "all") {
+        where.push("compatibility_state(a.compatibility,?,a.description)=?");
+        params.push(subject, q[subject]);
+      }
     }
     const clause = where.join(" AND ");
     const total = db
@@ -1200,6 +1274,8 @@ export async function createApp(overrides = {}) {
     },
   );
   await registerExtras(app, { db, c, authorized, job });
+  await registerInternalRegister(app, { db, authorized });
+  await registerGroupPosters(app, { db, c, authorized });
   if (existsSync(path.join(root, "dist", "index.html"))) {
     await app.register(serveStatic, {
       root: path.join(root, "dist"),

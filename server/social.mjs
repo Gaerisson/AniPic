@@ -1,3 +1,4 @@
+import { hasAnimalInfo } from "../shared/animal-info.mjs";
 import { aiFailure, aiResponseText } from "./ai-response.mjs";
 import { compatibilityLabels } from "../video/facts.mjs";
 const sexes = { female: "Femelle", male: "Mâle", unknown: "" };
@@ -6,7 +7,7 @@ export function publicFacts(animal) {
     nom: animal.name,
     espece: { dog: "chien", cat: "chat", other: "NAC" }[animal.species],
     sexe: sexes[animal.sex],
-    race: animal.breed || "",
+    race: hasAnimalInfo(animal.breed) ? animal.breed : "",
     dateNaissance: animal.birth_date || "",
     description: animal.description || "",
     ententes: JSON.parse(animal.compatibility || "{}"),

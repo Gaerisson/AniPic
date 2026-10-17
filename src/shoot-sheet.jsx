@@ -244,9 +244,7 @@ export function ShootSheet({ user, notify, go }) {
                       {t.assignee ? " · " + t.assignee : ""}
                     </p>
                   ))}
-                  <div className="sheet-writing">
-                    Notes : __________________________________________________
-                  </div>
+                  <div className="sheet-writing">Notes :</div>
                 </div>
                 <div className="sheet-checks">
                   {["Photographié"].map((label) => (

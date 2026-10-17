@@ -1,3 +1,4 @@
+import { hasAnimalInfo } from "../shared/animal-info.mjs";
 import sharp from "sharp";
 import { z } from "zod";
 import path from "node:path";
@@ -105,9 +106,12 @@ export async function presentationCard(c, animal, photo, input = {}) {
     height = o.format === "story" ? 1920 : o.format === "square" ? 1080 : 1350;
   const panel = o.format === "square" ? 300 : 390;
   return limit(async () => {
-    const image = await sharp(photo.buffer || path.join(c.mediaDir, photo.hash), {
-      limitInputPixels: 40_000_000,
-    })
+    const image = await sharp(
+      photo.buffer || path.join(c.mediaDir, photo.hash),
+      {
+        limitInputPixels: 40_000_000,
+      },
+    )
       .rotate()
       .resize(width, o.style === "banner" ? height - panel : height, {
         fit: "cover",
@@ -118,7 +122,7 @@ export async function presentationCard(c, animal, photo, input = {}) {
     const name = animal.name.slice(0, 55),
       font = Math.min(84, Math.max(28, 930 / (name.length * 0.59)));
     const details = [
-      animal.breed ||
+      (hasAnimalInfo(animal.breed) ? animal.breed : "") ||
         { dog: "Chien", cat: "Chat", other: "NAC" }[animal.species],
       animal.sex === "female" ? "Femelle" : animal.sex === "male" ? "Mâle" : "",
       animal.birth_date

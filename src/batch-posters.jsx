@@ -49,7 +49,7 @@ export default function BatchPosters({ user, notify, go }) {
         <div>
           <h1>Affiches en série</h1>
           <p className="muted">
-            Jusqu’à 20 animaux · un PDF A4 prêt à imprimer
+            Tous les animaux sélectionnés · PDF A4 en lots de 20 pages
           </p>
         </div>
         <Button
@@ -105,11 +105,18 @@ export default function BatchPosters({ user, notify, go }) {
           onClick={async () => {
             setBusy(true);
             try {
-              await apiDownload(
-                "/posters/batch",
-                { animalIds: chosen, template },
-                "affiches-box-SPA.pdf",
-              );
+              const pages = [];
+              for (let i = 0; i < chosen.length; i += 20)
+                pages.push(chosen.slice(i, i + 20));
+              // Each request remains bounded; browsers may ask to allow multiple downloads.
+              for (const [index, animalIds] of pages.entries())
+                await apiDownload(
+                  "/posters/batch",
+                  { animalIds, template },
+                  pages.length === 1
+                    ? "affiches-box-SPA.pdf"
+                    : `affiches-box-SPA-${index + 1}-sur-${pages.length}.pdf`,
+                );
               notify("PDF des affichettes prêt.");
             } catch (e) {
               notify(e.message, "error");
@@ -124,19 +131,23 @@ export default function BatchPosters({ user, notify, go }) {
         </Button>
       </section>
       <div className="batch-poster-toolbar">
-        <span>{chosen.length} / 20 sélectionnés</span>
+        <span>
+          {chosen.length} / {animals?.length || 0} sélectionnés
+        </span>
         <Button
           variant="quiet"
           icon={CheckCheck}
           onClick={() =>
             setChosen(
-              chosen.length ? [] : filtered.slice(0, 20).map((a) => a.id),
+              filtered.every((a) => chosen.includes(a.id))
+                ? chosen.filter((id) => !filtered.some((a) => a.id === id))
+                : [...new Set([...chosen, ...filtered.map((a) => a.id)])],
             )
           }
         >
-          {chosen.length
-            ? "Désélectionner"
-            : "Sélectionner les 20 premiers résultats"}
+          {filtered.length > 0 && filtered.every((a) => chosen.includes(a.id))
+            ? "Désélectionner les résultats"
+            : "Sélectionner tous les résultats"}
         </Button>
       </div>
       {!animals ? (
@@ -151,7 +162,6 @@ export default function BatchPosters({ user, notify, go }) {
               <input
                 type="checkbox"
                 checked={chosen.includes(a.id)}
-                disabled={!chosen.includes(a.id) && chosen.length >= 20}
                 onChange={(e) =>
                   setChosen((v) =>
                     e.target.checked

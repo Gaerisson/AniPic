@@ -1,7 +1,13 @@
+import { browserTheme, rememberTheme } from "./theme-store.mjs";
+const InternalRegister = lazy(() => import("./internal-register.jsx"));
+const GroupPoster = lazy(() => import("./group-poster.jsx"));
 const BatchPosters = lazy(() => import("./batch-posters.jsx"));
 import { SiteGate } from "./site-access.jsx";
 import { useUndo } from "./undo.jsx";
-import { accessForPage } from "../shared/page-access.mjs";
+import { accessForPage, canManageDisplay } from "../shared/page-access.mjs";
+const DisplaySettings = lazy(() =>
+  import("./refuge-display.jsx").then((m) => ({ default: m.DisplaySettings })),
+);
 import {
   useState,
   useEffect,
@@ -33,7 +39,6 @@ import {
   Menu,
   AlertCircle,
   Sun,
-  Leaf,
   Eye,
   Video,
   Rss,
@@ -125,8 +130,19 @@ const pages = {
   visitors: { name: "Visiteurs", icon: Eye, group: "admin" },
   history: { name: "Historique SPA", icon: RefreshCw, group: "library" },
   display: { name: "Écran du refuge", icon: Eye, group: "library" },
-  displaySettings: { name: "Écran du refuge", icon: Eye, group: "admin" },
-  posters: { name: "Affiches en série", icon: Images, group: "library" },
+  displaySettings: {
+    name: "Écran du refuge",
+    icon: Eye,
+    group: "team",
+    roles: ["admin", "agent"],
+  },
+  register: { name: "Registre interne", icon: ShieldCheck, group: "team" },
+  groupPoster: {
+    name: "Grande affiche du refuge",
+    icon: Images,
+    group: "library",
+  },
+  posters: { name: "Affiches de box en série", icon: Images, group: "library" },
   gallery: { name: "Accueil & photos", icon: Images, group: "library" },
   animals: { name: "Les animaux", icon: PawPrint, group: "library" },
   collections: { name: "Albums privés", icon: Folder, group: "library" },
@@ -135,7 +151,6 @@ const pages = {
   inbox: { name: "Photos à trier", icon: Folder, group: "library" },
   print: { name: "Feuille de séance", icon: Camera, group: "print" },
   archives: { name: "Archives", icon: Archive, group: "library" },
-  departures: { name: "Les animaux partis", icon: Leaf, group: "library" },
   studio: { name: "Studio vidéo", icon: Video, group: "library" },
   editor: { name: "Éditeur photo", icon: SlidersHorizontal, group: "library" },
   motion: { name: "Fonds animés & réseaux", icon: Video, group: "library" },
@@ -158,7 +173,10 @@ const pages = {
 };
 function App() {
   const [page, setPage] = useState(() => {
-    const value = location.hash.slice(1);
+    const value =
+      location.hash.slice(1) === "departures"
+        ? "archives"
+        : location.hash.slice(1);
     return pages[value] ? value : "gallery";
   });
   const [user, setUser] = useState(null),
@@ -171,19 +189,26 @@ function App() {
     [q, setQ] = useState(""),
     [mobile, setMobile] = useState(false),
     [connectionError, setConnectionError] = useState("");
-  const [theme, setTheme] = useState(
-    () => localStorage.getItem("anipic-theme") || null,
-  );
+  const [theme, setTheme] = useState(() => browserTheme());
   const [animations, setAnimations] = useState(
     () =>
       localStorage.getItem("anipic-animations") !== "false" &&
       !matchMedia("(prefers-reduced-motion: reduce)").matches,
   );
+  useEffect(() => {
+    const sync = (e) => {
+      if (e.key === "anipic-theme")
+        setTheme(
+          browserTheme() || overview?.interface?.themeDefault || "night",
+        );
+    };
+    window.addEventListener("storage", sync);
+    return () => window.removeEventListener("storage", sync);
+  }, [overview?.interface?.themeDefault]);
   const [videoDraft, setVideoDraft] = useState(null);
   const [editorDraft, setEditorDraft] = useState(null);
   useEffect(() => {
     document.documentElement.dataset.theme = theme || "night";
-    if (theme) localStorage.setItem("anipic-theme", theme);
   }, [theme]);
   useEffect(() => {
     document.documentElement.dataset.motion = animations ? "on" : "off";
@@ -211,6 +236,8 @@ function App() {
   }, [mobile]);
   useEffect(() => {
     const listener = () => {
+      if (location.hash === "#departures")
+        history.replaceState(null, "", "#archives");
       const key = location.hash.slice(1);
       if (/^canva\/[a-f0-9-]{36}$/i.test(key)) {
         setModal({ type: "canva", animalId: key.slice(6) });
@@ -226,7 +253,11 @@ function App() {
       }
     };
     window.addEventListener("hashchange", listener);
-    if (/^#(animal|canva)\//.test(location.hash)) listener();
+    if (
+      /^#(animal|canva)\//.test(location.hash) ||
+      location.hash === "#departures"
+    )
+      listener();
     return () => window.removeEventListener("hashchange", listener);
   }, []);
   const [favorites, setFavorites] = useState(() => {
@@ -304,6 +335,16 @@ function App() {
   const close = useCallback(() => setModal(null), []);
   const canEdit = user && ["admin", "editor", "agent"].includes(user.role);
   const go = (key) => {
+    if (key === "departures") key = "archives";
+    if (key === "displaySettings" && !canManageDisplay(user)) {
+      if (!user) setModal({ type: "login", then: key });
+      else
+        notify(
+          "La configuration de l’écran est réservée aux agents SPA et à l’administration.",
+          "error",
+        );
+      return;
+    }
     if (pages[key].group === "admin" && user?.role !== "admin") {
       setModal({ type: "login", then: key });
       return;
@@ -450,7 +491,7 @@ function App() {
       luminance > 0.179 ? "#000000" : "#ffffff",
     );
     d.dataset.density = prefs.compactUI ? "compact" : "comfortable";
-    if (!localStorage.getItem("anipic-theme")) setTheme(prefs.themeDefault);
+    setTheme(browserTheme() || prefs.themeDefault || "night");
   }, [overview?.interface]);
   useEffect(() => {
     try {
@@ -519,7 +560,14 @@ function App() {
               ["PRISE DE VUE", ["todo", "inbox", "print"]],
               [
                 "CRÉATION",
-                ["studio", "editor", "posters", "wallpaper", "motion"],
+                [
+                  "studio",
+                  "editor",
+                  "posters",
+                  "groupPoster",
+                  "wallpaper",
+                  "motion",
+                ],
               ],
               [
                 "LE REFUGE",
@@ -527,8 +575,9 @@ function App() {
                   "feed",
                   "stats",
                   "tools",
+                  "register",
                   "archives",
-                  "departures",
+                  "displaySettings",
                   "broadcasts",
                 ],
               ],
@@ -536,14 +585,7 @@ function App() {
                 ? [
                     [
                       "ADMINISTRATION",
-                      [
-                        "dashboard",
-                        "users",
-                        "messages",
-                        "displaySettings",
-                        "visitors",
-                        "journal",
-                      ],
+                      ["dashboard", "users", "messages", "visitors", "journal"],
                     ],
                     [
                       "RÉGLAGES",
@@ -581,7 +623,17 @@ function App() {
                   <ChevronDown size={13} />
                 </summary>
                 {keys
+                  .filter(
+                    (key) =>
+                      !pages[key].roles ||
+                      pages[key].roles.includes(user?.role),
+                  )
                   .filter((key) => key !== "inbox" || canEdit)
+                  .filter(
+                    (key) =>
+                      key !== "register" ||
+                      ["admin", "agent"].includes(user?.role),
+                  )
                   .map((key) => {
                     const item = pages[key];
                     return (
@@ -673,9 +725,13 @@ function App() {
                 <select
                   aria-label="Thème visuel"
                   value={theme || "night"}
-                  onChange={(e) => setTheme(e.target.value)}
+                  onChange={(e) => {
+                    rememberTheme(e.target.value);
+                    setTheme(e.target.value);
+                  }}
                 >
                   <option value="sage">Lumière</option>
+                  <option value="spa">SPA · clair & verre</option>
                   <option value="night">Studio nuit</option>
                   <option value="amber">Ambre SPA</option>
                 </select>
@@ -733,6 +789,29 @@ function App() {
                   </Button>
                 }
               />
+            ) : page === "displaySettings" ? (
+              canManageDisplay(user) ? (
+                <Suspense fallback={<Spinner />}>
+                  <DisplaySettings {...actions} />
+                </Suspense>
+              ) : (
+                <Empty
+                  icon={LockKeyhole}
+                  title="Configuration réservée à l’équipe SPA"
+                  text="Connectez-vous avec un compte Agent SPA ou Administrateur."
+                  action={
+                    !user && (
+                      <Button
+                        onClick={() =>
+                          setModal({ type: "login", then: "displaySettings" })
+                        }
+                      >
+                        Se connecter
+                      </Button>
+                    )
+                  }
+                />
+              )
             ) : page === "visitors" ? (
               user?.role === "admin" ? (
                 <Suspense fallback={<Spinner />}>
@@ -790,6 +869,21 @@ function App() {
             ) : page === "posters" ? (
               <Suspense fallback={<Spinner />}>
                 <BatchPosters {...actions} />
+              </Suspense>
+            ) : page === "register" ? (
+              ["admin", "agent"].includes(user?.role) ? (
+                <Suspense fallback={<Spinner />}>
+                  <InternalRegister {...actions} />
+                </Suspense>
+              ) : (
+                <Empty
+                  title="Registre réservé"
+                  text="Accès limité aux comptes administration et agent."
+                />
+              )
+            ) : page === "groupPoster" ? (
+              <Suspense fallback={<Spinner />}>
+                <GroupPoster {...actions} />
               </Suspense>
             ) : page === "tools" ? (
               <AgentTools {...actions} />
@@ -944,3 +1038,5 @@ createRoot(document.getElementById("root")).render(<App />);
 import "./update32.css";
 import "./update33.css";
 import "./update34.css";
+import "./update35.css";
+import "./update36.css";

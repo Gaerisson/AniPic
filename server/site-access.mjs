@@ -15,15 +15,33 @@ import {
 } from "./ip-access.mjs";
 const fail = (message, statusCode = 400) =>
   Object.assign(new Error(message), { statusCode });
+// AniPic permissions have no expiry. Browsers require a finite cookie lifetime;
+// renew this persistent, HttpOnly cookie whenever the app or TV is opened.
+export const gateCookieSeconds = 400 * 86400;
+function browserPass(db, req) {
+  const token = req.cookies.anipic_gate;
+  if (typeof token !== "string" || !token || token.length > 100) return null;
+  return (
+    db
+      .prepare(
+        "SELECT expires_at FROM site_passes WHERE token_hash=? AND (expires_at='' OR expires_at>?)",
+      )
+      .get(hashToken(token), now()) || null
+  );
+}
+function rememberBrowser(reply, c, token) {
+  reply.setCookie("anipic_gate", token, {
+    httpOnly: true,
+    path: "/",
+    sameSite: "strict",
+    secure: c.secureCookie,
+    expires: new Date(Date.now() + gateCookieSeconds * 1000),
+    maxAge: gateCookieSeconds,
+  });
+}
 export function siteGateRequired(db, req) {
   const cfg = settings(db);
-  return (
-    !!cfg.accessPinEnabled &&
-    !req.user &&
-    !db
-      .prepare("SELECT 1 FROM site_passes WHERE token_hash=? AND expires_at>?")
-      .get(hashToken(String(req.cookies.anipic_gate || "")), now())
-  );
+  return !!cfg.accessPinEnabled && !req.user && !browserPass(db, req);
 }
 export function siteAccessHook(db, c) {
   return async (req, reply) => {
@@ -49,6 +67,29 @@ export function siteAccessHook(db, c) {
     }
     const cfg = settings(db),
       sid = req.user?.token_hash;
+    // Keep valid pre-existing passes without asking for the PIN again. Upgrade
+    // only unexpired legacy passes; revoked and expired tokens never revive.
+    if (
+      req.method === "GET" &&
+      ["/api/session", "/api/public/display"].includes(req.url.split("?")[0]) &&
+      req.cookies.anipic_gate
+    ) {
+      const pass = cfg.accessPinEnabled && browserPass(db, req);
+      if (pass) {
+        if (pass.expires_at !== "") {
+          db.prepare(
+            "UPDATE site_passes SET expires_at='' WHERE token_hash=? AND expires_at>?",
+          ).run(hashToken(req.cookies.anipic_gate), now());
+        }
+        rememberBrowser(reply, c, req.cookies.anipic_gate);
+      } else
+        reply.clearCookie("anipic_gate", {
+          path: "/",
+          httpOnly: true,
+          sameSite: "strict",
+          secure: c.secureCookie,
+        });
+    }
     if (sid) {
       const binding = db
         .prepare("SELECT network FROM ip_sessions WHERE token_hash=?")
@@ -117,15 +158,9 @@ export async function registerSiteAccess(app, { db, c, authorized }) {
       const token = randomBytes(32).toString("base64url");
       db.prepare("INSERT INTO site_passes VALUES (?,?)").run(
         hashToken(token),
-        new Date(Date.now() + 30 * 86400000).toISOString(),
+        "",
       );
-      reply.setCookie("anipic_gate", token, {
-        httpOnly: true,
-        path: "/",
-        sameSite: "strict",
-        secure: c.secureCookie,
-        maxAge: 30 * 86400,
-      });
+      rememberBrowser(reply, c, token);
       return { ok: true };
     },
   );

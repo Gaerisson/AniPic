@@ -1,3 +1,4 @@
+import { hasAnimalInfo } from "../shared/animal-info.mjs";
 import {
   textDefaults,
   posterLayoutDefaults,
@@ -178,7 +179,7 @@ export async function posterImage(
     { dog: "Chien", cat: "Chat", other: "NAC" }[animal.species],
     { female: "Femelle", male: "Mâle" }[animal.sex],
     meta.ageLabel,
-    animal.breed,
+    hasAnimalInfo(animal.breed) ? animal.breed : "",
   ]
     .filter(Boolean)
     .join(" · ");
@@ -334,7 +335,7 @@ export async function registerCommunication(app, { db, c, authorized }) {
     "/api/posters/batch",
     {
       preHandler: authorized(["admin", "editor", "agent", "viewer"]),
-      config: { rateLimit: { max: 4, timeWindow: "1 minute" } },
+      config: { rateLimit: { max: 30, timeWindow: "1 minute" } },
     },
     async (req, reply) => {
       const v = z

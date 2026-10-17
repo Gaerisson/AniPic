@@ -384,13 +384,19 @@ export function SignageCanvas({
                               ? glass || cinema || cards
                                 ? "#f5a1a1"
                                 : "#9a3434"
-                              : undefined,
+                              : e.state === "conditional"
+                                ? glass || cinema || cards
+                                  ? "#ffc176"
+                                  : "#a0570d"
+                                : undefined,
                         background:
                           e.state === "yes"
                             ? "#48aa7c15"
                             : e.state === "no"
                               ? "#da555515"
-                              : undefined,
+                              : e.state === "conditional"
+                                ? "#e79d3126"
+                                : undefined,
                       }}
                     >
                       <CompatibilityIcon subject={e.subject} size={25 * u} />

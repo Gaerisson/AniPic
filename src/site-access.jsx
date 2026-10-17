@@ -23,6 +23,10 @@ export function SiteGate({
         </span>
         <h1>Bienvenue dans AniPic</h1>
         <p>Saisissez le code d’accès pour ouvrir la photothèque.</p>
+        <p className="fineprint">
+          Ce navigateur sera mémorisé sans limite de durée dans AniPic, jusqu’à
+          l’effacement de ses cookies ou au changement du PIN.
+        </p>
         <form
           onSubmit={async (e) => {
             e.preventDefault();
@@ -140,9 +144,9 @@ export function SiteAccessSettings({ notify }) {
       </label>
       <p className="fineprint">
         Ces IP ouvrent automatiquement le compte agent choisi. Le bouton «
-        Changer de compte » permet ensuite une connexion personnelle. Le PIN
-        reste valable 30 jours sur le navigateur ; changer le code révoque les
-        accès précédents.
+        Changer de compte » permet ensuite une connexion personnelle. Le PIN est
+        mémorisé sans expiration dans AniPic, tant que le navigateur conserve
+        ses cookies. Changer le code révoque les accès précédents.
       </p>
       {!v.agents.length && (
         <p>

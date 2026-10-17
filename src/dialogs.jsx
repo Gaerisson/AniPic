@@ -1,3 +1,4 @@
+import { hasAnimalInfo } from "../shared/animal-info.mjs";
 import { PhotoTrash } from "./photo-trash.jsx";
 import { UserAvatarEditor, UserPicture } from "./user-avatar.jsx";
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -571,33 +572,40 @@ export function AnimalDetail({
                 {animal.description || "Description non renseignée par la SPA."}
               </p>
               <div className="detail-facts">
-                {animal.breed && (
+                {hasAnimalInfo(animal.breed) && (
                   <div>
                     <span>Race</span>
                     <strong>{animal.breed}</strong>
                   </div>
                 )}
-                <div>
-                  <span>Sexe</span>
-                  <strong>
-                    {animal.sex === "female"
-                      ? "Femelle"
-                      : animal.sex === "male"
-                        ? "Mâle"
-                        : "À préciser"}
-                  </strong>
-                </div>
-                <div>
-                  <span>
-                    {animal.birth_date ? "Naissance" : "Âge indiqué par la SPA"}
-                  </span>
-                  <strong>
-                    {animal.birth_date
-                      ? date(animal.birth_date)
-                      : animal.source_metadata?.ageLabel || "À préciser"}
-                  </strong>
-                </div>
-                {animal.source_metadata?.size && (
+                {["female", "male"].includes(animal.sex) && (
+                  <div>
+                    <span>Sexe</span>
+                    <strong>
+                      {animal.sex === "female"
+                        ? "Femelle"
+                        : animal.sex === "male"
+                          ? "Mâle"
+                          : ""}
+                    </strong>
+                  </div>
+                )}
+                {(animal.birth_date ||
+                  hasAnimalInfo(animal.source_metadata?.ageLabel)) && (
+                  <div>
+                    <span>
+                      {animal.birth_date
+                        ? "Naissance"
+                        : "Âge indiqué par la SPA"}
+                    </span>
+                    <strong>
+                      {animal.birth_date
+                        ? date(animal.birth_date)
+                        : animal.source_metadata?.ageLabel}
+                    </strong>
+                  </div>
+                )}
+                {hasAnimalInfo(animal.source_metadata?.size) && (
                   <div>
                     <span>Taille</span>
                     <strong>{animal.source_metadata.size}</strong>
@@ -779,6 +787,27 @@ export function AnimalDetail({
               canEdit={canEdit}
               notify={notify}
             />
+          )}
+          {canEdit && photo && (
+            <div
+              className={
+                "photo-privacy-control " + (photo.hidden ? "is-private" : "")
+              }
+            >
+              <span>
+                {photo.hidden ? <EyeOff size={18} /> : <Eye size={18} />}{" "}
+                {photo.hidden
+                  ? "Photo privée · équipe uniquement"
+                  : "Photo visible publiquement"}
+              </span>
+              <Button
+                variant="secondary"
+                icon={photo.hidden ? Eye : EyeOff}
+                onClick={() => updatePhoto({ hidden: !photo.hidden })}
+              >
+                {photo.hidden ? "Rendre publique" : "Rendre privée"}
+              </Button>
+            </div>
           )}
           {canEdit && photo && (
             <form
