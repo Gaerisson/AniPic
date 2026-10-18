@@ -84,7 +84,7 @@ export async function createBackup(db, c) {
 export async function pruneBackups(db, c, keep) {
   const rows = db
     .prepare(
-      "SELECT * FROM backups WHERE id NOT IN (SELECT backup_id FROM archive_compactions) ORDER BY created_at DESC",
+      "SELECT * FROM backups WHERE id NOT IN (SELECT backup_id FROM archive_compactions) AND NOT EXISTS(SELECT 1 FROM settings s WHERE s.key='protectedBackup:'||backups.id) ORDER BY created_at DESC",
     )
     .all();
   for (const row of rows.slice(keep)) {

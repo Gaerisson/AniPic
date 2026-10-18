@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 3.10.2 — 18 octobre 2026
+
+Alerte d’écart SPA sur l’accueil, présence « à vérifier » et diagnostic de comparaison locale/source. Option pour archiver et compter automatiquement les adoptions après absences confirmées, avec provenance et correction lors d’un retour. Interface allégée par menus contextuels, jusqu’à 200 animaux par page et export CSV filtré. Halo corrigé en thème clair/glass, dates de tri explicites et portraits de suggestions dégagés. Suppression/restauration des archives et vidage de corbeille après sauvegarde vérifiée, avec protection des originaux partagés. [Détail](RELEASE_v3.10.2.md).
+
 ## 3.10.1 — 18 octobre 2026
 
 Attribution et réattribution de photos avec annulation Ctrl+Z, conservation des originaux et de la confidentialité, protection contre les doublons et les modifications concurrentes. Suggestions progressives de fiches par ressemblance des couleurs et du contraste, à partir des photos locales et SPA. Case « Photos privées » décochée par défaut à l’attribution. Aucun changement des dépendances, du schéma SQLite ou des montages NAS. [Détail](RELEASE_v3.10.1.md).

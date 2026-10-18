@@ -192,7 +192,7 @@ export function PhotoAssignmentDialog({
                       alt={`Portrait de ${a.name}`}
                     />
                   ) : (
-                    <SpaPhoto animal={a} compact />
+                    <SpaPhoto animal={a} compact watermark={false} />
                   )}
                   <i>{a.source === "local" ? "Locale" : "SPA"}</i>
                 </span>

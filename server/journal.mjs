@@ -19,6 +19,11 @@ const names = {
   task_restored: "Demande photo restaurée",
   group_poster_exported: "Grande affiche exportée",
   sync: "Synchronisation SPA",
+  source_adoption_automatic:
+    "Adoption comptée automatiquement après absences confirmées",
+  source_adoption_reversed:
+    "Retour de l’animal · adoption automatique corrigée",
+  source_adoption_confirmed: "Adoption confirmée par un statut source",
   json_imported: "Import des fiches SPA",
   backup: "Sauvegarde",
   archive_compress: "Compression des archives",
@@ -26,6 +31,10 @@ const names = {
   inbox_assigned: "Photos attribuées à un animal",
   photos_reassigned: "Photos réattribuées à un autre animal",
   photo_assignment_undone: "Attribution de photos annulée",
+  archive_trashed: "Archive placée dans la corbeille",
+  archive_trash_restored: "Archive restaurée depuis la corbeille",
+  trash_emptied: "Corbeille vidée après sauvegarde",
+  trash_empty: "Vidage de la corbeille",
   settings_updated: "Configuration enregistrée",
   login: "Connexion",
   login_failed: "Connexion refusée",

@@ -2,7 +2,7 @@ export async function registerArchiveFolders(app, { db }) {
   app.get("/api/archive/folders", async () => {
     const rows = db
         .prepare(
-          "SELECT species,COALESCE(departed_at,archived_at) archived_at FROM animals WHERE archived_at IS NOT NULL",
+          "SELECT species,COALESCE(departed_at,archived_at) archived_at FROM animals WHERE archived_at IS NOT NULL AND NOT EXISTS(SELECT 1 FROM settings s WHERE s.key='animalTrash:'||animals.id)",
         )
         .all(),
       groups = new Map();

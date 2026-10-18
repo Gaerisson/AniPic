@@ -370,6 +370,11 @@ const actionNames = {
   animal_created: "Nouvelle fiche créée",
   animal_updated: "Fiche mise à jour",
   animal_archived: "Album archivé",
+  source_adoption_automatic:
+    "Adoption comptée automatiquement après absences confirmées",
+  source_adoption_reversed: "Animal réapparu · adoption automatique corrigée",
+  source_adoption_confirmed:
+    "Adoption automatique confirmée par un statut source",
   animal_restored: "Album restauré",
   photos_uploaded: "Photos importées",
   photo_updated: "Photo mise à jour",
@@ -855,7 +860,11 @@ function Sync({ data, notify, reload }) {
               <span>Archivage des absences</span>
               <strong>
                 {data.settings.archiveMissing
-                  ? data.settings.missingThreshold + " inventaires complets"
+                  ? data.settings.missingThreshold +
+                    " inventaires complets" +
+                    (data.settings.sourceMissingOutcome === "adopted"
+                      ? " · adoption automatique"
+                      : " · sans adoption")
                   : "Désactivé"}
               </strong>
             </div>

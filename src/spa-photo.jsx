@@ -5,6 +5,7 @@ export function SpaPhoto({
   large = false,
   loading = "lazy",
   compact = false,
+  watermark = true,
 }) {
   const [failed, setFailed] = useState(false),
     [loaded, setLoaded] = useState(false),
@@ -54,9 +55,11 @@ export function SpaPhoto({
             aria-label="Chargement de la photo SPA"
           />
         )}
-      <i className="spa-reference-mark" aria-hidden="true">
-        <Camera size={30} />
-      </i>
+      {watermark && (
+        <i className="spa-reference-mark" aria-hidden="true">
+          <Camera size={30} />
+        </i>
+      )}
       <span>
         <Globe size={12} />
         {large ? "Photo du site SPA · aucune photo locale" : "Source SPA"}

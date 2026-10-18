@@ -858,7 +858,8 @@ export default function Gazette({ user, notify }) {
                   )}
                   <p className="fineprint">
                     Les nouvelles fiches sans date d’arrivée ne sont pas
-                    comptées comme des arrivées. L’archivage seul ne compte pas
+                    comptées comme des arrivées. Les adoptions automatiques, si
+                    activées, sont incluses ; un simple archivage ne compte pas
                     comme une adoption. Le nombre de compagnons présents reflète
                     la situation actuelle.
                   </p>
@@ -968,9 +969,10 @@ export default function Gazette({ user, notify }) {
                 </label>
               </div>
               <p className="fineprint">
-                Une nouvelle fiche importée ne prouve pas une arrivée.
-                L’archivage d’un animal ne compte pas comme une adoption. Vos
-                corrections ici concernent la gazette.
+                Une nouvelle fiche importée ne prouve pas une arrivée. Un simple
+                archivage ne compte pas comme une adoption. La règle d’adoption
+                automatique, si activée, alimente ce bilan. Vos corrections ici
+                concernent la gazette.
               </p>
               <label>
                 Rubrique
@@ -1004,7 +1006,10 @@ export default function Gazette({ user, notify }) {
                             <div>
                               <span className={`gazette-kind ${row.kind}`}>
                                 {row.kind === "adoption"
-                                  ? "Adoption"
+                                  ? row.adoption_origin?.kind ===
+                                    "automatic_absence"
+                                    ? "Adoption automatique"
+                                    : "Adoption"
                                   : "Arrivée"}
                               </span>
                               <strong>

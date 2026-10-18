@@ -1,4 +1,5 @@
 import { hasAnimalInfo } from "../shared/animal-info.mjs";
+import { missingAnimalIds } from "./source-presence.mjs";
 import { displayManagerRoles } from "../shared/page-access.mjs";
 import { textDefaults, seasonDefaults } from "../shared/content-defaults.mjs";
 import { z } from "zod";
@@ -77,7 +78,8 @@ export async function buildDisplay(
         })),
     ];
   }
-  const excluded = new Set(cfg.displayHiddenIds);
+  const sourceMissing = missingAnimalIds(db);
+  const excluded = new Set([...cfg.displayHiddenIds, ...sourceMissing]);
   const animals = db
     .prepare(
       "SELECT * FROM animals WHERE archived_at IS NULL AND status NOT IN ('adopted','source_missing') ORDER BY name COLLATE NOCASE LIMIT 2000",
@@ -173,9 +175,9 @@ export async function buildDisplay(
   }
   const present = db
     .prepare(
-      "SELECT species,COUNT(*) n FROM animals WHERE archived_at IS NULL AND status NOT IN ('adopted','source_missing') GROUP BY species",
+      `SELECT species,COUNT(*) n FROM animals WHERE archived_at IS NULL AND status NOT IN ('adopted','source_missing') AND id NOT IN (${sourceMissing.length ? sourceMissing.map(() => "?").join(",") : "''"}) GROUP BY species`,
     )
-    .all();
+    .all(...sourceMissing);
   const stats = {
     year: program.year,
     adoptions: db

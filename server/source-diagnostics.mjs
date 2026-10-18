@@ -5,6 +5,7 @@ import {
 } from "./source-collect.mjs";
 import { collectorIO } from "./source-request.mjs";
 import * as cheerio from "cheerio";
+import { inventoryComparison } from "./source-presence.mjs";
 function safeURL(value) {
   const url = new URL(value);
   for (const key of url.searchParams.keys())
@@ -49,6 +50,7 @@ export async function diagnoseSource(db, input, dependencies = {}) {
       delayMs: cfg.sourceDelayMs,
       maxDurationSeconds: cfg.sourceMaxDurationSeconds,
       refugeSlug: cfg.spaRefugeSlug,
+      scope: cfg.sourceScope,
       robotsPolicy: cfg.sourceRobotsPolicy,
     },
     message: "",
@@ -93,6 +95,12 @@ export async function diagnoseSource(db, input, dependencies = {}) {
     report.animalsKept = checked.animals.length;
     report.archiveSafe = checked.absenceSafe;
     report.protection = checked.protection;
+    if (checked.complete && checked.absenceSafe)
+      report.sourceIds = checked.animals.map((a) => a.sourceId);
+    report.reconciliation = inventoryComparison(db, checked);
+    report.synchronizationRequired =
+      report.reconciliation.missing.length > 0 ||
+      report.reconciliation.new.length > 0;
     report.preview = checked.animals
       .slice(0, 8)
       .map((a) => ({ sourceId: a.sourceId, name: a.name, species: a.species }));

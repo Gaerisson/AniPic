@@ -344,6 +344,45 @@ export function SourceSettings({ values: v, change, notify }) {
                 à cet instant
               </small>
               {report.protection && <p>{report.protection}</p>}
+              {report.reconciliation && (
+                <div className="source-reconciliation">
+                  <strong>
+                    {report.reconciliation.localActive} fiches locales actives ·{" "}
+                    {report.reconciliation.sourceCount} reçues de la source
+                  </strong>
+                  {report.reconciliation.missing.length > 0 && (
+                    <>
+                      <p>
+                        {report.reconciliation.missing.length} fiche(s)
+                        locale(s) absente(s) de cet inventaire. Ce test
+                        n’applique aucune mise à jour. Lancez une
+                        synchronisation après enregistrement des réglages pour
+                        actualiser leur présence ; une absence ne confirme pas
+                        une adoption.
+                      </p>
+                      <ul>
+                        {report.reconciliation.missing.map((a) => (
+                          <li key={a.id}>
+                            <strong>{a.name}</strong> · {a.sourceId}
+                            {a.lastSeenAt
+                              ? " · dernière présence : " +
+                                new Date(a.lastSeenAt).toLocaleString("fr-FR", {
+                                  timeZone: "Europe/Paris",
+                                })
+                              : ""}
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                  {!report.reconciliation.missing.length && (
+                    <p>
+                      Aucune fiche locale supplémentaire détectée dans ce
+                      périmètre.
+                    </p>
+                  )}
+                </div>
+              )}
               {report.preview.length > 0 && (
                 <div className="diagnostic-animals">
                   {report.preview.map((a) => (
@@ -446,21 +485,48 @@ export function SourceSettings({ values: v, change, notify }) {
           </p>
         </details>
         <details className="settings-details">
-          <summary>Archivage des animaux absents</summary>
+          <summary>Absences et adoptions automatiques</summary>
           {num(
             "missingThreshold",
             "Inventaires complets avant archivage",
             2,
             10,
           )}
-          {flag(
-            "archiveMissing",
-            "Activer l’archivage après absences confirmées",
-          )}
+          <label>
+            Après les absences confirmées
+            <select
+              value={
+                !v.archiveMissing
+                  ? "keep"
+                  : v.sourceMissingOutcome === "adopted"
+                    ? "adopted"
+                    : "archive"
+              }
+              onChange={(e) =>
+                change({
+                  archiveMissing: e.target.value !== "keep",
+                  sourceMissingOutcome:
+                    e.target.value === "adopted" ? "adopted" : "unconfirmed",
+                })
+              }
+            >
+              <option value="keep">Garder la fiche à vérifier</option>
+              <option value="archive">
+                Archiver sans compter une adoption
+              </option>
+              <option value="adopted">
+                Archiver et compter automatiquement comme adoption
+              </option>
+            </select>
+          </label>
           <p className="fineprint">
-            Aucune suppression des photos. Une absence ne compte pas comme une
-            adoption. Une baisse brutale ou des données anciennes suspendent
-            l’archivage.
+            Seuls les inventaires complets et fiables, espacés du délai
+            configuré (24 h minimum), confirment les absences. En mode adoption
+            automatique, AniPic applique votre règle et indique « Adopté ·
+            automatique » : aucune validation manuelle n’est nécessaire. Si
+            l’animal réapparaît, son statut et les statistiques sont corrigés.
+            Les photos restent conservées. Une baisse suspecte, un inventaire
+            incomplet ou ancien suspendent ce traitement.
           </p>
         </details>
       </section>

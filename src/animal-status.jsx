@@ -16,26 +16,41 @@ export function AnimalStatus({
   appearance,
 }) {
   const configured = useStatusAppearance();
+  const sourceMissing =
+    !animal?.archived_at && animal?.source_presence?.state === "missing";
   const value = statusKeys.includes(status) ? status : "unknown";
   const style = (appearance || configured)[value] || statusDefaults[value];
   const archived =
     animal?.archived_at &&
     !["adopted", "source_missing", "deceased", "transferred"].includes(value);
-  const label = archived
-    ? "Archivé · statut à confirmer"
-    : style?.label?.trim() || statusDefaults[value]?.label || "À confirmer";
-  const color = archived
-    ? "#9fa6b2"
-    : /^#[a-fA-F0-9]{6}$/.test(style?.color || "")
-      ? style.color
-      : statusDefaults[value]?.color || "#b4becb";
-  const origin = animal?.source_id?.startsWith("demo:")
-    ? "Profil de démonstration"
-    : value === "source_missing"
-      ? "Absence confirmée de l’inventaire ; adoption non confirmée"
-      : animal?.source_id?.startsWith("spa:")
-        ? "Statut importé de la source SPA"
-        : "Statut importé du flux source";
+  const automatic =
+    value === "adopted" &&
+    animal?.adoption_origin?.kind === "automatic_absence";
+  const label = sourceMissing
+    ? "Absent de la liste SPA · à vérifier"
+    : automatic
+      ? "Adopté · automatique"
+      : archived
+        ? "Archivé · statut à confirmer"
+        : style?.label?.trim() || statusDefaults[value]?.label || "À confirmer";
+  const color = sourceMissing
+    ? "#e99436"
+    : archived
+      ? "#9fa6b2"
+      : /^#[a-fA-F0-9]{6}$/.test(style?.color || "")
+        ? style.color
+        : statusDefaults[value]?.color || "#b4becb";
+  const origin = sourceMissing
+    ? `Absent du dernier inventaire complet appliqué${animal.source_presence.checkedAt ? " du " + date(animal.source_presence.checkedAt) : ""}. Dernier statut connu : ${style?.label || value}. Adoption non confirmée.`
+    : automatic
+      ? `Adoption déduite par la règle d’absence configurée dans AniPic, après ${animal.adoption_origin.confirmations} inventaires confirmés. Corrigée automatiquement si l’animal réapparaît.`
+      : animal?.source_id?.startsWith("demo:")
+        ? "Profil de démonstration"
+        : value === "source_missing"
+          ? "Absence confirmée de l’inventaire ; adoption non confirmée"
+          : animal?.source_id?.startsWith("spa:")
+            ? "Statut importé de la source SPA"
+            : "Statut importé du flux source";
   return (
     <span
       className={`animal-status status-${value} ${compact ? "compact" : ""}`}
@@ -66,8 +81,9 @@ export function StatusKey() {
           <AnimalStatus key={status} status={status} />
         ))}
         <p>
-          Les statuts proviennent de la source. L’archivage conserve les albums
-          ; une absence ne confirme pas une adoption.
+          Les statuts proviennent de la source ou de la règle d’adoption
+          automatique activée par l’administration. Les adoptions déduites sont
+          signalées. L’archivage conserve les albums.
         </p>
       </div>
     </details>

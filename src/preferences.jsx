@@ -455,7 +455,7 @@ export function InterfaceSettings({
             value={v.cardsPerPage}
             onChange={(e) => change("cardsPerPage", Number(e.target.value))}
           >
-            {[12, 24, 48].map((n) => (
+            {[12, 24, 48, 96, 200].map((n) => (
               <option key={n}>{n}</option>
             ))}
           </select>

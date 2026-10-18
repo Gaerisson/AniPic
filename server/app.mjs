@@ -14,6 +14,11 @@ import { createHash } from "node:crypto";
 import { registerArchiveFolders } from "./archive-folders.mjs";
 import { recordError, registerJournal } from "./journal.mjs";
 import { registerStorageHealth } from "./storage-health.mjs";
+import { registerTrash, isAnimalTrashed } from "./trash.mjs";
+import { animalPresence, missingAnimalIds } from "./source-presence.mjs";
+import { animalCsv } from "../shared/animal-csv.mjs";
+import { sourceHealth } from "./source-health.mjs";
+import { adoptionOrigin } from "./source-adoption.mjs";
 import { cachedSourceMatch } from "./source-match.mjs";
 import {
   siteAccessHook,
@@ -97,7 +102,13 @@ const Settings = z.object({
   showClock: z.boolean().default(true),
   carouselSeconds: z.number().min(3).max(20).default(6),
   cardsPerPage: z
-    .union([z.literal(12), z.literal(24), z.literal(48)])
+    .union([
+      z.literal(12),
+      z.literal(24),
+      z.literal(48),
+      z.literal(96),
+      z.literal(200),
+    ])
     .default(24),
   geminiModel: z
     .string()
@@ -234,6 +245,7 @@ export async function createApp(overrides = {}) {
   await registerArchiveFolders(app, { db });
   await registerJournal(app, { db, authorized });
   await registerArchiveCompression(app, { db, c, authorized, job });
+  await registerTrash(app, { db, c, authorized, job });
   await registerUserAvatars(app, { db, authorized });
   await registerStorageHealth(app, { c, authorized });
   app.get("/api/health", async (req, reply) => {
@@ -348,6 +360,12 @@ export async function createApp(overrides = {}) {
     );
     return {
       ...row,
+      adoption_origin: adoptionOrigin(db, row.id),
+      source_presence: animalPresence(
+        db,
+        row,
+        (req.presenceCache ||= new Map()),
+      ),
       ...(req.user
         ? {
             sourcePhotoMatch: cachedSourceMatch(db, row),
@@ -408,15 +426,28 @@ export async function createApp(overrides = {}) {
     const animalId = req.query.animalId ? UUID.parse(req.query.animalId) : "";
     return db
       .prepare(
-        "SELECT p.id,p.filename,p.deleted_at,a.name FROM photos p JOIN animals a ON a.id=p.animal_id WHERE p.deleted_at IS NOT NULL AND (?='' OR p.animal_id=?) ORDER BY p.deleted_at DESC LIMIT 300",
+        "SELECT p.id,p.filename,p.deleted_at,a.name FROM photos p JOIN animals a ON a.id=p.animal_id WHERE p.deleted_at IS NOT NULL AND NOT EXISTS(SELECT 1 FROM settings s WHERE s.key='animalTrash:'||a.id) AND (?='' OR p.animal_id=?) ORDER BY p.deleted_at DESC LIMIT 300",
       )
       .all(animalId, animalId);
   });
+  app.get(
+    "/api/source/health",
+    {
+      preHandler: authorized([
+        "admin",
+        "editor",
+        "agent",
+        "volunteer",
+        "viewer",
+      ]),
+    },
+    async () => sourceHealth(db),
+  );
   app.get("/api/overview", async (req) => {
     const cfg = settings(db);
     const stats = db
       .prepare(
-        `SELECT COUNT(*) total,SUM(species='dog') dogs,SUM(species='cat') cats,SUM(species='other') others,SUM(archived_at IS NOT NULL) archived FROM animals`,
+        `SELECT COUNT(*) total,SUM(species='dog') dogs,SUM(species='cat') cats,SUM(species='other') others,SUM(archived_at IS NOT NULL) archived FROM animals WHERE NOT EXISTS(SELECT 1 FROM settings s WHERE s.key='animalTrash:'||animals.id)`,
       )
       .get();
     const photos = db
@@ -434,6 +465,7 @@ export async function createApp(overrides = {}) {
       authorGithubUrl: cfg.authorGithubUrl,
       assistantAvatarUrl: assistantAvatarUrl(db),
       subtitle: cfg.subtitle,
+      ...(req.user ? { sourceSync: sourceHealth(db, cfg) } : {}),
       interface: Object.fromEntries(
         [
           "themeDefault",
@@ -512,7 +544,7 @@ export async function createApp(overrides = {}) {
       return 0;
     }
   });
-  app.get("/api/animals", async (req) => {
+  app.get("/api/animals", async (req, reply) => {
     const q = z
       .object({
         q: z.string().max(100).default(""),
@@ -552,7 +584,9 @@ export async function createApp(overrides = {}) {
           ])
           .default("recent"),
         page: z.coerce.number().int().min(1).max(10000).default(1),
-        limit: z.coerce.number().int().min(1).max(60).default(24),
+        limit: z.coerce.number().int().min(1).max(200).default(24),
+        format: z.enum(["json", "csv"]).default("json"),
+        presence: z.enum(["current", "missing", "all"]).default("current"),
         year: z
           .string()
           .regex(/^\d{4}$/)
@@ -562,6 +596,7 @@ export async function createApp(overrides = {}) {
     const params = [];
     const where = [
       q.archive === "1" ? "a.archived_at IS NOT NULL" : "a.archived_at IS NULL",
+      "NOT EXISTS(SELECT 1 FROM settings s WHERE s.key='animalTrash:'||a.id)",
     ];
     if (q.ids !== undefined) {
       const ids = z
@@ -641,6 +676,24 @@ export async function createApp(overrides = {}) {
         params.push(subject, q[subject]);
       }
     }
+    const missingIds = missingAnimalIds(db);
+    const missingClause = missingIds.length
+      ? `a.id IN (${missingIds.map(() => "?").join(",")})`
+      : "0=1";
+    const sourceMissingTotal =
+      q.archive === "0"
+        ? db
+            .prepare(
+              `SELECT COUNT(*) n FROM animals a WHERE ${where.join(" AND ")} AND ${missingClause}`,
+            )
+            .get(...params, ...missingIds).n
+        : 0;
+    if (q.archive === "0" && q.presence !== "all") {
+      where.push(
+        q.presence === "missing" ? missingClause : `NOT (${missingClause})`,
+      );
+      params.push(...missingIds);
+    }
     const clause = where.join(" AND ");
     const total = db
       .prepare(`SELECT COUNT(*) count FROM animals a WHERE ${clause}`)
@@ -659,23 +712,46 @@ export async function createApp(overrides = {}) {
         arrival: "a.created_at DESC",
         archive: "COALESCE(a.departed_at,a.archived_at) DESC",
       }[q.sort] || latest + " DESC,a.created_at DESC";
+    if (q.format === "csv" && !req.user)
+      return reply
+        .code(401)
+        .send({ error: "Connectez-vous pour exporter la liste." });
+    if (q.format === "csv" && total > 5000)
+      return reply.code(413).send({
+        error: "L’export est limité à 5 000 animaux. Précisez les filtres.",
+      });
     const rows = db
       .prepare(
         `SELECT a.* FROM animals a WHERE ${clause} ORDER BY ${order},a.id LIMIT ? OFFSET ?`,
       )
-      .all(...params, q.limit, (q.page - 1) * q.limit);
+      .all(
+        ...params,
+        q.format === "csv" ? 5000 : q.limit,
+        q.format === "csv" ? 0 : (q.page - 1) * q.limit,
+      );
+    if (q.format === "csv")
+      return reply
+        .header(
+          "Content-Disposition",
+          'attachment; filename="anipic-animaux.csv"',
+        )
+        .type("text/csv; charset=utf-8")
+        .send(animalCsv(rows.map((r) => animalSummary(r, req))));
     return {
       items: rows.map((r) => animalSummary(r, req)),
       total,
       page: q.page,
       pages: Math.ceil(total / q.limit),
+      sourceMissingTotal,
+      pageSize: q.limit,
     };
   });
   app.get("/api/animals/:id", async (req, reply) => {
     const row = db
       .prepare("SELECT * FROM animals WHERE id=?")
       .get(UUID.parse(req.params.id));
-    if (!row) return reply.code(404).send({ error: "Animal introuvable." });
+    if (!row || (isAnimalTrashed(db, row.id) && !req.user))
+      return reply.code(404).send({ error: "Animal introuvable." });
     const photos = db
       .prepare(
         `SELECT p.*,b.size,b.width,b.height,(SELECT COUNT(*) FROM photo_likes l WHERE l.photo_id=p.id) likes,EXISTS(SELECT 1 FROM photo_likes l WHERE l.photo_id=p.id AND l.user_id=?) liked FROM photos p JOIN blobs b ON b.hash=p.hash WHERE p.animal_id=? AND ${photoCondition(req)} ORDER BY p.archived_at IS NOT NULL,p.created_at DESC`,
@@ -697,6 +773,10 @@ export async function createApp(overrides = {}) {
       const animalId = UUID.parse(req.params.id);
       const { archived } = z.object({ archived: z.boolean() }).parse(req.body);
       const old = db.prepare("SELECT * FROM animals WHERE id=?").get(animalId);
+      if (isAnimalTrashed(db, animalId))
+        return reply.code(409).send({
+          error: "Restaurez d’abord la fiche depuis la corbeille des archives.",
+        });
       const result = db
         .prepare(
           "UPDATE animals SET archived_at=?,departed_at=?,updated_at=? WHERE id=?",
@@ -841,6 +921,13 @@ export async function createApp(overrides = {}) {
               photoId,
             );
         }
+        if (input.deleted === false && isAnimalTrashed(db, photo.animal_id))
+          throw Object.assign(
+            Error(
+              "Restaurez d’abord la fiche depuis la corbeille des archives.",
+            ),
+            { statusCode: 409 },
+          );
         if (input.cover && (input.deleted || photo.deleted_at))
           throw Object.assign(
             Error("Restaurez la photo avant de la mettre en couverture."),
@@ -1050,7 +1137,8 @@ export async function createApp(overrides = {}) {
     if (
       running.has(kind) ||
       running.has("archive_compress") ||
-      (kind === "archive_compress" && running.size)
+      running.has("trash_empty") ||
+      (["archive_compress", "trash_empty"].includes(kind) && running.size)
     )
       throw Object.assign(new Error("Cette opération est déjà en cours."), {
         statusCode: 409,
@@ -1163,7 +1251,7 @@ export async function createApp(overrides = {}) {
     async () =>
       db
         .prepare(
-          "SELECT b.*,EXISTS(SELECT 1 FROM archive_compactions c WHERE c.backup_id=b.id) protected FROM backups b ORDER BY b.created_at DESC",
+          "SELECT b.*,(EXISTS(SELECT 1 FROM archive_compactions c WHERE c.backup_id=b.id) OR EXISTS(SELECT 1 FROM settings s WHERE s.key='protectedBackup:'||b.id)) protected FROM backups b ORDER BY b.created_at DESC",
         )
         .all(),
   );

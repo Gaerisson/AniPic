@@ -79,7 +79,7 @@ export function Modal({
       if (e.key === "Tab") {
         const elements = [
           ...ref.current.querySelectorAll(
-            'button,a[href],input,select,textarea,[tabindex="0"]',
+            'button,a[href],input,select,textarea,summary,[tabindex="0"]',
           ),
         ].filter((el) => !el.disabled && el.offsetParent !== null);
         const first = elements[0],

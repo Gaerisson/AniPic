@@ -12,6 +12,9 @@ export function publicFacts(animal) {
     description: animal.description || "",
     ententes: JSON.parse(animal.compatibility || "{}"),
     statut: animal.status,
+    ...(animal.adoption_origin
+      ? { origineAdoption: animal.adoption_origin }
+      : {}),
     lien: animal.source_url || "",
   };
 }

@@ -14,6 +14,7 @@ export function LibraryFilters({
   user,
   publication = "all",
   mediaTag = "",
+  presence = "current",
 }) {
   const appearance = useStatusAppearance();
   const [tags, setTags] = useState([]);
@@ -29,6 +30,22 @@ export function LibraryFilters({
       id="animal-filters"
       aria-label="Filtres des animaux"
     >
+      {page !== "archives" && (
+        <label>
+          Présence SPA
+          <select
+            aria-label="Présence dans le dernier inventaire SPA"
+            value={presence}
+            onChange={(e) => change("presence", e.target.value)}
+          >
+            <option value="current">Liste actuelle</option>
+            <option value="all">Tous, y compris à vérifier</option>
+            <option value="missing">
+              Absents de la liste SPA · à vérifier
+            </option>
+          </select>
+        </label>
+      )}
       <label>
         Statut
         <select

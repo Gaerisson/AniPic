@@ -6,6 +6,8 @@ import * as cheerio from "cheerio";
 import { z } from "zod";
 import { recordAnimalChanges } from "./animal-history.mjs";
 import { sourceStatus } from "./source-status.mjs";
+import { savePresence, readPresence } from "./source-presence.mjs";
+import { inferAdoption, reconcileAdoption } from "./source-adoption.mjs";
 import {
   publicAnimalMetadata,
   publicCompatibility,
@@ -368,7 +370,10 @@ export function applySnapshot(db, snapshot) {
     updated = 0,
     changed = 0,
     unchanged = 0,
-    absent = 0;
+    absent = 0,
+    autoAdopted = 0,
+    autoAdoptionsReversed = 0;
+  let reconciliation = null;
   const historyKey = `complete:${snapshot.scope}`;
   const previous = db
     .prepare("SELECT value FROM settings WHERE key=?")
@@ -376,6 +381,26 @@ export function applySnapshot(db, snapshot) {
   const history = previous ? JSON.parse(previous.value) : {};
   const last = history.at ? Date.parse(history.at) : 0;
   const fetched = Date.parse(snapshot.fetchedAt || "");
+  if (fetched > Date.now() + 5 * 60000)
+    throw Object.assign(
+      Error(
+        "La date de cet inventaire est dans le futur. Aucune fiche modifiée.",
+      ),
+      { statusCode: 409 },
+    );
+  const lastInventory = readPresence(db, snapshot.scope);
+  if (
+    Number.isFinite(fetched) &&
+    lastInventory &&
+    fetched < Date.parse(lastInventory.fetchedAt)
+  )
+    throw Object.assign(
+      Error(
+        "Cet inventaire est plus ancien que le dernier inventaire appliqué. Aucune fiche modifiée.",
+      ),
+      { statusCode: 409 },
+    );
+  const seenAt = Number.isFinite(fetched) ? snapshot.fetchedAt : date;
   const countAbsences =
     snapshot.complete &&
     Date.now() - last >= cfg.sourceAbsenceIntervalHours * 3600_000 &&
@@ -394,6 +419,19 @@ export function applySnapshot(db, snapshot) {
               .get(a.sourceUrl, snapshot.scope)
           : null);
       if (old) {
+        if (
+          db
+            .prepare("SELECT 1 FROM settings WHERE key=?")
+            .get("animalTrash:" + old.id)
+        )
+          continue;
+        const reopened = reconcileAdoption(db, old, a.status);
+        if (reopened) {
+          db.prepare(
+            "UPDATE animals SET archived_at=NULL,departed_at=NULL WHERE id=?",
+          ).run(old.id);
+          autoAdoptionsReversed++;
+        }
         db.prepare(
           "UPDATE animals SET name=?,species=?,sex=?,birth_date=?,description=?,source_url=?,source_seen_at=?,missing_count=0,updated_at=?,source_scope=?,breed=?,compatibility=?,source_metadata=?,tags=?,archived_at=CASE WHEN status='source_missing' THEN NULL ELSE archived_at END,departed_at=CASE WHEN status='source_missing' THEN NULL ELSE departed_at END,status=? WHERE id=?",
         ).run(
@@ -403,7 +441,7 @@ export function applySnapshot(db, snapshot) {
           a.birthDate ?? null,
           a.description,
           a.sourceUrl ?? null,
-          date,
+          seenAt,
           date,
           snapshot.scope,
           a.breed,
@@ -426,9 +464,14 @@ export function applySnapshot(db, snapshot) {
           old.compatibility !== JSON.stringify(a.compatibility) ||
           old.source_metadata !== JSON.stringify(a.metadata) ||
           old.tags !== JSON.stringify(a.tags);
+        if (!differs)
+          db.prepare("UPDATE animals SET updated_at=? WHERE id=?").run(
+            old.updated_at,
+            old.id,
+          );
         if (differs) changed++;
         else unchanged++;
-        if (old.status === "source_missing" && old.archived_at)
+        if ((old.status === "source_missing" || reopened) && old.archived_at)
           feedEvent(db, { ...old, status: a.status }, "restored");
       } else {
         db.prepare(
@@ -442,7 +485,7 @@ export function applySnapshot(db, snapshot) {
           a.description,
           a.sourceId,
           a.sourceUrl ?? null,
-          date,
+          seenAt,
           JSON.stringify(a.tags),
           date,
           date,
@@ -481,13 +524,22 @@ export function applySnapshot(db, snapshot) {
         .get(a.sourceId);
       if (currentRow) recordAnimalChanges(db, old, currentRow, date);
     }
+    if (
+      snapshot.complete &&
+      snapshot.absenceSafe !== false &&
+      Math.abs(Date.now() - fetched) < cfg.sourceStaleHours * 3600_000
+    )
+      reconciliation = savePresence(db, snapshot, date);
     if (countAbsences) {
       const seen = new Set(snapshot.animals.map((a) => a.sourceId));
       for (const a of db
         .prepare(
-          "SELECT id,source_id,missing_count FROM animals WHERE source_scope=? AND archived_at IS NULL",
+          "SELECT id,source_id,missing_count FROM animals WHERE source_scope=? AND status NOT IN ('adopted','deceased','transferred') AND (archived_at IS NULL OR (? AND status='source_missing')) AND NOT EXISTS(SELECT 1 FROM settings s WHERE s.key='animalTrash:'||animals.id)",
         )
-        .all(snapshot.scope)) {
+        .all(
+          snapshot.scope,
+          Number(cfg.archiveMissing && cfg.sourceMissingOutcome === "adopted"),
+        )) {
         if (seen.has(a.source_id)) continue;
         const count = a.missing_count + 1;
         db.prepare("UPDATE animals SET missing_count=? WHERE id=?").run(
@@ -498,9 +550,17 @@ export function applySnapshot(db, snapshot) {
           const before = db
             .prepare("SELECT * FROM animals WHERE id=?")
             .get(a.id);
+          const outcome =
+            cfg.sourceMissingOutcome === "adopted"
+              ? "adopted"
+              : "source_missing";
           db.prepare(
-            "UPDATE animals SET archived_at=?,departed_at=?,status='source_missing',updated_at=? WHERE id=?",
-          ).run(date, date, date, a.id);
+            "UPDATE animals SET archived_at=COALESCE(archived_at,?),departed_at=COALESCE(departed_at,?),status=?,updated_at=? WHERE id=?",
+          ).run(date, date, outcome, date, a.id);
+          if (outcome === "adopted") {
+            inferAdoption(db, before, snapshot, cfg, date, count);
+            autoAdopted++;
+          }
           recordAnimalChanges(
             db,
             before,
@@ -530,9 +590,29 @@ export function applySnapshot(db, snapshot) {
     changed,
     unchanged,
     archived: absent,
+    autoAdopted,
+    autoAdoptionsReversed,
     complete: snapshot.complete,
     absenceCheck: countAbsences,
     photosImported: 0,
+    missingFromSource:
+      reconciliation?.missing.filter((a) =>
+        db
+          .prepare("SELECT 1 FROM animals WHERE id=? AND archived_at IS NULL")
+          .get(a.id),
+      ).length ?? null,
+    reconciliation,
+    archiveMissingEnabled: cfg.archiveMissing,
+    sourceMissingOutcome: cfg.sourceMissingOutcome,
+    absenceProtection:
+      !snapshot.complete || snapshot.absenceSafe === false
+        ? snapshot.protection ||
+          "Inventaire incomplet ou non sûr : absences non confirmées."
+        : !countAbsences
+          ? "Présence actualisée ; prochaine confirmation d’archivage après le délai configuré."
+          : !cfg.archiveMissing
+            ? "Présence actualisée ; archivage automatique désactivé."
+            : "Absences comptées selon le seuil configuré.",
     note: "Les photos locales sont conservées. Le flux JSON importe les fiches; ajouter les photos par lot.",
   };
 }

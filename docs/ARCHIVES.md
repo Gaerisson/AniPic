@@ -3,7 +3,7 @@
 **Archives** regroupe les animaux partis et leurs albums dans une seule page,
 avec dossiers par espèce et année, filtre d’année et accès au bilan annuel.
 Les anciens liens « Animaux partis » ouvrent cette page. Un archivage n’est
-pas automatiquement présenté comme une adoption : le statut reste explicite.
+pas présenté comme une adoption par défaut. L’option **Archiver et compter automatiquement comme adoption**, dans API & connexions, permet ce classement après absences confirmées sur des inventaires fiables et espacés. Le badge et le journal indiquent son origine automatique ; si l’animal revient, son statut et les compteurs sont corrigés.
 
 ## Retirer une photo
 
@@ -38,3 +38,12 @@ Télécharger la sauvegarde protégée depuis **Sauvegardes**, puis suivre la [p
 `MAX_MEDIA_MB=512` fixe la limite par fichier audio/vidéo ; la valeur acceptée va de 1 à 4 096 Mo. Elle est transmise par les deux fichiers Compose principaux. Redéployer l’application après modification. Adapter aussi les limites de requête et de délai du reverse proxy si nécessaire. Une image reste limitée par `MAX_UPLOAD_MB` (25 Mo par défaut).
 
 © 2026 Gaerisson
+## Supprimer une archive et vider la corbeille
+
+Ouvrir une fiche archivée, puis **Créer & gérer → Supprimer l’archive · corbeille**. La fiche disparaît de la navigation des archives ; ses photos restent stockées et restaurables. Une synchronisation ne réimporte pas une fiche supprimée volontairement. La restauration de cette archive, depuis la corbeille, la remet dans les archives avec ses photos et leur confidentialité d’origine.
+
+La **Corbeille · photos d’animaux et archives** se trouve en haut des Archives et dans la fiche d’un animal pour sa propre corbeille. Les membres autorisés peuvent restaurer. Seule l’administration peut **Vider la corbeille**, en saisissant `VIDER` dans l’interface. Le serveur lance un traitement en arrière-plan : sauvegarde complète, vérification des fichiers et de leur intégrité, puis suppression des photos éligibles. Un indicateur et le journal indiquent l’achèvement ou l’erreur.
+
+La sauvegarde créée avant le vidage est protégée de la rotation automatique. Si le NAS est absent, un marqueur manque ou la sauvegarde échoue, rien n’est supprimé et aucun dossier de remplacement local n’est créé. Une photo encore utilisée par un projet ou une affiche reste dans la corbeille ; un original partagé avec une autre fiche, un album ou un média reste stocké. L’interface signale les éléments conservés. Le gain annoncé concerne le dossier des originaux ; la sauvegarde occupe son propre espace.
+
+Après vidage, restaurer un élément purgé nécessite cette sauvegarde. Les traces historiques des fiches restent en base pour conserver les liens et l’historique. Les médias propres aux albums privés ont leur corbeille dans chaque album ; ils ne sont pas inclus dans ce vidage.

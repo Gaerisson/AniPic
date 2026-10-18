@@ -31,6 +31,7 @@ export const sourceDefaults = {
   sourceRobotsPolicy: "respect",
   sourceStaleHours: 24,
   sourceAbsenceIntervalHours: 24,
+  sourceMissingOutcome: "unconfirmed",
 };
 const httpsURL = z
   .string()
@@ -89,6 +90,9 @@ export const sourceFields = {
   sourceRobotsPolicy: z.enum(["respect", "spa_public_api"]).default("respect"),
   sourceStaleHours: z.number().int().min(1).max(48).default(24),
   sourceAbsenceIntervalHours: z.number().int().min(24).max(168).default(24),
+  sourceMissingOutcome: z
+    .enum(["unconfirmed", "adopted"])
+    .default("unconfirmed"),
 };
 export const interfaceDefaults = {
   posterLayout: posterLayoutDefaults,

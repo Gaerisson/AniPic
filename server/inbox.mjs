@@ -1,4 +1,5 @@
 import { registerPhotoAssignments } from "./photo-assignment.mjs";
+import { missingAnimalIds } from "./source-presence.mjs";
 export { assignInbox } from "./photo-assignment.mjs";
 import { z } from "zod";
 import path from "node:path";
@@ -247,8 +248,10 @@ export async function registerInbox(app, { db, c, authorized }) {
           .prepare("SELECT animal_id FROM import_folders WHERE folder=?")
           .get(folder)?.animal_id,
       }));
-      const found = [];
+      const found = [],
+        sourceMissing = new Set(missingAnimalIds(db));
       for (const a of animals) {
+        if (sourceMissing.has(a.id)) continue;
         let score = 0,
           reason = "";
         for (const { parts, remembered } of hints) {

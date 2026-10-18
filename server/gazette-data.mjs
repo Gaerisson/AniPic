@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { publicAnimalMetadata } from "./animal-facts.mjs";
+import { adoptionOrigin } from "./source-adoption.mjs";
 import {
   mergeGazetteMovements,
   gazettePortraits,
@@ -156,6 +157,7 @@ export function gazetteMonth(db, month) {
     .map((a) => ({
       ...brief(a),
       kind: "adoption",
+      adoption_origin: adoptionOrigin(db, a.id),
       date: a.adoption_date.slice(0, 10),
       origin: "history",
     }));

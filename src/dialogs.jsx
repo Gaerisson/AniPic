@@ -1,5 +1,6 @@
+import { ActionMenu } from "./action-menu.jsx";
 import { hasAnimalInfo } from "../shared/animal-info.mjs";
-import { PhotoTrash } from "./photo-trash.jsx";
+import { PhotoTrash } from "./photo-trash-lazy.jsx";
 import { UserAvatarEditor, UserPicture } from "./user-avatar.jsx";
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
@@ -549,20 +550,58 @@ export function AnimalDetail({
               {photo && (
                 <div className="photo-downloads">
                   <DownloadOptions photoId={photo.id} user={user} />
-                  {canEdit && (
-                    <Button
-                      variant="secondary"
-                      icon={ArrowRightLeft}
-                      onClick={() =>
-                        open({
-                          type: "reassign-photos",
-                          photos: [photo],
-                          animal: { id: animal.id, name: animal.name },
-                        })
-                      }
-                    >
-                      Réattribuer cette photo
-                    </Button>
+                  {canEdit && photo && (
+                    <ActionMenu label="Gérer cette photo">
+                      <div>
+                        <strong>Gérer cette photo</strong>
+                        <span>
+                          {photo.hidden
+                            ? "Privée · visible uniquement à l’équipe"
+                            : "Visible dans la photothèque"}
+                        </span>
+                      </div>
+                      <Button
+                        variant="secondary"
+                        icon={photo.hidden ? Eye : EyeOff}
+                        onClick={() => updatePhoto({ hidden: !photo.hidden })}
+                      >
+                        {photo.hidden ? "Publier" : "Rendre privée"}
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        icon={Camera}
+                        onClick={() => updatePhoto({ cover: true })}
+                      >
+                        En couverture
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        icon={ArrowRightLeft}
+                        onClick={() =>
+                          open({
+                            type: "reassign-photos",
+                            photos: [photo],
+                            animal: { id: animal.id, name: animal.name },
+                          })
+                        }
+                      >
+                        Réattribuer à un autre animal
+                      </Button>
+                      <Button
+                        variant="quiet"
+                        icon={Archive}
+                        onClick={() => updatePhoto({ archived: true })}
+                      >
+                        Archiver la photo
+                      </Button>
+                      <Button
+                        variant="quiet"
+                        icon={Trash2}
+                        onClick={() => updatePhoto({ deleted: true })}
+                      >
+                        Supprimer · corbeille
+                      </Button>
+                    </ActionMenu>
                   )}
                 </div>
               )}
@@ -755,84 +794,109 @@ export function AnimalDetail({
               )}
               {canEdit && (
                 <div className="detail-actions">
-                  {photo && user?.role === "admin" && (
-                    <Button
-                      variant="secondary"
-                      icon={Edit3}
-                      onClick={() =>
-                        editPhoto({
-                          photoId: photo.id,
-                          filename: photo.filename,
-                        })
-                      }
-                    >
-                      Retoucher cette photo
-                    </Button>
-                  )}
-                  <Button icon={Video} onClick={() => video(animal)}>
-                    Créer sa vidéo
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    icon={Palette}
-                    onClick={() => {
-                      location.hash = "canva/" + animal.id;
-                      open({
-                        type: "canva",
-                        animalId: animal.id,
-                        photoId: photo?.id,
-                      });
-                    }}
-                  >
-                    Créer dans Canva
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    icon={Share2}
-                    onClick={() =>
-                      open({ type: "post", animal, photoId: photo?.id })
-                    }
-                  >
-                    Préparer une publication
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    icon={Flag}
-                    onClick={() => open({ type: "task", animal })}
-                  >
-                    Demander une séance
-                  </Button>
                   <Button
                     icon={Upload}
                     onClick={() => open({ type: "upload", id: animal.id })}
                   >
                     Ajouter des photos
                   </Button>
-                  <Button
-                    variant="quiet"
-                    icon={animal.archived_at ? Undo2 : Archive}
-                    onClick={async () => {
-                      try {
-                        await api(`/animals/${animal.id}/archive`, {
-                          method: "POST",
-                          body: { archived: !animal.archived_at },
+                  <ActionMenu label="Créer & gérer">
+                    {photo && user?.role === "admin" && (
+                      <Button
+                        variant="secondary"
+                        icon={Edit3}
+                        onClick={() =>
+                          editPhoto({
+                            photoId: photo.id,
+                            filename: photo.filename,
+                          })
+                        }
+                      >
+                        Retoucher cette photo
+                      </Button>
+                    )}
+                    <Button icon={Video} onClick={() => video(animal)}>
+                      Créer sa vidéo
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      icon={Palette}
+                      onClick={() => {
+                        location.hash = "canva/" + animal.id;
+                        open({
+                          type: "canva",
+                          animalId: animal.id,
+                          photoId: photo?.id,
                         });
-                        notify(
-                          animal.archived_at
-                            ? "Album restauré."
-                            : "Album archivé. Tous les originaux sont conservés.",
-                        );
-                        reload();
-                        load();
-                      } catch (e) {
-                        notify(e.message, "error");
+                      }}
+                    >
+                      Créer dans Canva
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      icon={Share2}
+                      onClick={() =>
+                        open({ type: "post", animal, photoId: photo?.id })
                       }
-                    }}
-                  >
-                    {animal.archived_at
-                      ? "Restaurer l’album"
-                      : "Archiver l’album"}
-                  </Button>
+                    >
+                      Préparer une publication
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      icon={Flag}
+                      onClick={() => open({ type: "task", animal })}
+                    >
+                      Demander une séance
+                    </Button>
+                    <Button
+                      variant="quiet"
+                      icon={animal.archived_at ? Undo2 : Archive}
+                      onClick={async () => {
+                        try {
+                          await api(`/animals/${animal.id}/archive`, {
+                            method: "POST",
+                            body: { archived: !animal.archived_at },
+                          });
+                          notify(
+                            animal.archived_at
+                              ? "Album restauré."
+                              : "Album archivé. Tous les originaux sont conservés.",
+                          );
+                          reload();
+                          load();
+                        } catch (e) {
+                          notify(e.message, "error");
+                        }
+                      }}
+                    >
+                      {animal.archived_at
+                        ? "Sortir des archives"
+                        : "Archiver la fiche"}
+                    </Button>
+                    {animal.archived_at && (
+                      <Button
+                        variant="quiet"
+                        icon={Trash2}
+                        onClick={async () => {
+                          try {
+                            await api(`/animals/${animal.id}/trash`, {
+                              method: "POST",
+                              body: {},
+                            });
+                            notify(
+                              "Archive placée dans la corbeille. Elle reste restaurable depuis Archives.",
+                            );
+                            reload();
+                            close();
+                          } catch (e) {
+                            notify(e.message, "error");
+                          }
+                        }}
+                      >
+                        Supprimer l’archive · corbeille
+                      </Button>
+                    )}
+                  </ActionMenu>
                 </div>
               )}
             </div>
@@ -866,82 +930,32 @@ export function AnimalDetail({
             </div>
           )}
           {canEdit && photo && (
-            <form
-              className="caption-editor"
-              key={photo.id}
-              onSubmit={(e) => {
-                e.preventDefault();
-                updatePhoto({
-                  caption: new FormData(e.currentTarget).get("caption"),
-                });
-              }}
-            >
-              <label>
-                Légende de cette photo
-                <input
-                  name="caption"
-                  maxLength={300}
-                  defaultValue={photo.caption}
-                  placeholder="Un moment, une expression, une belle rencontre…"
-                />
-              </label>
-              <Button icon={Check} variant="secondary">
-                Enregistrer la légende
-              </Button>
-            </form>
-          )}
-          {canEdit && photo && (
-            <div className="photo-management">
-              <div>
-                <strong>Gérer cette photo</strong>
-                <span>
-                  {photo.hidden
-                    ? "Privée · visible uniquement à l’équipe"
-                    : "Visible dans la photothèque"}
-                </span>
-              </div>
-              <Button
-                variant="secondary"
-                icon={photo.hidden ? Eye : EyeOff}
-                onClick={() => updatePhoto({ hidden: !photo.hidden })}
+            <details className="feature-details">
+              <summary>Modifier la légende</summary>
+              <form
+                className="caption-editor"
+                key={photo.id}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  updatePhoto({
+                    caption: new FormData(e.currentTarget).get("caption"),
+                  });
+                }}
               >
-                {photo.hidden ? "Publier" : "Rendre privée"}
-              </Button>
-              <Button
-                variant="secondary"
-                icon={Camera}
-                onClick={() => updatePhoto({ cover: true })}
-              >
-                En couverture
-              </Button>
-              <Button
-                variant="secondary"
-                icon={ArrowRightLeft}
-                onClick={() =>
-                  open({
-                    type: "reassign-photos",
-                    photos: [photo],
-                    animal: { id: animal.id, name: animal.name },
-                  })
-                }
-              >
-                Réattribuer à un autre animal
-              </Button>
-              <Button
-                variant="quiet"
-                icon={Archive}
-                onClick={() => updatePhoto({ archived: true })}
-              >
-                Archiver la photo
-              </Button>
-              <Button
-                variant="quiet"
-                icon={Trash2}
-                onClick={() => updatePhoto({ deleted: true })}
-              >
-                Supprimer · corbeille
-              </Button>
-            </div>
+                <label>
+                  Légende de cette photo
+                  <input
+                    name="caption"
+                    maxLength={300}
+                    defaultValue={photo.caption}
+                    placeholder="Un moment, une expression, une belle rencontre…"
+                  />
+                </label>
+                <Button icon={Check} variant="secondary">
+                  Enregistrer la légende
+                </Button>
+              </form>
+            </details>
           )}
           {canEdit && selected.length > 0 && (
             <div className="selection-bar">
@@ -1012,6 +1026,7 @@ export function AnimalDetail({
           {canEdit && (
             <PhotoTrash
               animalId={animal.id}
+              user={user}
               notify={notify}
               reload={() => {
                 load();

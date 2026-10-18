@@ -4,6 +4,7 @@ import { z } from "zod";
 import { id } from "./db.mjs";
 import { publicSpaImage } from "./animal-facts.mjs";
 import { sourcePhotoBuffer } from "./source-photo.mjs";
+import { missingAnimalIds } from "./source-presence.mjs";
 
 // Small local descriptors: no upload to an AI service, model or model download.
 // Centre-weighting limits (but cannot eliminate) similarities in backgrounds.
@@ -270,6 +271,7 @@ export async function registerAssignmentSuggestions(
         if (!old) break;
         jobs.delete(old[0]);
       }
+      const sourceMissing = new Set(missingAnimalIds(db));
       const all = db
         .prepare(
           "SELECT id,name,species,source_id,source_metadata,cover_id FROM animals WHERE archived_at IS NULL AND departed_at IS NULL ORDER BY name,id",
@@ -278,6 +280,7 @@ export async function registerAssignmentSuggestions(
         .filter(
           (a) =>
             a.id !== input.sourceAnimalId &&
+            !sourceMissing.has(a.id) &&
             (input.species === "all" || a.species === input.species),
         );
       const localRows = db

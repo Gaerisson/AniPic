@@ -1,4 +1,6 @@
-import { PhotoTrash } from "./photo-trash.jsx";
+import { PhotoTrash } from "./photo-trash-lazy.jsx";
+import { ActionMenu } from "./action-menu.jsx";
+import { SourceSyncAlert } from "./source-sync-alert.jsx";
 import { hasAnimalInfo } from "../shared/animal-info.mjs";
 import { normalizeCompatibility } from "../shared/compatibility-text.mjs";
 import { NavLink } from "./nav-link.jsx";
@@ -27,6 +29,7 @@ import {
   Info,
   Video,
   Download,
+  LoaderCircle,
 } from "lucide-react";
 import { api, date, speciesName, imageUrl } from "./api.js";
 import { Spinner, Empty, Button } from "./ui.jsx";
@@ -69,6 +72,23 @@ export function Library({
   }, [page, version]);
   const [year, setYear] = useState(0);
   const [recentOnly, setRecentOnly] = useState(false);
+  const [presence, setPresence] = useState("current"),
+    [csvBusy, setCsvBusy] = useState(false);
+  const [pageSize, setPageSize] = useState(() => {
+    try {
+      const v = Number(localStorage.getItem("anipic:animalsPerPage"));
+      return [12, 24, 48, 96, 200].includes(v) ? v : ui?.cardsPerPage || 24;
+    } catch {
+      return ui?.cardsPerPage || 24;
+    }
+  });
+  const requestParams = useRef("");
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem("anipic:animalsPerPage"))
+        setPageSize(ui?.cardsPerPage || 24);
+    } catch {}
+  }, [ui?.cardsPerPage]);
   const [mediaTag, setMediaTag] = useState("");
   const [publication, setPublication] = useState("all");
   const [compat, setCompat] = useState({
@@ -120,6 +140,8 @@ export function Library({
     photos,
     publication,
     mediaTag,
+    presence,
+    pageSize,
   ]);
   useEffect(() => {
     let cancelled = false;
@@ -137,11 +159,13 @@ export function Library({
       archive: page === "archives" ? "1" : "0",
       missing: page === "todo" ? "1" : "0",
       favorites: page === "favorites" && user ? "1" : "0",
-      limit: String(ui?.cardsPerPage || 24),
+      limit: String(pageSize),
+      presence,
       recent: recentOnly ? "1" : "0",
     });
     if (year) params.set("year", String(year));
     if (page === "favorites" && !user) params.set("ids", favorites.join(","));
+    requestParams.current = params.toString();
     api("/animals?" + params)
       .then((result) => {
         if (cancelled) return;
@@ -168,11 +192,13 @@ export function Library({
     photos,
     publication,
     mediaTag,
-    ui?.cardsPerPage,
+    presence,
+    pageSize,
   ]);
   useEffect(() => {
     setYear(0);
     setRecentOnly(false);
+    setPresence("current");
     setCompat({ sos: "all", cats: "all", dogs: "all", children: "all" });
     setStatus("all");
     setPhotos("all");
@@ -189,9 +215,11 @@ export function Library({
     Number(!!mediaTag) +
     Number(photos !== "all") +
     Number(recentOnly) +
-    Number(year !== 0);
+    Number(year !== 0) +
+    Number(presence !== "current");
   const hasFilters = Boolean(q || species !== "all" || filterCount);
   const resetFilters = () => {
+    setPresence("current");
     setPublication("all");
     setMediaTag("");
     setCompat({ sos: "all", cats: "all", dogs: "all", children: "all" });
@@ -214,11 +242,85 @@ export function Library({
           {title[1] && <p>{title[1]}</p>}
         </div>
         <div className="heading-actions">
-          <Button icon={Upload} onClick={upload}>
-            Importer des photos
-          </Button>
+          <ActionMenu
+            label={csvBusy ? "Export CSV…" : "Options de la liste"}
+            busy={csvBusy}
+          >
+            {user && (
+              <Button
+                icon={csvBusy ? LoaderCircle : Download}
+                variant="secondary"
+                disabled={csvBusy || loading || q !== debounced || !data?.total}
+                aria-busy={csvBusy}
+                onClick={async () => {
+                  setCsvBusy(true);
+                  try {
+                    const params = new URLSearchParams(requestParams.current);
+                    params.set("format", "csv");
+                    const response = await fetch("/api/animals?" + params, {
+                      credentials: "same-origin",
+                    });
+                    if (!response.ok) {
+                      const e = await response.json().catch(() => ({}));
+                      throw Error(e.error || "Export CSV indisponible.");
+                    }
+                    const url = URL.createObjectURL(await response.blob()),
+                      a = document.createElement("a");
+                    a.href = url;
+                    a.download = "anipic-animaux.csv";
+                    a.click();
+                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+                    notify(
+                      "CSV exporté : tous les animaux correspondant aux filtres, au-delà de la page affichée.",
+                    );
+                  } catch (e) {
+                    notify(e.message, "error");
+                  } finally {
+                    setCsvBusy(false);
+                  }
+                }}
+              >
+                {csvBusy ? "Export CSV…" : "Exporter CSV"}
+              </Button>
+            )}
+            <label className="action-menu-field">
+              Afficher{" "}
+              <select
+                aria-label="Animaux par page"
+                value={pageSize}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  setPageSize(n);
+                  try {
+                    localStorage.setItem("anipic:animalsPerPage", String(n));
+                  } catch {}
+                }}
+              >
+                {[12, 24, 48, 96, 200].map((n) => (
+                  <option key={n} value={n}>
+                    {n} animaux
+                  </option>
+                ))}
+              </select>
+            </label>
+          </ActionMenu>
+          {canEdit && (
+            <Button icon={Upload} onClick={upload}>
+              Importer des photos
+            </Button>
+          )}
         </div>
       </div>
+      {page === "gallery" && user && (
+        <SourceSyncAlert
+          user={user}
+          initial={overview?.sourceSync}
+          onReview={() => {
+            setPresence("missing");
+            setFiltersOpen(true);
+          }}
+        />
+      )}
       {page === "gallery" && !hasFilters && (
         <Home
           animals={data?.items || []}
@@ -230,7 +332,7 @@ export function Library({
         />
       )}
       {page === "archives" && canEdit && (
-        <PhotoTrash notify={notify} reload={reload} />
+        <PhotoTrash notify={notify} reload={reload} user={user} />
       )}
       {page === "archives" && (
         <section aria-label="Dossiers d’archives">
@@ -454,6 +556,12 @@ export function Library({
           </div>
         </div>
       </div>
+      {["recent", "oldest"].includes(sort) && (
+        <p className="small-note library-sort-note">
+          Tri : dernière série locale ajoutée. Les portraits SPA seuls sont
+          classés ensuite.
+        </p>
+      )}
       {filtersOpen && (
         <LibraryFilters
           page={page}
@@ -463,6 +571,7 @@ export function Library({
           photos={photos}
           mediaTag={mediaTag}
           publication={publication}
+          presence={presence}
           user={user}
           year={year}
           recent={recentOnly}
@@ -474,6 +583,7 @@ export function Library({
               mediaTag: setMediaTag,
               year: setYear,
               recent: setRecentOnly,
+              presence: setPresence,
             })[key](value);
             setNumber(1);
           }}
@@ -546,7 +656,7 @@ export function Library({
                 <th>Identité</th>
                 <th>Photos</th>
                 <th>Statut</th>
-                <th>Mis à jour</th>
+                <th>Dernières photos locales</th>
                 <th />
               </tr>
             </thead>
@@ -588,7 +698,17 @@ export function Library({
                   <td>
                     <AnimalStatus animal={a} />
                   </td>
-                  <td>{date(a.updated_at)}</td>
+                  <td>
+                    {a.latest_photo_at ? (
+                      <PhotoUpdate animal={a} user={user} />
+                    ) : (
+                      <span className="muted">
+                        {a.source_metadata?.thumbnail
+                          ? "Photo SPA uniquement"
+                          : "Aucune photo locale"}
+                      </span>
+                    )}
+                  </td>
                   <td>
                     <button
                       className="icon-button"
@@ -635,7 +755,7 @@ export function Library({
     </>
   );
 }
-function AnimalCard({
+export function AnimalCard({
   user,
   a,
   open,
@@ -653,7 +773,10 @@ function AnimalCard({
   const agePhoto = a.latest_photo_at
     ? (Date.now() - Date.parse(a.latest_photo_at)) / 86400_000
     : 9999;
-  const recent = agePhoto >= 0 && agePhoto < (ui.recentDays || 7);
+  const ageProfile = (Date.now() - Date.parse(a.created_at)) / 86400_000;
+  const recentSeries = agePhoto >= 0 && agePhoto < (ui.recentDays || 7);
+  const newProfile = ageProfile >= 0 && ageProfile < (ui.recentDays || 7);
+  const recent = !archived && (recentSeries || newProfile);
   const highlight =
     a.tags.find((tag) => /^sos(?:\s|$)/i.test(tag)) || a.tags[0];
   const liked = a.favorite || favorites.includes(a.id);
@@ -743,7 +866,11 @@ function AnimalCard({
           </button>
           {recent && !archived ? (
             <span className="recent-label">
-              {agePhoto < 2 ? "Nouveau · 48 h" : "Photos récentes"}
+              {recentSeries
+                ? agePhoto < 2
+                  ? "Nouvelle série · 48 h"
+                  : "Photos locales récentes"
+                : "Nouvelle fiche"}
             </span>
           ) : null}
           <div className="photo-badge-stack">
