@@ -1,0 +1,230 @@
+.event-arrival {
+  --event-color: #83cdb5;
+}
+.event-adoption {
+  --event-color: #eea8c0;
+}
+.event-pending {
+  --event-color: #f2bd79;
+}
+.event-departure {
+  --event-color: #b3bac7;
+}
+.event-returned {
+  --event-color: #a7c6fa;
+}
+.event-update {
+  --event-color: var(--accent);
+}
+html:is([data-theme="spa"], [data-theme="sage"]) .event-arrival {
+  --event-color: #246b53;
+}
+html:is([data-theme="spa"], [data-theme="sage"]) .event-adoption {
+  --event-color: #a02d5c;
+}
+html:is([data-theme="spa"], [data-theme="sage"]) .event-pending {
+  --event-color: #96520d;
+}
+html:is([data-theme="spa"], [data-theme="sage"]) .event-departure {
+  --event-color: #586373;
+}
+html:is([data-theme="spa"], [data-theme="sage"]) .event-returned {
+  --event-color: #315ba7;
+}
+.home-widget-list.refuge-mini-feed {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.refuge-mini-feed .refuge-mini-event {
+  border-inline-start: 2px solid
+    color-mix(in srgb, var(--event-color) 65%, transparent);
+  transition:
+    background 0.18s,
+    border-color 0.18s,
+    transform 0.18s;
+  padding: 14px 12px;
+  min-width: 0;
+}
+@media (min-width: 1500px) {
+  .home-widget-list.refuge-mini-feed {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (max-width: 620px) {
+  .home-widget-list.refuge-mini-feed {
+    grid-template-columns: 1fr;
+  }
+}
+.refuge-mini-feed .refuge-mini-event:hover {
+  background: color-mix(in srgb, var(--event-color) 7%, transparent);
+  border-color: var(--event-color);
+  transform: translateY(-2px);
+}
+.home-widget-list.refuge-mini-feed .refuge-event-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  color: var(--event-color);
+  background: color-mix(in srgb, var(--event-color) 12%, transparent);
+}
+.refuge-mini-feed strong {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+.refuge-mini-feed .refuge-event-label {
+  color: var(--event-color);
+  margin-top: 5px;
+  line-height: 1.45;
+  font-size: 11px;
+}
+.refuge-mini-feed time {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 400;
+  margin-top: 4px;
+}
+.refuge-event-open {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+html[data-theme] .feed-entry .feed-event-label {
+  color: var(--event-color, var(--ink));
+  border-color: color-mix(
+    in srgb,
+    var(--event-color, var(--accent)) 25%,
+    transparent
+  );
+  background: color-mix(
+    in srgb,
+    var(--event-color, var(--accent)) 8%,
+    transparent
+  );
+}
+.adoption-reviews h1 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.review-total {
+  display: inline-grid;
+  place-items: center;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 4px 10px;
+  font-size: 18px;
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.adoption-review-help {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 20px;
+  color: var(--muted);
+  line-height: 1.7;
+  margin-bottom: 24px;
+}
+.adoption-review-help > svg {
+  flex-shrink: 0;
+  color: var(--accent);
+  margin-top: 4px;
+}
+.adoption-review-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  gap: 18px;
+}
+.adoption-review-card {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  padding: 20px;
+  gap: 16px;
+  align-items: center;
+}
+.review-portrait {
+  width: 84px;
+  height: 98px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface);
+  color: var(--muted);
+}
+.review-portrait img,
+.review-portrait .spa-source-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.review-portrait .spa-source-photo > span {
+  display: none;
+}
+.review-animal strong {
+  display: block;
+  color: var(--ink);
+  font-size: 21px;
+  overflow-wrap: anywhere;
+}
+.review-animal small,
+.review-animal time {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 7px;
+  line-height: 1.5;
+}
+.review-actions {
+  grid-column: 1/-1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.review-actions .button {
+  flex: 1;
+}
+.review-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin: 24px 0;
+}
+.tile-logo-mosaic .template-mini {
+  clip-path: polygon(50% 0, 100% 24%, 100% 76%, 50% 100%, 0 76%, 0 24%);
+  background: #dc6928;
+  padding: 12px;
+}
+.tile-logo-mosaic .template-mini i {
+  background: linear-gradient(135deg, #c3d5bc, #75987e);
+  border-bottom: 4px solid #30241d;
+}
+@media (max-width: 480px) {
+  .adoption-review-card {
+    padding: 16px;
+    gap: 12px;
+    grid-template-columns: 70px minmax(0, 1fr);
+  }
+  .review-portrait {
+    width: 70px;
+    height: 88px;
+  }
+  .review-actions {
+    flex-direction: column;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .refuge-mini-feed .refuge-mini-event {
+    transition: none;
+  }
+  .refuge-mini-feed .refuge-mini-event:hover {
+    transform: none;
+  }
+}

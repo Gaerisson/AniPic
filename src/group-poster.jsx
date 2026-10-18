@@ -12,6 +12,11 @@ import { api, apiBlob, apiDownload, imageUrl, speciesName } from "./api.js";
 import { Button, Spinner, Empty } from "./ui.jsx";
 import { SpaPhoto } from "./spa-photo.jsx";
 const templates = [
+  [
+    "logo-mosaic",
+    "Les regards dans le logo",
+    "Silhouette SPA en portraits, chaque nom reste lisible",
+  ],
   ["spa", "Mosaïque SPA", "Clair, orange et portraits aux bords découpés"],
   ["glass", "Verre moderne", "Cartes translucides, reflets et fond lumineux"],
   ["editorial", "Éditorial", "Contraste profond et grille photographique"],
@@ -132,7 +137,15 @@ export default function GroupPoster({ user, overview, notify }) {
                   key={id}
                   className={`template-tile tile-${id} ${options.template === id ? "selected" : ""}`}
                   aria-pressed={options.template === id}
-                  onClick={() => change("template", id)}
+                  onClick={() =>
+                    setOptions((v) => ({
+                      ...v,
+                      template: id,
+                      ...(id === "logo-mosaic"
+                        ? { names: true, columns: 0 }
+                        : {}),
+                    }))
+                  }
                 >
                   <span className="template-mini">
                     <i />
@@ -197,6 +210,7 @@ export default function GroupPoster({ user, overview, notify }) {
                 <label>
                   Colonnes
                   <select
+                    disabled={options.template === "logo-mosaic"}
                     value={options.columns}
                     onChange={(e) => change("columns", Number(e.target.value))}
                   >
@@ -212,11 +226,18 @@ export default function GroupPoster({ user, overview, notify }) {
               <label className="checkbox-label">
                 <input
                   type="checkbox"
+                  disabled={options.template === "logo-mosaic"}
                   checked={options.names}
                   onChange={(e) => change("names", e.target.checked)}
                 />
                 Afficher les noms
               </label>
+              {options.template === "logo-mosaic" && (
+                <p className="fineprint">
+                  Les portraits composent la silhouette du logo. La disposition
+                  s’adapte à la sélection et les noms restent toujours affichés.
+                </p>
+              )}
               <label>
                 Adresse du QR code (facultatif)
                 <input

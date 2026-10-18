@@ -40,7 +40,9 @@ export function animalCsv(rows) {
         statuses[a.status] || a.status,
         a.adoption_origin?.kind === "automatic_absence"
           ? "Règle automatique d’absence AniPic"
-          : "",
+          : a.adoption_origin?.kind === "team_confirmed"
+            ? "Adoption validée par l’équipe AniPic"
+            : "",
         a.source_presence?.state === "missing"
           ? a.adoption_origin?.kind === "automatic_absence"
             ? "Absent — adoption automatique"

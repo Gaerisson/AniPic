@@ -26,13 +26,19 @@ export function AnimalStatus({
   const automatic =
     value === "adopted" &&
     animal?.adoption_origin?.kind === "automatic_absence";
+  const teamConfirmed =
+    value === "adopted" && animal?.adoption_origin?.kind === "team_confirmed";
   const label = sourceMissing
     ? "Absent de la liste SPA · à vérifier"
     : automatic
       ? "Adopté · automatique"
-      : archived
-        ? "Archivé · statut à confirmer"
-        : style?.label?.trim() || statusDefaults[value]?.label || "À confirmer";
+      : teamConfirmed
+        ? "Adopté · confirmé par l’équipe"
+        : archived
+          ? "Archivé · statut à confirmer"
+          : style?.label?.trim() ||
+            statusDefaults[value]?.label ||
+            "À confirmer";
   const color = sourceMissing
     ? "#e99436"
     : archived
@@ -44,13 +50,15 @@ export function AnimalStatus({
     ? `Absent du dernier inventaire complet appliqué${animal.source_presence.checkedAt ? " du " + date(animal.source_presence.checkedAt) : ""}. Dernier statut connu : ${style?.label || value}. Adoption non confirmée.`
     : automatic
       ? `Adoption déduite par la règle d’absence configurée dans AniPic, après ${animal.adoption_origin.confirmations} inventaires confirmés. Corrigée automatiquement si l’animal réapparaît.`
-      : animal?.source_id?.startsWith("demo:")
-        ? "Profil de démonstration"
-        : value === "source_missing"
-          ? "Absence confirmée de l’inventaire ; adoption non confirmée"
-          : animal?.source_id?.startsWith("spa:")
-            ? "Statut importé de la source SPA"
-            : "Statut importé du flux source";
+      : teamConfirmed
+        ? `Adoption validée par l’équipe le ${date(animal.adoption_origin.reviewedAt)}. Corrigée si l’animal réapparaît dans l’inventaire SPA.`
+        : animal?.source_id?.startsWith("demo:")
+          ? "Profil de démonstration"
+          : value === "source_missing"
+            ? "Absence confirmée de l’inventaire ; adoption non confirmée"
+            : animal?.source_id?.startsWith("spa:")
+              ? "Statut importé de la source SPA"
+              : "Statut importé du flux source";
   return (
     <span
       className={`animal-status status-${value} ${compact ? "compact" : ""}`}

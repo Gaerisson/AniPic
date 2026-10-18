@@ -7,6 +7,7 @@ import {
 import { themedNames, nameThemes } from "../shared/name-themes.mjs";
 import { registerAuthorAvatar } from "./author-avatar.mjs";
 import { registerSourceMatches } from "./source-match.mjs";
+import { feedAdoptionOrigin } from "./source-adoption.mjs";
 import { registerGeoIP } from "./geoip.mjs";
 import { z } from "zod";
 import path from "node:path";
@@ -374,6 +375,9 @@ export async function registerExtras(app, { db, c, authorized, job }) {
       return {
         events: events.map(({ source_metadata, ...event }) => ({
           ...event,
+          ...(event.status === "adopted"
+            ? { adoption_origin: feedAdoptionOrigin(db, event) }
+            : {}),
           source_metadata: {
             ageLabel: publicAnimalMetadata(JSON.parse(source_metadata || "{}"))
               .ageLabel,

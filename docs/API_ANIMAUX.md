@@ -165,3 +165,11 @@ Pour un compte connecté, `GET /api/animals?format=csv&presence=all` télécharg
 La planification peut utiliser `syncIntervalHours: 0.25` (15 minutes) ; zéro conserve le fonctionnement manuel. `sourceAbsenceIntervalHours: 0.25` règle séparément l’espacement minimum des confirmations de départ, et `missingThreshold` reste au moins égal à 2. Les trois passages de collecte contrôlent un même inventaire et ne remplacent pas ces confirmations espacées.
 
 Les planifications actives réessaient les échecs et collectes partielles avec un délai progressif de 5 à 30 minutes. Les modes manuel et désactivé ne font aucun nouvel essai automatique. Les totaux par espèce et les identifiants entre espèces sont vérifiés avant de valider les absences. La liste web relit l’API AniPic chaque minute lorsqu’elle est visible ; elle ne déclenche pas pour autant une nouvelle collecte SPA.
+
+## Validation des adoptions par l’équipe
+
+`GET /api/adoption-reviews?page=1` renvoie `items`, `total`, `page` et `pages`, à raison de 40 fiches par page. `?countOnly=1` fournit seulement le compteur. Ces routes exigent un compte **agent ou admin** : ni le PIN seul ni un compte bénévole ne permettent d’y accéder.
+
+`POST /api/adoption-reviews/UUID/confirm` accepte `{"expectedAt":"DATE_AT_REÇUE_DANS_LA_LISTE"}` avec session, origine et jeton CSRF. La validation est idempotente ; une fiche revenue dans l’inventaire, retirée de la file ou remplacée par une nouvelle détection produit `409`. Elle ne rajoute aucun événement statistique d’adoption.
+
+Le champ public `adoption_origin.kind` vaut `automatic_absence` pour une déduction non vérifiée et `team_confirmed` après validation. Il expose la date de validation, jamais l’identité du membre de l’équipe. Le journal privé conserve l’auteur. Le fil conserve aussi l’origine des nouveaux événements ; une adoption automatique rétractée est signalée par `automatic_reversed`.

@@ -7,7 +7,7 @@ Anipic reprend le projet GPIC SPA pour organiser les photos des animaux, prépar
 
 **Projet vibecodé par [Gaerisson](https://github.com/Gaerisson/), avec Codex, assistant d’OpenAI.** L’idée, les besoins métier, les choix visuels et la direction du projet viennent de Gaerisson.
 
-[Release 3.10.3](RELEASE_v3.10.3.md) · [Installation Docker / Portainer](docs/DEPLOIEMENT.md) · [Journal des versions](CHANGELOG.md) · [API SPA / AniPic](docs/API_ANIMAUX.md) · [Google et bénévoles](GOOGLE.md) · [Agenda partagé](docs/AGENDA.md) · [Suivi des TV](docs/SUIVI_TV.md) · [Tests et validation](VALIDATION.md)
+[Release 3.10.4](RELEASE_v3.10.4.md) · [Installation Docker / Portainer](docs/DEPLOIEMENT.md) · [Journal des versions](CHANGELOG.md) · [API SPA / AniPic](docs/API_ANIMAUX.md) · [Google et bénévoles](GOOGLE.md) · [Agenda partagé](docs/AGENDA.md) · [Suivi des TV](docs/SUIVI_TV.md) · [Tests et validation](VALIDATION.md)
 
 ## Présentation
 
@@ -21,6 +21,8 @@ Deux montages de **24,5 secondes**, 30 images/s : portraits en relief et présen
 
 ## Nouveautés 3.10
 
+- Fil d’accueil avec +/−/cœur et dates ; file « Adoptions à confirmer » pour les agents, compteur et validation sans double comptage.
+- Nouveau poster en silhouette SPA, portraits regroupés dans le logo et noms toujours lisibles, exports A4/A3/A2.
 - Synchronisation dès 15 minutes, reprise après échec et alerte d’écart SPA ; adoptions automatiques après confirmations, au choix de l’administration.
 - Actions regroupées, jusqu’à 200 animaux par page, export CSV et corbeille des archives avec sauvegarde avant vidage.
 - Photos mal attribuées : réattribution seule ou en lot, annulation Ctrl+Z et suggestions par ressemblance des portraits locaux / SPA.
@@ -31,7 +33,7 @@ Deux montages de **24,5 secondes**, 30 images/s : portraits en relief et présen
 - Suivi des TV : connexion, actualisation, séquence en cours et historique des incidents.
 - Ententes nuancées en orange, thèmes clairs et placements mobiles corrigés.
 
-[Notes de version](RELEASE_v3.10.3.md) · [Atelier du refuge](docs/ATELIER_REFUGE.md) · [Historique complet](CHANGELOG.md).
+[Notes de version](RELEASE_v3.10.4.md) · [Atelier du refuge](docs/ATELIER_REFUGE.md) · [Historique complet](CHANGELOG.md).
 
 ## Les espaces
 
@@ -77,9 +79,9 @@ docker compose -f compose.yml exec -it anipic npm run setup
 
 Le conteneur utilise un compte non root et une racine en lecture seule. SQLite et le cache restent dans des volumes locaux ; les originaux et les sauvegardes peuvent être sur le NAS. Une instance utilise la base. [Guide complet, Portainer, Apache et C8](docs/DEPLOIEMENT.md).
 
-Trois modes sont proposés : `compose.yml` pour compiler depuis Git, `portainer-stack.yml` pour une image locale et `portainer-ghcr.yml` pour télécharger `ghcr.io/gaerisson/anipic:3.10.3` après sa publication GitHub. Conserver la stack, les volumes et les chemins NAS existants. [Procédure de mise à jour](docs/DEPLOIEMENT.md#portainer-et-apache).
+Trois modes sont proposés : `compose.yml` pour compiler depuis Git, `portainer-stack.yml` pour une image locale et `portainer-ghcr.yml` pour télécharger `ghcr.io/gaerisson/anipic:3.10.4` après sa publication GitHub. Conserver la stack, les volumes et les chemins NAS existants. [Procédure de mise à jour](docs/DEPLOIEMENT.md#portainer-et-apache).
 
-La publication de l’image et de la release est déclenchée par un tag `v3.10.3` ou manuellement dans Actions → Validation Anipic, option **publish**. Elle attend les tests, les deux builds, la construction Docker et un rendu MP4 réel. Au premier envoi, vérifier que le package GHCR est public. [Publication et dépannage](docs/CONTROLES_RELEASE.md).
+La publication de l’image et de la release est déclenchée par un tag `v3.10.4` ou manuellement dans Actions → Validation Anipic, option **publish**. Elle attend les tests, les deux builds, la construction Docker et un rendu MP4 réel. Au premier envoi, vérifier que le package GHCR est public. [Publication et dépannage](docs/CONTROLES_RELEASE.md).
 
 ## Configurer les services
 

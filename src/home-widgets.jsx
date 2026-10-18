@@ -1,5 +1,16 @@
 import { useState, useEffect, lazy, Suspense } from "react";
-import { Camera, Rss, Monitor, ArrowUpRight } from "lucide-react";
+import {
+  Camera,
+  Rss,
+  Monitor,
+  ArrowUpRight,
+  Plus,
+  Minus,
+  Heart,
+  Undo2,
+  RefreshCw,
+} from "lucide-react";
+import { refugeEvent } from "../shared/feed-event.mjs";
 import { api, imageUrl } from "./api.js";
 import { SpaPhoto } from "./spa-photo.jsx";
 import { parisDate, agendaDateLabel } from "../shared/agenda.mjs";
@@ -8,7 +19,8 @@ const Player = lazy(() =>
 );
 export function HomeWidgets({ widgets, user, overview, open }) {
   const [tasks, setTasks] = useState([]),
-    [feed, setFeed] = useState([]),
+    [feed, setFeed] = useState(null),
+    [feedError, setFeedError] = useState(""),
     [tv, setTv] = useState(null),
     [agenda, setAgenda] = useState(null),
     [agendaError, setAgendaError] = useState("");
@@ -48,11 +60,37 @@ export function HomeWidgets({ widgets, user, overview, open }) {
       api("/tasks")
         .then(setTasks)
         .catch(() => {});
-    if (widgets.includes("activity"))
-      api("/feed?latest=1&limit=4")
-        .then((v) => setFeed(v.items || v.events || []))
-        .catch(() => {});
   }, [widgets.join("|"), user?.id]);
+  useEffect(() => {
+    if (!widgets.includes("activity")) return;
+    let active = true,
+      inFlight = false;
+    const load = async () => {
+      if (inFlight || document.visibilityState === "hidden") return;
+      inFlight = true;
+      try {
+        const v = await api("/feed?latest=1&limit=4");
+        if (active) {
+          setFeed(v.events || []);
+          setFeedError("");
+        }
+      } catch {
+        /* Keep the last known activity during an outage. */
+        if (active)
+          setFeedError("Le fil du refuge est temporairement indisponible.");
+      } finally {
+        inFlight = false;
+      }
+    };
+    load();
+    const timer = setInterval(load, 60000);
+    window.addEventListener("focus", load);
+    return () => {
+      active = false;
+      clearInterval(timer);
+      window.removeEventListener("focus", load);
+    };
+  }, [widgets.includes("activity"), user?.id, overview]);
   useEffect(() => {
     if (!widgets.includes("tv")) return;
     const load = () =>
@@ -204,28 +242,56 @@ export function HomeWidgets({ widgets, user, overview, open }) {
                     Tout voir <ArrowUpRight size={14} />
                   </a>
                 </h2>
-                <div className="home-widget-list">
-                  {feed.slice(0, 4).map((t) => (
-                    <button
-                      key={t.id || t.seq}
-                      onClick={() => open({ type: "animal", id: t.animal_id })}
-                    >
-                      <strong>
-                        {t.name}
-                        <small>
-                          {{
-                            added: "Nouvel arrivant",
-                            adopted: "Adoption",
-                            archived: "Archivage",
-                            removed: "Départ",
-                            returned: "Retour",
-                            restored: "Retour",
-                          }[t.kind] || "Nouvelle du refuge"}
-                        </small>
-                      </strong>
-                      <ArrowUpRight size={16} />
-                    </button>
-                  ))}
+                <div className="home-widget-list refuge-mini-feed">
+                  {(feed || []).slice(0, 4).map((t) => {
+                    const event = refugeEvent(t),
+                      Icon = {
+                        plus: Plus,
+                        minus: Minus,
+                        heart: Heart,
+                        return: Undo2,
+                        update: RefreshCw,
+                      }[event.symbol];
+                    return (
+                      <button
+                        className={`refuge-mini-event event-${event.type}`}
+                        key={t.id || t.seq}
+                        onClick={() =>
+                          open({ type: "animal", id: t.animal_id })
+                        }
+                      >
+                        <span className="refuge-event-icon" aria-hidden="true">
+                          <Icon size={18} />
+                        </span>
+                        <strong>
+                          {t.name}
+                          <small className="refuge-event-label">
+                            {event.label}
+                          </small>
+                          <time dateTime={t.created_at}>
+                            {new Date(t.created_at).toLocaleString("fr-FR", {
+                              timeZone: "Europe/Paris",
+                              day: "numeric",
+                              month: "short",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </time>
+                        </strong>
+                        <ArrowUpRight size={15} className="refuge-event-open" />
+                      </button>
+                    );
+                  })}
+                  {feed === null && (
+                    <p className="muted" role="status">
+                      {feedError || "Chargement des nouvelles…"}
+                    </p>
+                  )}
+                  {feed?.length === 0 && (
+                    <p className="muted">
+                      Les prochaines nouvelles du refuge apparaîtront ici.
+                    </p>
+                  )}
                 </div>
               </>
             )}

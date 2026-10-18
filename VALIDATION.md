@@ -1,4 +1,16 @@
-# Vérifications — AniPic 3.10.3
+# Vérifications — AniPic 3.10.4
+
+## V3.10.4 — Fil d’accueil, validation d’adoptions et poster SPA
+
+**251 tests réussis**, aucun échec ni test ignoré, suite complète en 135,7 secondes sous Node.js 24.18.1. Sept tests couvrent les accès agent/admin, refus des autres rôles et du CSRF absent, compteur et pagination, validation idempotente sans double adoption, conservation des photos privées et de leurs originaux, refus d’une validation périmée ou en corbeille, archivage automatique réel suivi d’un retour SPA, pictogrammes des mouvements et mise en page de 1 à 60 portraits. Le fil conserve l’origine des nouveaux mouvements et signale les déductions corrigées après retour. Le test ciblé de poster vérifie aussi l’export PDF réel avec taille A4.
+
+**Rendus contrôlés :** PNG de 12, 24 et 60 portraits inspectés ; génération réelle d’un aperçu depuis la page Grande affiche avec trois portraits locaux. Contrôle interactif du module d’accueil en SPA clair et Studio nuit, grille équilibrée sur écran normal, puis en 390 × 844 px. Icônes, libellés et dates lisibles, aucune largeur de document dépassant l’écran sur cette vue. La page des adoptions affiche correctement son état vide sur la base de démonstration ; les validations avec animaux en attente sont exécutées sur des bases temporaires isolées. Préférences initiales de thème et taille de fenêtre rétablies.
+
+**Dépendances et builds :** `npm ci` depuis un dossier neuf, manifestes 3.10.4, Node.js 24 : 464 packages installés, 465 audités, aucune vulnérabilité signalée. Aucune dépendance ajoutée. Compilations frontend et vidéo réussies ; avertissement Vite non bloquant pour le bundle principal dépassant légèrement 500 kB. Six variantes Compose, métadonnées de release simulées et syntaxe GitHub Actions vérifiées.
+
+**Conservation :** sauvegarde SQLite cohérente avant intervention sur la démo, sans changer le schéma 21. Fiches, photos, blobs, albums, projets et sessions encore valides conservés ; intégrité et clés étrangères contrôlées. Les visites et journaux HTTP se complètent normalement. Les réglages d’adoption/fréquence de cette base restent inchangés : le profil rapide doit être appliqué puis enregistré dans l’administration. Aucun changement de volumes ou montages NAS.
+
+**Non exécutés :** construction et démarrage Docker, workflow GitHub en ligne, déploiement Portainer/NAS physique. Le moteur Docker n’est pas disponible ici. Les tests de stockage et de structure de production existants tournent dans la suite ; ils ne remplacent pas un déploiement réel. Aucune image ni release GitHub/GHCR publiée dans cette intervention.
 
 ## V3.10.3 — Interface, posters et synchronisation réactive
 

@@ -7,7 +7,11 @@ import { z } from "zod";
 import { recordAnimalChanges } from "./animal-history.mjs";
 import { sourceStatus } from "./source-status.mjs";
 import { savePresence, readPresence } from "./source-presence.mjs";
-import { inferAdoption, reconcileAdoption } from "./source-adoption.mjs";
+import {
+  adoptionOrigin,
+  inferAdoption,
+  reconcileAdoption,
+} from "./source-adoption.mjs";
 import {
   publicAnimalMetadata,
   publicCompatibility,
@@ -574,6 +578,7 @@ export function applySnapshot(db, snapshot) {
             db,
             db.prepare("SELECT * FROM animals WHERE id=?").get(a.id),
             "removed",
+            outcome === "adopted" ? adoptionOrigin(db, a.id) : null,
           );
           absent++;
         }

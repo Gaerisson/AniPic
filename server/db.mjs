@@ -305,11 +305,12 @@ export function audit(db, user, action, detail = {}) {
     now(),
   );
 }
-export function feedEvent(db, animal, kind) {
+export function feedEvent(db, animal, kind, origin = null) {
+  const eventId = id();
   db.prepare(
     "INSERT INTO feed_events(id,animal_id,name,species,kind,status,created_at) VALUES (?,?,?,?,?,?,?)",
   ).run(
-    id(),
+    eventId,
     animal.id,
     animal.name,
     animal.species,
@@ -317,4 +318,9 @@ export function feedEvent(db, animal, kind) {
     animal.status || "available",
     now(),
   );
+  if (origin)
+    db.prepare("INSERT INTO settings VALUES (?,?)").run(
+      "feedOrigin:" + eventId,
+      JSON.stringify(origin),
+    );
 }

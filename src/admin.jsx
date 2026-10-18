@@ -375,6 +375,7 @@ const actionNames = {
   source_adoption_reversed: "Animal réapparu · adoption automatique corrigée",
   source_adoption_confirmed:
     "Adoption automatique confirmée par un statut source",
+  adoption_review_confirmed: "Adoption validée par l’équipe",
   animal_restored: "Album restauré",
   photos_uploaded: "Photos importées",
   photo_updated: "Photo mise à jour",

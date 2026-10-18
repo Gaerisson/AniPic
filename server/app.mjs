@@ -18,7 +18,11 @@ import { registerTrash, isAnimalTrashed } from "./trash.mjs";
 import { animalPresence, missingAnimalIds } from "./source-presence.mjs";
 import { animalCsv } from "../shared/animal-csv.mjs";
 import { sourceHealth } from "./source-health.mjs";
-import { adoptionOrigin } from "./source-adoption.mjs";
+import {
+  adoptionOrigin,
+  pendingAdoptionCount,
+  registerAdoptionReviews,
+} from "./source-adoption.mjs";
 import { cachedSourceMatch } from "./source-match.mjs";
 import {
   siteAccessHook,
@@ -502,6 +506,9 @@ export async function createApp(overrides = {}) {
           .get().n,
         photos,
         needPhotos,
+        ...(["admin", "agent"].includes(req.user?.role)
+          ? { pendingAdoptions: pendingAdoptionCount(db) }
+          : {}),
         openTasks: req.user
           ? db
               .prepare(
@@ -1420,6 +1427,7 @@ export async function createApp(overrides = {}) {
   await registerExtras(app, { db, c, authorized, job });
   await registerInternalRegister(app, { db, authorized });
   await registerGroupPosters(app, { db, c, authorized });
+  await registerAdoptionReviews(app, { db, authorized });
   await registerCreativeWorkshop(app, { db, c, authorized });
   if (existsSync(path.join(root, "dist", "index.html"))) {
     await app.register(serveStatic, {

@@ -1,5 +1,6 @@
 import { id, now } from "./db.mjs";
 const names = {
+  adoption_review_confirmed: "Adoption validée par l’équipe",
   photo_reviewed: "Analyse du tri photo",
   animal_cutout: "Détourage d’un animal",
   cutout_saved: "Copie détourée enregistrée",

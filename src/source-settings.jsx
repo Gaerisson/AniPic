@@ -480,6 +480,29 @@ export function SourceSettings({ values: v, change, notify }) {
         </details>
         <details className="settings-details">
           <summary>Absences et adoptions automatiques</summary>
+          <Button
+            variant="secondary"
+            onClick={() =>
+              change({
+                archiveMissing: true,
+                sourceMissingOutcome: "adopted",
+                missingThreshold: 2,
+                sourceAbsenceIntervalHours: 0.5,
+                syncScheduleMode: "interval",
+                syncIntervalHours: 0.25,
+                sourceAttempts: 3,
+              })
+            }
+          >
+            Appliquer le profil rapide · 2 confirmations / 30 min
+          </Button>
+          <p className="fineprint">
+            Ce profil règle la synchronisation interne toutes les 15 minutes,
+            conserve 3 passages par collecte et archive automatiquement après 2
+            confirmations espacées de 30 minutes. Enregistrez ensuite les
+            paramètres. Les agents retrouvent les adoptions déduites dans «
+            Adoptions à confirmer ».
+          </p>
           {num(
             "missingThreshold",
             "Inventaires complets avant archivage",
@@ -507,14 +530,18 @@ export function SourceSettings({ values: v, change, notify }) {
             pendant une seule synchronisation : ils ne représentent pas des
             jours d’attente. Le départ demande {v.missingThreshold || 3}{" "}
             confirmations distinctes, espacées d’au moins{" "}
-            {(v.sourceAbsenceIntervalHours || 24) * 60} minutes. Avec une
-            synchronisation assez fréquente, le délai depuis la dernière
-            confirmation peut aller jusqu’à environ{" "}
-            {(
-              (v.missingThreshold || 3) * (v.sourceAbsenceIntervalHours || 24)
-            ).toLocaleString("fr-FR")}{" "}
-            h, hors panne ou inventaire rejeté. Les arrivées et modifications
-            sont actualisées à chaque synchronisation sans attendre ce délai.
+            {(v.sourceAbsenceIntervalHours || 24) * 60} minutes. La première
+            absence est comptabilisée lors du prochain inventaire complet
+            éligible. Après cette première absence comptabilisée, les{" "}
+            {Math.max(1, (v.missingThreshold || 3) - 1)} confirmation(s)
+            restante(s) demandent au moins{" "}
+            {Math.round(
+              Math.max(1, (v.missingThreshold || 3) - 1) *
+                (v.sourceAbsenceIntervalHours || 24) *
+                60,
+            )}{" "}
+            minutes. Les arrivées et modifications sont actualisées à chaque
+            synchronisation sans attendre ce délai.
           </p>
           <label>
             Après les absences confirmées

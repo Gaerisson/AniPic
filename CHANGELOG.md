@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 3.10.4 — 18 octobre 2026
+
+Fil d’accueil avec +/−/cœur, couleurs des mouvements et dates. Liste « Adoptions à confirmer » avec compteur dans le menu et validation par les agents sans double comptage. Profil rapide 2 confirmations / 30 min, synchronisation 15 min. Poster en silhouette SPA avec noms lisibles, jusqu’à 60 portraits. [Détail](RELEASE_v3.10.4.md).
+
 ## 3.10.3 — 18 octobre 2026
 
 Menus au-dessus des cartes et des fenêtres, actions séance/publication visibles, badges sans chevauchement, formulaires équipe et titres corrigés. Horloge/météo harmonisées en sombre. Correction de l’export poster dans Docker avec ressources `dist/` et test de production ajouté. Fréquence et confirmations réglables dès 15 minutes, reprise progressive après échec/inventaire partiel, contrôles SPA par espèce renforcés et listes actualisées en arrière-plan. [Détail](RELEASE_v3.10.3.md).

@@ -1,6 +1,7 @@
 import { browserTheme, rememberTheme } from "./theme-store.mjs";
 const InternalRegister = lazy(() => import("./internal-register.jsx"));
 const GroupPoster = lazy(() => import("./group-poster.jsx"));
+const AdoptionReviews = lazy(() => import("./adoption-reviews.jsx"));
 const Agenda = lazy(() => import("./agenda.jsx"));
 const BatchPosters = lazy(() => import("./batch-posters.jsx"));
 import { SiteGate } from "./site-access.jsx";
@@ -130,6 +131,12 @@ import "./update31.css";
 
 const iconProps = { size: 19, strokeWidth: 1.7 };
 const pages = {
+  adoptionReviews: {
+    name: "Adoptions à confirmer",
+    icon: Heart,
+    group: "team",
+    roles: ["admin", "agent"],
+  },
   visitors: { name: "Visiteurs", icon: Eye, group: "admin" },
   history: { name: "Historique SPA", icon: RefreshCw, group: "library" },
   display: { name: "Écran du refuge", icon: Eye, group: "library" },
@@ -295,6 +302,28 @@ function App() {
     return () => clearTimeout(timer);
   }, [toast]);
   const reload = useCallback(() => setVersion((v) => v + 1), []);
+  const [pendingAdoptions, setPendingAdoptions] = useState(0);
+  useEffect(() => {
+    if (!["admin", "agent"].includes(user?.role)) {
+      setPendingAdoptions(0);
+      return;
+    }
+    let active = true;
+    const load = () => {
+      if (document.visibilityState !== "hidden")
+        api("/adoption-reviews?countOnly=1")
+          .then((d) => active && setPendingAdoptions(d.total))
+          .catch(() => {});
+    };
+    load();
+    const timer = setInterval(load, 60000);
+    window.addEventListener("focus", load);
+    return () => {
+      active = false;
+      clearInterval(timer);
+      window.removeEventListener("focus", load);
+    };
+  }, [user?.id, version]);
   const undo = useUndo(user, notify, reload);
   const [navOpen, setNavOpen] = useState(() => {
     try {
@@ -603,6 +632,7 @@ function App() {
                   "agenda",
                   "register",
                   "archives",
+                  "adoptionReviews",
                   "displaySettings",
                   "broadcasts",
                 ],
@@ -691,6 +721,14 @@ function App() {
                         {key === "archives" && overview?.stats.archived > 0 && (
                           <span className="nav-subcount">
                             {overview.stats.archived}
+                          </span>
+                        )}
+                        {key === "adoptionReviews" && pendingAdoptions > 0 && (
+                          <span
+                            className="nav-count"
+                            aria-label={`${pendingAdoptions} adoptions à confirmer`}
+                          >
+                            {pendingAdoptions}
                           </span>
                         )}
                       </a>
@@ -912,6 +950,10 @@ function App() {
               <Suspense fallback={<Spinner />}>
                 <GroupPoster {...actions} />
               </Suspense>
+            ) : page === "adoptionReviews" ? (
+              <Suspense fallback={<Spinner />}>
+                <AdoptionReviews {...actions} />
+              </Suspense>
             ) : page === "tools" ? (
               <AgentTools {...actions} />
             ) : page === "agenda" ? (
@@ -1096,3 +1138,4 @@ import "./update35.css";
 import "./update36.css";
 import "./update39.css";
 import "./update312.css";
+import "./update314.css";

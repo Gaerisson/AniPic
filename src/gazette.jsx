@@ -1009,7 +1009,10 @@ export default function Gazette({ user, notify }) {
                                   ? row.adoption_origin?.kind ===
                                     "automatic_absence"
                                     ? "Adoption automatique"
-                                    : "Adoption"
+                                    : row.adoption_origin?.kind ===
+                                        "team_confirmed"
+                                      ? "Adoption confirmée par l’équipe"
+                                      : "Adoption"
                                   : "Arrivée"}
                               </span>
                               <strong>

@@ -1,23 +1,18 @@
 import { useEffect, useState } from "react";
 import {
   ArrowUpRight,
-  Archive,
   Camera,
   Heart,
   Plus,
   RefreshCw,
   Rss,
   Undo2,
+  Minus,
 } from "lucide-react";
+import { refugeEvent } from "../shared/feed-event.mjs";
 import { api, imageUrl, speciesName } from "./api.js";
 import { Empty, Spinner, Button } from "./ui.jsx";
 import { SpaPhoto } from "./spa-photo.jsx";
-const kinds = {
-  added: ["Nouvel arrivant", Plus],
-  removed: ["Archivé", Archive],
-  restored: ["De retour", Undo2],
-  adopted: ["Adoption", Heart],
-};
 export function Feed({ open, version }) {
   const [events, setEvents] = useState(null),
     [kind, setKind] = useState("all"),
@@ -118,9 +113,16 @@ export function Feed({ open, version }) {
               </div>
               <div className="feed-day-entries">
                 {rows.map((event) => {
-                  const type =
-                      event.status === "adopted" ? "adopted" : event.kind,
-                    [label, Icon] = kinds[type] || ["Mise à jour", RefreshCw];
+                  const details = refugeEvent(event),
+                    type = details.type,
+                    label = details.label,
+                    Icon = {
+                      plus: Plus,
+                      minus: Minus,
+                      heart: Heart,
+                      return: Undo2,
+                      update: RefreshCw,
+                    }[details.symbol];
                   return (
                     <button
                       className={`feed-entry event-${type}`}

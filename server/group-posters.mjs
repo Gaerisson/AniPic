@@ -8,6 +8,7 @@ import { assertStorage } from "./config.mjs";
 import { sourcePhotoBuffer } from "./source-photo.mjs";
 import { settings, audit } from "./db.mjs";
 import { publicAsset } from "./public-assets.mjs";
+import { logoPosterImage } from "./logo-poster.mjs";
 const UUID = z.string().uuid();
 export const groupPosterOptions = z
   .object({
@@ -19,7 +20,9 @@ export const groupPosterOptions = z
       )
       .min(1)
       .max(60),
-    template: z.enum(["spa", "editorial", "glass", "polaroid"]).default("spa"),
+    template: z
+      .enum(["spa", "editorial", "glass", "polaroid", "logo-mosaic"])
+      .default("spa"),
     format: z.enum(["A4", "A3", "A2"]).default("A3"),
     title: z.string().trim().min(1).max(90).default("Les regards du refuge"),
     subtitle: z
@@ -69,6 +72,13 @@ export async function groupPosterImage(c, items, input, logoBuffer) {
   const o = groupPosterOptions.parse(input),
     w = 1240,
     h = 1754;
+  if (o.template === "logo-mosaic")
+    return logoPosterImage(
+      items,
+      o,
+      logoBuffer,
+      await publicAsset("spa-lettering.png"),
+    );
   const dark = o.template === "editorial" || o.template === "glass",
     ink = dark ? "#fcfaf7" : "#24211f",
     muted = dark ? "#d0cbd4" : "#625a52";
