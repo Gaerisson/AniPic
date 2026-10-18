@@ -13,6 +13,7 @@ video-bundle/
 browser-path.txt
 smoke-output/
 release-validation.json
+release-artifacts/
 
 .mistral-key*
 !docs/media/

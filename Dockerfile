@@ -13,6 +13,12 @@ COPY scripts/build-video.mjs scripts/video-browser.mjs ./scripts/
 RUN npm run build && npm run video:build && VIDEO_BROWSER_INSTALL_DIR=/opt/remotion-browser npm run video:browser && npm prune --omit=dev
 
 FROM node:24-bookworm-slim
+ARG VCS_REF=unknown
+LABEL org.opencontainers.image.title="AniPic" \
+      org.opencontainers.image.version="3.10.0" \
+      org.opencontainers.image.revision=$VCS_REF \
+      org.opencontainers.image.source="https://github.com/Gaerisson/AniPic" \
+      org.opencontainers.image.authors="Gaerisson"
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=3000 DB_DIR=/data MEDIA_DIR=/media CACHE_DIR=/cache BACKUP_DIR=/backups
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends libnss3 libdbus-1-3 libatk1.0-0 libgbm-dev libasound2 libxrandr2 libxkbcommon-dev libxfixes3 libxcomposite1 libxdamage1 libatk-bridge2.0-0 libpango-1.0-0 libcairo2 libcups2 fonts-dejavu-core fonts-noto-color-emoji && rm -rf /var/lib/apt/lists/*

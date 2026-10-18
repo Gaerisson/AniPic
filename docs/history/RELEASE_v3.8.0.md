@@ -8,6 +8,6 @@ Exports en PDF complet, pages JPEG et ZIP d’images, plus un visuel réseaux PN
 
 L’atelier se concentre sur la gazette et le suivi des affiches de box. L’assistant de tri et le détourage ne sont plus affichés dans le menu ; les données déjà créées sont conservées.
 
-Schéma SQLite 19 conservé, montages Docker inchangés. [Mode d’emploi](docs/ATELIER_REFUGE.md) · [Vérifications](VALIDATION.md) · [Installation](docs/DEPLOIEMENT.md).
+Schéma SQLite 19 conservé, montages Docker inchangés. [Mode d’emploi](../ATELIER_REFUGE.md) · [Vérifications](../../VALIDATION.md) · [Installation](../DEPLOIEMENT.md).
 
 © Gaerisson.

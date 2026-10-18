@@ -19,6 +19,6 @@ Utiliser le même projet Compose et les mêmes volumes. Depuis Git/Portainer : `
 
 SQLite migre automatiquement de 15 vers 16 : métadonnées de compte, corbeille et historique de compression. L’opération de compression est désactivée tant que l’administrateur ne l’a pas explicitement lancée. Elle ne s’exécute pas pendant une migration ou une mise à jour.
 
-[Gestion des archives et restauration](docs/ARCHIVES.md) · [Déploiement](docs/DEPLOIEMENT.md) · [Contrôles réellement exécutés et limites](VALIDATION.md)
+[Gestion des archives et restauration](../ARCHIVES.md) · [Déploiement](../DEPLOIEMENT.md) · [Contrôles réellement exécutés et limites](../../VALIDATION.md)
 
 © 2026 Gaerisson. Le logo et l’identité de La SPA conservent leurs mentions et règles d’utilisation.

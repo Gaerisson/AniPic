@@ -2,47 +2,49 @@
 
 ## 3.10.0 — 18 octobre 2026
 
+Livraison : images Compose alignées sur 3.10.0, option GHCR dédiée et publication image/release conditionnée aux tests, builds et rendu Docker réel. Correction du contrôle des bind mounts pour Compose v2/v5 sans diminuer les protections NAS. Anciennes notes regroupées dans `docs/history/`.
+
 Suivi TV : écrans nommés, dernier contact, actualisation du programme, séquence en cours, incidents et reprises datés, détection des écrans hors ligne et retrait du suivi. Gestion réservée aux agents SPA et à l’administration ; PIN maintenu, aperçus exclus. Migration additive 20 → 21. [Détail](RELEASE_v3.10.0.md).
 
 ## 3.9.1 — 18 octobre 2026
 
-Ententes : seuls « Oui » et « Non » sans précision sont définitifs. Toute autre réponse renseignée est orange, y compris les descriptions sans oui/non et les ententes à tester. Texte SPA conservé ; règle commune aux fiches, filtres et vidéos. [Détail](RELEASE_v3.9.1.md).
+Ententes : seuls « Oui » et « Non » sans précision sont définitifs. Toute autre réponse renseignée est orange, y compris les descriptions sans oui/non et les ententes à tester. Texte SPA conservé ; règle commune aux fiches, filtres et vidéos. [Détail](docs/history/RELEASE_v3.9.1.md).
 
 ## 3.9.0 — 18 octobre 2026
 
-Gazette préremplie : résumé automatique, mouvements datés, portraits répartis entre espèces et événements partagés. Agenda d’équipe avec dates clés, rendez-vous sur plusieurs jours, annulation, module d’accueil, publication TV au choix et contrôle des modifications concurrentes. Données actualisées chaque minute ; textes et placements de l’interface assouplis sur mobile. Migration additive 19 → 20, sans changement des montages Docker. [Détail](RELEASE_v3.9.0.md).
+Gazette préremplie : résumé automatique, mouvements datés, portraits répartis entre espèces et événements partagés. Agenda d’équipe avec dates clés, rendez-vous sur plusieurs jours, annulation, module d’accueil, publication TV au choix et contrôle des modifications concurrentes. Données actualisées chaque minute ; textes et placements de l’interface assouplis sur mobile. Migration additive 19 → 20, sans changement des montages Docker. [Détail](docs/history/RELEASE_v3.9.0.md).
 
 ## 3.8.0 — 18 octobre 2026
 
-Gazette complète avec arrivées et adoptions illustrées, dates corrigibles pour chaque édition, agenda de dates clés, brouillons partagés et travail local mémorisé. PDF, pages JPEG, ZIP d’images et visuel réseaux PNG ; partage de fichiers vers WhatsApp avec repli par téléchargement. L’atelier affiche la gazette et le suivi des affiches de box. [Détail](RELEASE_v3.8.0.md).
+Gazette complète avec arrivées et adoptions illustrées, dates corrigibles pour chaque édition, agenda de dates clés, brouillons partagés et travail local mémorisé. PDF, pages JPEG, ZIP d’images et visuel réseaux PNG ; partage de fichiers vers WhatsApp avec repli par téléchargement. L’atelier affiche la gazette et le suivi des affiches de box. [Détail](docs/history/RELEASE_v3.8.0.md).
 
 ## 3.7.0 — 17 octobre 2026
 
-Atelier de tri photo avec références SPA, détourage local avec réglage du contour et export PNG, suivi des affiches installées dans les box et gazette mensuelle A4 en trois styles. Préparations privées avec progression, brouillons et choix mémorisés, originaux conservés. Migration SQLite 19 et contrôle du moteur ONNX CPU dans le smoke test Docker. [Détail](RELEASE_v3.7.0.md).
+Atelier de tri photo avec références SPA, détourage local avec réglage du contour et export PNG, suivi des affiches installées dans les box et gazette mensuelle A4 en trois styles. Préparations privées avec progression, brouillons et choix mémorisés, originaux conservés. Migration SQLite 19 et contrôle du moteur ONNX CPU dans le smoke test Docker. [Détail](docs/history/RELEASE_v3.7.0.md).
 
 ## 3.6.0 — 17 octobre 2026
 
-Inscription Google avec validation des comptes bénévoles et droits de création dédiés. Vidéo depuis une fiche animal, albums privés, archives, statistiques et C8. Exports de fiches en arrière-plan avec progression, PDF allégés, ZIP unique et rapport des photos en erreur. Migration SQLite 17 → 18 sans changement des montages. [Détail](RELEASE_v3.6.0.md).
+Inscription Google avec validation des comptes bénévoles et droits de création dédiés. Vidéo depuis une fiche animal, albums privés, archives, statistiques et C8. Exports de fiches en arrière-plan avec progression, PDF allégés, ZIP unique et rapport des photos en erreur. Migration SQLite 17 → 18 sans changement des montages. [Détail](docs/history/RELEASE_v3.6.0.md).
 
 ## 3.5.4 — 17 octobre 2026
 
-Originaux chargés progressivement dans les albums pour un zoom net, sans ouvrir leur accès public. Couleurs de texte TV indépendantes du thème de l’interface, y compris messages, statistiques et aperçu du bilan annuel. Ententes avec « oui/non » dans une phrase classées en orange. Guide des API SPA/AniPic avec exemples vérifiés. [Détail](RELEASE_v3.5.4.md).
+Originaux chargés progressivement dans les albums pour un zoom net, sans ouvrir leur accès public. Couleurs de texte TV indépendantes du thème de l’interface, y compris messages, statistiques et aperçu du bilan annuel. Ententes avec « oui/non » dans une phrase classées en orange. Guide des API SPA/AniPic avec exemples vérifiés. [Détail](docs/history/RELEASE_v3.5.4.md).
 
 ## 3.5.3 — 17 octobre 2026
 
-Autorisation PIN sans expiration côté AniPic, conservée après redémarrage. Les anciens accès encore valides sont prolongés sans redemander le code ; changer le PIN révoque toujours les accès précédents. [Détail](RELEASE_v3.5.3.md).
+Autorisation PIN sans expiration côté AniPic, conservée après redémarrage. Les anciens accès encore valides sont prolongés sans redemander le code ; changer le PIN révoque toujours les accès précédents. [Détail](docs/history/RELEASE_v3.5.3.md).
 
 ## 3.5.2 — 17 octobre 2026
 
-Configuration TV ouverte aux agents SPA via une API dédiée, sans accès aux paramètres généraux. PIN mémorisé dans un cookie persistant de 30 jours, renouvelé lors des visites et de la diffusion, indépendant de la session de compte et révocable. [Détail](RELEASE_v3.5.2.md).
+Configuration TV ouverte aux agents SPA via une API dédiée, sans accès aux paramètres généraux. PIN mémorisé dans un cookie persistant de 30 jours, renouvelé lors des visites et de la diffusion, indépendant de la session de compte et révocable. [Détail](docs/history/RELEASE_v3.5.2.md).
 
 ## 3.5.1 — 17 octobre 2026
 
-Fenêtres claires opaques sur le voile sombre, verre lisible et textes secondaires suivant le thème. Prénoms filtrés sur les animaux présents et le catalogue national SPA vérifié, avec réutilisation des noms après départ. Navigation Archives unifiée, anciens liens conservés. [Détail](RELEASE_v3.5.1.md).
+Fenêtres claires opaques sur le voile sombre, verre lisible et textes secondaires suivant le thème. Prénoms filtrés sur les animaux présents et le catalogue national SPA vérifié, avec réutilisation des noms après départ. Navigation Archives unifiée, anciens liens conservés. [Détail](docs/history/RELEASE_v3.5.1.md).
 
 ## 3.5.0 — 17 octobre 2026
 
-Grandes affiches multi-animaux SPA/glass/éditorial/polaroids, thèmes clairs et mobile, persistance navigateur, prénoms à thème, assistant unique, filtres SOS/ententes, nuances orange, informations absentes masquées, visibilité privée des photos, retrait/annulation du planning, feuille de séance enrichie et sélection complète des affichettes. Registre interne protégé avec aperçu d’import Excel/CSV. Migration additive 16 → 17. [Détail](RELEASE_v3.5.md).
+Grandes affiches multi-animaux SPA/glass/éditorial/polaroids, thèmes clairs et mobile, persistance navigateur, prénoms à thème, assistant unique, filtres SOS/ententes, nuances orange, informations absentes masquées, visibilité privée des photos, retrait/annulation du planning, feuille de séance enrichie et sélection complète des affichettes. Registre interne protégé avec aperçu d’import Excel/CSV. Migration additive 16 → 17. [Détail](docs/history/RELEASE_v3.5.md).
 
 ## 3.4.0 — 17 octobre 2026
 
@@ -50,7 +52,7 @@ Affiches avec origine des photos et chargements visibles, ouverture du design Ca
 
 Miniatures C8, avatars et dernières connexions, distinction des photos locales dans les statistiques, compteurs de modifications réelles en synchronisation, couvertures des albums descendants et corbeille restaurable des photos d’animaux. Compression WebP des archives après sauvegarde complète relue et vérifiée, protégée de la rotation, sans traiter les fichiers partagés avec des médias actifs. Limite audio/vidéo configurable via `MAX_MEDIA_MB`.
 
-[Détail de la version](RELEASE_v3.4.md) · [Archives et récupération des originaux](docs/ARCHIVES.md) · [Validation et limites](VALIDATION.md)
+[Détail de la version](docs/history/RELEASE_v3.4.md) · [Archives et récupération des originaux](docs/ARCHIVES.md) · [Validation et limites](VALIDATION.md)
 
 ## 3.3.0 · 17 octobre 2026
 
@@ -60,7 +62,7 @@ Chargement et cache commun des photos SPA, prélecture contrôlée du studio/TV,
 
 Nettoyage : ancien code de présentation GPIC et assets retirés, historique documentaire regroupé, logo à quatre doigts régénérable et bundle vidéo reconstruit sans fichiers résiduels.
 
-[Détail de la version](RELEASE_v3.3.md) · [Validation et limites](VALIDATION.md)
+[Détail de la version](docs/history/RELEASE_v3.3.md) · [Validation et limites](VALIDATION.md)
 
 ## 3.2
 

@@ -6,4 +6,4 @@ Le navigateur conserve uniquement un jeton aléatoire, dans un cookie HttpOnly, 
 
 Les anciennes autorisations encore valides deviennent permanentes au retour dans l’application ou sur la TV. Les autorisations déjà expirées ou révoquées restent refusées. La valeur vide du champ `site_passes.expires_at` indique une autorisation permanente ; le nettoyage au démarrage la conserve. Aucune migration ni dépendance supplémentaire.
 
-Les agents SPA conservent l’accès à la configuration de l’écran du refuge, sans accès aux paramètres généraux. Les volumes, chemins NAS et protections Docker restent inchangés. [Vérifications et limites](VALIDATION.md).
+Les agents SPA conservent l’accès à la configuration de l’écran du refuge, sans accès aux paramètres généraux. Les volumes, chemins NAS et protections Docker restent inchangés. [Vérifications et limites](../../VALIDATION.md).

@@ -6,6 +6,6 @@ Les titres et descriptions du programme TV utilisent les couleurs de leur scène
 
 Les réponses d’entente qui contiennent un « oui » ou « non » au milieu d’une phrase passent en orange : par exemple « Mâle oui selon profil ». Les réponses simples restent vertes ou rouges, les mentions « Non testé » restent inconnues, et le texte original est conservé. La même règle sert aux filtres, fiches et compositions.
 
-Nouveau [guide des API animaux](docs/API_ANIMAUX.md) : route SPA et paramètres réellement vérifiés, catalogue AniPic, photos locales/SPA, filtres, pagination, authentification par session, PIN et suivi des changements.
+Nouveau [guide des API animaux](../API_ANIMAUX.md) : route SPA et paramètres réellement vérifiés, catalogue AniPic, photos locales/SPA, filtres, pagination, authentification par session, PIN et suivi des changements.
 
-Aucune nouvelle dépendance, migration SQLite ni modification des montages Docker. [Vérifications et limites](VALIDATION.md).
+Aucune nouvelle dépendance, migration SQLite ni modification des montages Docker. [Vérifications et limites](../../VALIDATION.md).

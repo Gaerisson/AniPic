@@ -18,6 +18,7 @@ smoke-output
 *.sqlite*
 .mistral-key*
 release-validation.json
+release-artifacts
 
 outputs
 docs

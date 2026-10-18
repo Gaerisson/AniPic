@@ -27,7 +27,7 @@ Le retour Canva récupère sa session uniquement sur le callback prévu, via un 
 
 Lockfile régénéré par npm sous Node.js 24, dossiers Docker créés de façon idempotente, CI sur PR/push main/tags, compilations frontend et vidéo, image complète et test de démarrage/rendu. Script de préparation NAS côté hôte : validation NFS/SMB, droits UID/GID, création des dossiers et marqueurs, refus du disque local lorsque le NAS manque. Volumes et montages existants conservés ; migration additive du schéma 14 vers 15.
 
-[Installation](docs/DEPLOIEMENT.md) · [Procédure avant release et dépannage](docs/CONTROLES_RELEASE.md) · [Contrôles réellement exécutés](VALIDATION.md)
+[Installation](../DEPLOIEMENT.md) · [Procédure avant release et dépannage](../CONTROLES_RELEASE.md) · [Contrôles réellement exécutés](../../VALIDATION.md)
 
 Le build d’image et le déploiement sur votre NAS/Portainer doivent encore être exécutés sur un moteur Docker. La validation syntaxique Compose et les simulations de panne ne remplacent pas cet essai.
 

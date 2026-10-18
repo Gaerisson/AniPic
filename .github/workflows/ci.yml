@@ -2,9 +2,17 @@ name: Validation Anipic
 on:
   push:
     branches: [main]
-    tags: ['v*']
+    tags: ["v*"]
   pull_request:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: Publier l’image GHCR et la release après validation complète
+        type: boolean
+        default: false
+concurrency:
+  group: anipic-${{ github.ref }}
+  cancel-in-progress: false
 env:
   ONNXRUNTIME_NODE_INSTALL: skip
 permissions:
@@ -22,6 +30,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - name: Check release version and tag
+        run: node scripts/release-metadata.mjs
       - run: npm test
       - run: npm run build
       - run: npm run video:build
@@ -39,6 +49,57 @@ jobs:
       - name: Validate Compose and optional mounts
         run: node scripts/check-deploy-config.mjs
       - name: Build complete production image
-        run: docker build --pull --tag anipic:ci .
+        run: docker build --pull --platform linux/amd64 --build-arg VCS_REF="$GITHUB_SHA" --tag anipic:ci .
       - name: Start production app and render a real clip in disposable storage
         run: docker run --rm --tmpfs /tmp:size=768m --entrypoint node anipic:ci scripts/docker-smoke.mjs
+      - name: Save the tested image
+        if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.publish)
+        run: docker save anipic:ci --output "$RUNNER_TEMP/anipic-image.tar"
+      - uses: actions/upload-artifact@v7
+        if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.publish)
+        with:
+          name: anipic-image-${{ github.sha }}
+          path: ${{ runner.temp }}/anipic-image.tar
+          compression-level: 0
+          retention-days: 1
+          overwrite: true
+  publish:
+    needs: [application, docker]
+    if: >-
+      github.repository == 'Gaerisson/AniPic' &&
+      (startsWith(github.ref, 'refs/tags/v') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.publish))
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: anipic-publication
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      packages: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: anipic-image-${{ github.sha }}
+          path: ${{ runner.temp }}/anipic-image
+      - name: Load the tested image
+        run: docker load --input "$RUNNER_TEMP/anipic-image/anipic-image.tar"
+      - name: Authenticate to GHCR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: printf '%s' "$GH_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+      - name: Publish image and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/publish-release.mjs
+      - name: Clear registry credentials
+        if: always()
+        run: docker logout ghcr.io

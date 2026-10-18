@@ -6,4 +6,4 @@ Après la saisie correcte du PIN initial, le navigateur conserve une autorisatio
 
 La mémorisation est propre au navigateur et au domaine utilisés. L’effacement des cookies ou la fin d’une session de navigation privée supprime cette mémorisation.
 
-Aucune migration SQLite ni nouvelle dépendance. Les volumes et les montages Docker sont inchangés. [Vérifications et limites](VALIDATION.md).
+Aucune migration SQLite ni nouvelle dépendance. Les volumes et les montages Docker sont inchangés. [Vérifications et limites](../../VALIDATION.md).

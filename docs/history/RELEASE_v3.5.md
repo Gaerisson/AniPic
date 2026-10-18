@@ -24,7 +24,7 @@ Les affichettes de box en série permettent désormais de sélectionner tous les
 
 **Le refuge → Registre interne**, réservé aux comptes **administration et agent**. Nom, contact/référence, faits observés, consignes et date de révision. Recherche, édition avec contrôle de version, retrait et restauration. Import Excel `.xlsx` ou CSV UTF-8 avec aperçu et sélection des lignes avant ajout, sans écraser les entrées existantes. Les doublons exacts nom/contact sont ignorés.
 
-Le registre reste exclu du contexte IA, des API publiques et des fiches d’animaux. Le journal général conserve l’identifiant et le type d’action, sans recopier les noms, contacts ou observations. La base SQLite sauvegardée comprend le registre. [Format d’import et utilisation](docs/REGISTRE_AFFICHES.md).
+Le registre reste exclu du contexte IA, des API publiques et des fiches d’animaux. Le journal général conserve l’identifiant et le type d’action, sans recopier les noms, contacts ou observations. La base SQLite sauvegardée comprend le registre. [Format d’import et utilisation](../REGISTRE_AFFICHES.md).
 
 Migration SQLite **16 → 17**, additive : tables du registre et des demandes retirées. Aucun changement de montage ni de volume Docker. Les protections NAS restent actives.
 
@@ -34,4 +34,4 @@ L’extension Edge pour SPA/Argos reste de côté : l’adresse d’Argos et les
 
 ## Vérification
 
-[Validation réellement effectuée et limites](VALIDATION.md). La construction et l’exécution de l’image Docker et un déploiement Portainer/NAS réels exigent un moteur Docker ; ne pas les déduire d’un build frontend ou d’une validation Compose.
+[Validation réellement effectuée et limites](../../VALIDATION.md). La construction et l’exécution de l’image Docker et un déploiement Portainer/NAS réels exigent un moteur Docker ; ne pas les déduire d’un build frontend ou d’une validation Compose.

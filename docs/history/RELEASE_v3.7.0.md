@@ -11,6 +11,6 @@ Chargements et progression visibles, suivi repris en revenant à l’outil, erre
 
 Migration SQLite 19 additive. Montages Docker/Compose inchangés. Nouvelle dépendance de calcul CPU installée par npm, lockfile régénéré ; le smoke test de l’image vérifie également le moteur ONNX. Le modèle de détourage est téléchargé au premier usage (192 Mo), reste dans `/cache` et demande environ 4 Go de RAM alloués avec au moins 3 Gio disponibles ; le lancement est refusé si cette marge manque.
 
-[Mode d’emploi et limites](docs/ATELIER_REFUGE.md) · [Vérifications réellement exécutées](VALIDATION.md) · [Installation](docs/DEPLOIEMENT.md)
+[Mode d’emploi et limites](../ATELIER_REFUGE.md) · [Vérifications réellement exécutées](../../VALIDATION.md) · [Installation](../DEPLOIEMENT.md)
 
 © Gaerisson. Aucun déploiement Portainer ni publication GitHub n’est effectué par cette release locale.

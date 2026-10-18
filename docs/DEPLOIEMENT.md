@@ -1,4 +1,4 @@
-# Déploiement AniPic 3.6.0
+# Déploiement AniPic 3.10.0
 
 ## Installer sur Debian avec Docker
 
@@ -33,10 +33,10 @@ sudo node scripts/prepare-storage.mjs --mount /mnt/nas --root /mnt/nas/anipic --
 Node.js 24 est nécessaire pour ce script. Sans Node sur l’hôte, construire d’abord l’image puis utiliser son runtime, en montant le parent NAS existant :
 
 ```sh
-docker build -t anipic:3.6.0 .
+docker build -t anipic:3.10.0 .
 docker run --rm --read-only --user 1000:1000 \
   --mount type=bind,src=/mnt/nas,dst=/mnt/nas \
-  --entrypoint node anipic:3.6.0 scripts/prepare-storage.mjs \
+  --entrypoint node anipic:3.10.0 scripts/prepare-storage.mjs \
   --mount /mnt/nas --root /mnt/nas/anipic --uid 1000 --gid 1000 --with-c8 --with-import
 ```
 
@@ -50,7 +50,22 @@ Cette préparation est couverte par des simulations de montage absent, permissio
 
 ## Portainer et Apache
 
-AniPic utilise une image **locale** `anipic:3.6.0`. Aucune image de ce nom n’est publiée sur Docker Hub. Le code sur GitHub et une image téléchargeable dans un registre sont deux livraisons distinctes.
+Choisir le mode adapté à la stack existante. `compose.yml` compile le dépôt Git, `portainer-stack.yml` utilise une image locale et `portainer-ghcr.yml` télécharge l’image publiée dans GitHub Container Registry (GHCR). Aucun de ces fichiers ne change les volumes ou les chemins NAS.
+
+### Image GitHub prête à télécharger
+
+Après la réussite du workflow de publication, utiliser `portainer-ghcr.yml` dans la **même stack**. Ce fichier référence `ghcr.io/gaerisson/anipic:3.10.0` avec `pull_policy: always` ; ici, **Re-pull image peut être activé**. Conserver toutes les variables NAS, UID/GID, port, origine et overrides C8/Import.
+
+```sh
+docker compose -f portainer-ghcr.yml pull
+docker compose -f portainer-ghcr.yml up -d
+```
+
+Pour C8 et Import, ajouter les mêmes `-f compose.c8.yml -f compose.import.yml` aux commandes. Conserver le nom de projet existant (au besoin `-p NOM_EXISTANT`) : changer de nom crée d’autres volumes. Ne pas supprimer la stack pour passer d’un mode à l’autre.
+
+`ANIPIC_IMAGE` permet d’épingler une autre version publiée ou le digest fourni dans la release, par exemple `ghcr.io/gaerisson/anipic@sha256:...`. Éviter `latest` pour une installation où la version doit être choisie explicitement. L’image actuelle cible **linux/amd64** ; une machine ARM nécessite sa propre construction et validation.
+
+Au premier envoi sur GHCR, le package peut être privé : son propriétaire doit choisir **Package settings → Change visibility → Public** pour autoriser le téléchargement anonyme. Le dépôt public ne rend pas automatiquement son package public. Vérifier le téléchargement depuis l’hôte Portainer avant la mise à jour. Si l’image/version n’est pas encore publiée, utiliser le mode compilation depuis Git ci-dessous.
 
 ### Stack Git sur Docker Standalone
 
@@ -65,13 +80,13 @@ Ne pas utiliser `portainer-stack.yml` pour une compilation automatique depuis Gi
 Après avoir récupéré les nouveaux fichiers du projet, construire l’image sur **le moteur Docker utilisé par Portainer**, depuis le répertoire contenant le Dockerfile :
 
 ```sh
-docker build -t anipic:3.6.0 .
-docker image inspect anipic:3.6.0 --format '{{.Id}}'
+docker build -t anipic:3.10.0 .
+docker image inspect anipic:3.10.0 --format '{{.Id}}'
 ```
 
 Redéployer ensuite la stack existante avec `portainer-stack.yml`, en conservant **Re-pull image désactivé**. Ce fichier garde `pull_policy: never` et exige que l’image existe déjà sur ce moteur. Si Portainer ne construit pas depuis Git, cette procédure permet de préparer l’image sur l’hôte puis de la déployer. Swarm nécessite aussi une image déjà construite, accessible à chacun des nœuds concernés ; un build Compose n’est pas un mécanisme de déploiement Swarm.
 
-Dans les deux cas, conserver le nom de stack/projet, les variables et tous les volumes/montages existants. Ne pas supprimer la stack ni recréer ses volumes pour résoudre une erreur de pull. Un registre privé/public est une autre méthode de livraison : il nécessite de publier réellement l’image sous une adresse de registre avant de changer `image:` et d’activer le téléchargement.
+Dans tous les cas, conserver le nom de stack/projet, les variables et tous les volumes/montages existants. Ne pas supprimer la stack ni recréer ses volumes pour résoudre une erreur de pull. Le mode GHCR attend une image réellement publiée : un tag Git ou un commit ne crée pas seul une image téléchargeable.
 
 Références : [mise à jour Portainer](https://docs.portainer.io/user/docker/stacks/edit), [politique de construction Docker Compose](https://docs.docker.com/reference/compose-file/services/#pull_policy).
 
@@ -142,7 +157,7 @@ Pour actualiser la base, charger un fichier City Lite MMDB ou MMDB.GZ dans Param
 
 ## Mise à jour d’une installation
 
-Créer une sauvegarde vérifiée, conserver l’ancienne image, puis reconstruire avec le nouveau code et redémarrer le service. Le schéma passe automatiquement à 15 sans reset de données. Garder les mêmes volumes. Vérifier /api/health, ouvrir la galerie et recharger les onglets déjà ouverts pour prendre les nouveaux fichiers frontaux. Une restauration de secours s’effectue toujours dans un nouveau dossier.
+Créer une sauvegarde vérifiée, conserver l’ancienne image, puis reconstruire avec le nouveau code et redémarrer le service. Le schéma est migré automatiquement vers la version 21 sans reset de données. Garder les mêmes volumes. Vérifier /api/health, ouvrir la galerie et recharger les onglets déjà ouverts pour prendre les nouveaux fichiers frontaux. Une restauration de secours s’effectue toujours dans un nouveau dossier.
 
 
 ## Canva avec PIN global

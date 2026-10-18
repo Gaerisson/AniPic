@@ -8,4 +8,4 @@ Le catalogue national est séparé des fiches du refuge : aucune importation d�
 
 **Archives** est désormais l’unique entrée pour les animaux partis et leurs albums. Les dossiers par espèce et année, la corbeille et la création du bilan annuel restent accessibles. Les anciens liens `#departures` ouvrent les Archives. Aucun dossier ni original n’est supprimé.
 
-Aucune nouvelle dépendance ni migration SQLite. Les montages Compose et les volumes persistants sont conservés. Voir [les vérifications réellement effectuées](VALIDATION.md) et [l’installation Docker / Portainer](docs/DEPLOIEMENT.md).
+Aucune nouvelle dépendance ni migration SQLite. Les montages Compose et les volumes persistants sont conservés. Voir [les vérifications réellement effectuées](../../VALIDATION.md) et [l’installation Docker / Portainer](../DEPLOIEMENT.md).

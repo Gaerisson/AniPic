@@ -26,29 +26,16 @@ Deux montages de **24,5 secondes**, 30 images/s : portraits en relief et présen
 
 [Composition et reproduction du montage](PRESENTATION.md).
 
-## Nouveautés 3.8
+## Nouveautés 3.10
 
-Gazette du refuge avec arrivées et adoptions datées, agenda de dates clés, éditorial, brouillons partagés et photos SPA/locales. Exports PDF, images et visuel réseaux, avec bouton de partage du fichier vers WhatsApp. L’atelier présente la gazette et le suivi des affiches de box. [Mode d’emploi](docs/ATELIER_REFUGE.md).
+- Comptes bénévoles via Google, soumis à validation, avec accès aux outils de création.
+- Affiches en série avec progression et suivi des affichettes installées dans les box.
+- Gazette préremplie : résumé, arrivées, adoptions et portraits, avec PDF/images et partage WhatsApp.
+- Agenda partagé, dates clés et diffusion des événements sur la TV au choix.
+- Suivi des TV : connexion, actualisation, séquence en cours et historique des incidents.
+- Ententes nuancées en orange, thèmes clairs et placements mobiles corrigés.
 
-## Nouveautés 3.7
-
-Assistant de tri photo avec références SPA, détourage local en PNG transparent avec réglages de contour, suivi des affiches dans les box et gazette mensuelle A4 en trois styles. Ces outils sont regroupés dans Outils de l’équipe et ouverts aux bénévoles approuvés. [Utilisation et prérequis du détourage](docs/ATELIER_REFUGE.md).
-
-## Nouveautés 3.5
-
-Grandes affiches multi-animaux avec quatre modèles, thèmes clairs revus dont SPA avec verre, choix du thème par navigateur, prénoms à thème et assistant unique. Filtres SOS/ententes, ententes nuancées en orange, photos privées plus visibles, demandes photo retirables avec annulation, portraits de séance agrandis et sélection de tous les animaux pour les affichettes. Registre interne réservé aux administrations/agents avec import Excel/CSV et aperçu. [Utilisation du registre et des affiches](docs/REGISTRE_AFFICHES.md).
-
-## Nouveautés 3.4
-
-Assistant avec chat contextuel, erreurs IA visibles, distinction SPA/local et loader sur les affiches, ouverture du design Canva après import. TV plus fluide avec saisons, particules, horaires en grille et nouvelles animations du logo ; bannières à thème avec sous-titre. Miniatures C8, avatars et dernières connexions, journal horodaté et statistiques photo locales séparées des références SPA. Couvertures d’albums prises dans les sous-dossiers, corbeille des photos d’animaux et [compression NAS après sauvegarde vérifiée](docs/ARCHIVES.md).
-
-**`MAX_MEDIA_MB`** règle la limite audio/vidéo (512 Mo par défaut). Les fichiers Compose conservent les mêmes volumes et la compilation depuis Git.
-
-### Évolutions 3.3 conservées
-
-Préparation des photos SPA avant lecture, cache partagé entre miniatures et vidéos, bilan annuel avec portraits espacés et message « Bonne année… ». Albums photos/vidéos avec déplacement et corbeille, imports avec progression, journal et diagnostic NAS, correction Canva avec PIN global.
-
-[Contrôles avant release et dépannage npm/Docker](docs/CONTROLES_RELEASE.md). La validation Compose est exécutée ; le build complet de l’image et le déploiement NAS/Portainer restent à réaliser sur un moteur Docker.
+[Notes de version](RELEASE_v3.10.0.md) · [Atelier du refuge](docs/ATELIER_REFUGE.md) · [Historique complet](CHANGELOG.md).
 
 ## Les espaces
 
@@ -94,7 +81,9 @@ docker compose -f compose.yml exec -it anipic npm run setup
 
 Le conteneur utilise un compte non root et une racine en lecture seule. SQLite et le cache restent dans des volumes locaux ; les originaux et les sauvegardes peuvent être sur le NAS. Une instance utilise la base. [Guide complet, Portainer, Apache et C8](docs/DEPLOIEMENT.md).
 
-Pour une stack Git dans Portainer, sélectionner `compose.yml` et laisser **Re-pull image désactivé**. `portainer-stack.yml` sert aux images déjà construites sur le moteur Docker ; aucune image `anipic` n’est publiée sur Docker Hub. [Procédure de mise à jour](docs/DEPLOIEMENT.md#portainer-et-apache).
+Trois modes sont proposés : `compose.yml` pour compiler depuis Git, `portainer-stack.yml` pour une image locale et `portainer-ghcr.yml` pour télécharger `ghcr.io/gaerisson/anipic:3.10.0` après sa publication GitHub. Conserver la stack, les volumes et les chemins NAS existants. [Procédure de mise à jour](docs/DEPLOIEMENT.md#portainer-et-apache).
+
+La publication de l’image et de la release est déclenchée par un tag `v3.10.0` ou manuellement dans Actions → Validation Anipic, option **publish**. Elle attend les tests, les deux builds, la construction Docker et un rendu MP4 réel. Au premier envoi, vérifier que le package GHCR est public. [Publication et dépannage](docs/CONTROLES_RELEASE.md).
 
 ## Configurer les services
 
@@ -119,7 +108,7 @@ npm run build
 npm run video:build
 ```
 
-**181 tests passent** lors de la validation locale de cette version. Les essais couvrent notamment les droits, le PIN et les IP, la confidentialité, les homonymes, les dates, la comparaison de photos, les sauvegardes, la TV et les connecteurs simulés. [Détails et limites des essais](VALIDATION.md).
+Les essais couvrent les droits, le PIN et les IP, la confidentialité, les homonymes, les dates, les photos, les sauvegardes, la TV, les connecteurs et les échecs de publication simulés. [Résultats et limites des essais](VALIDATION.md).
 
 ## Documentation
 

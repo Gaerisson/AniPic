@@ -4,6 +4,6 @@ Les ententes enfants, chats et chiens n’utilisent le vert et le rouge que pour
 
 La règle est partagée par les fiches, les filtres d’ententes et les libellés des créations/vidéos. Le texte original des faits SPA reste conservé.
 
-25 tests ciblés réussis ; compilation frontend et vidéo vérifiée. Pas de migration SQLite, dépendance ajoutée ou modification des volumes Docker. [Validation](VALIDATION.md).
+25 tests ciblés réussis ; compilation frontend et vidéo vérifiée. Pas de migration SQLite, dépendance ajoutée ou modification des volumes Docker. [Validation](../../VALIDATION.md).
 
 © Gaerisson.

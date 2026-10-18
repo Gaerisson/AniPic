@@ -1,5 +1,17 @@
 # Vérifications — AniPic 3.10.0
 
+## Livraison Docker / GitHub — 18 octobre 2026
+
+Suite locale complète : **210 tests réussis**, aucun échec ni test ignoré, en 163,4 s. Les trois tests ciblés de livraison ont ensuite réussi, dont un nouveau scénario exécutant le vrai script de publication avec transport GitHub/Docker/gh explicitement simulé : panne de push laissant la release en brouillon, refus d’un tag lié à un autre commit et publication seulement après envoi des fichiers.
+
+Les six configurations Compose (sources, image locale, GHCR, chacune avec ou sans C8+Import) sont vérifiées. Les versions de leurs images et du label Docker sont comparées au manifeste. Le contrôle NAS accepte les deux représentations JSON de `false` sans accepter `true` ni une source dépourvue de protection explicite. Workflow vérifié avec actionlint 1.7.12 ; liens de documentation contrôlés.
+
+Le dernier échec GitHub du job Docker provenait d’un booléen `false` omis dans le JSON de Compose. Ce contrôle est corrigé. Le workflow exige désormais tests, builds et essai Docker réels avant toute publication. Les résultats en ligne du commit exact sont la référence pour l’image publiée ; les essais locaux ci-dessus ne constituent pas un build Docker local ni une validation du NAS ou de la TV physique.
+
+Les nouveaux jobs de publication n’ont pas été exécutés en ligne pendant cette préparation : l’envoi GitHub est bloqué par les autorisations de la session. Aucune nouvelle image ni release n’a donc été publiée ici. Docker Engine reste absent du poste local. Après envoi des fichiers, lancer le workflow avec l’option **publish** et contrôler ses trois jobs avant de déployer l’image GHCR.
+
+Nettoyage : douze anciennes notes déplacées dans `docs/history/` avec liens corrigés, 59 anciens ZIP/sommes de contrôle supprimés des livraisons locales (1,59 Go). Bases, médias, sauvegardes et fonctions existantes conservés. Les dépendances npm et leur lockfile n’ont pas changé pendant cette préparation.
+
 ## V3.10.0 — 18 octobre 2026
 
 **208 tests réussis**, aucun échec ni test ignoré, suite complète en 119,7 s. Les neuf tests du suivi vérifient le PIN, les identités d’écran, les rôles, CSRF et origine, les entrées limitées, le silence réseau, les réglages en attente, la pause, l’onglet masqué, le blocage de lecture, les incidents et reprises, les conflits de renommage, la révocation et les limites d’inscription. Un scénario utilise le vrai client de télémétrie avec une horloge contrôlée et les routes HTTP de test, sans simuler les écritures SQLite. Les identités persistent après réouverture de la base.

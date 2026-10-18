@@ -10,6 +10,6 @@ L’interface corrige les débordements des formulaires, titres, boutons, en-tê
 
 Migration SQLite additive **19 → 20** pour l’agenda. Les données existantes, originaux et montages Docker sont conservés. Aucun compte ou volume n’est recréé.
 
-[Utilisation de l’atelier](docs/ATELIER_REFUGE.md) · [Agenda et API](docs/AGENDA.md) · [Vérifications et limites](VALIDATION.md) · [Installation](docs/DEPLOIEMENT.md).
+[Utilisation de l’atelier](../ATELIER_REFUGE.md) · [Agenda et API](../AGENDA.md) · [Vérifications et limites](../../VALIDATION.md) · [Installation](../DEPLOIEMENT.md).
 
 © Gaerisson.
