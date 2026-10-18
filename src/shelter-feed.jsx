@@ -13,9 +13,15 @@ import { refugeEvent } from "../shared/feed-event.mjs";
 import { api, imageUrl, speciesName } from "./api.js";
 import { Empty, Spinner, Button } from "./ui.jsx";
 import { SpaPhoto } from "./spa-photo.jsx";
-export function Feed({ open, version }) {
+export function Feed({
+  open,
+  version,
+  initialKind = "all",
+  title = "Le fil du refuge",
+  autoRefresh = false,
+}) {
   const [events, setEvents] = useState(null),
-    [kind, setKind] = useState("all"),
+    [kind, setKind] = useState(initialKind),
     [more, setMore] = useState(false),
     [cursor, setCursor] = useState(null),
     [busy, setBusy] = useState(false),
@@ -44,6 +50,35 @@ export function Feed({ open, version }) {
       active = false;
     };
   }, [version, kind]);
+  useEffect(() => {
+    if (!autoRefresh || events === null || events.length > 40 || busy) return;
+    let active = true,
+      inFlight = false;
+    const load = async () => {
+      if (inFlight || document.visibilityState === "hidden") return;
+      inFlight = true;
+      try {
+        const d = await api(`/feed?latest=1&limit=40&kind=${kind}`);
+        if (active) {
+          setEvents(d.events);
+          setMore(d.hasMore);
+          setCursor(d.before);
+          setError("");
+        }
+      } catch (e) {
+        if (active) setError(e.message);
+      } finally {
+        inFlight = false;
+      }
+    };
+    const timer = setInterval(load, 60000);
+    window.addEventListener("focus", load);
+    return () => {
+      active = false;
+      clearInterval(timer);
+      window.removeEventListener("focus", load);
+    };
+  }, [autoRefresh, kind, version, events?.length, busy]);
   const groups = new Map();
   for (const event of events || []) {
     const day = new Date(event.created_at).toLocaleDateString("fr-FR", {
@@ -59,7 +94,7 @@ export function Feed({ open, version }) {
     <div className="shelter-feed">
       <div className="page-heading">
         <div>
-          <h1>Le fil du refuge</h1>
+          <h1>{title}</h1>
           <p>Les arrivées, les retours et les adoptions.</p>
         </div>
         <a

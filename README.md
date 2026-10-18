@@ -7,9 +7,13 @@ Anipic reprend le projet GPIC SPA pour organiser les photos des animaux, prépar
 
 **Projet vibecodé par [Gaerisson](https://github.com/Gaerisson/), avec Codex, assistant d’OpenAI.** L’idée, les besoins métier, les choix visuels et la direction du projet viennent de Gaerisson.
 
-[Release 3.10.4](RELEASE_v3.10.4.md) · [Installation Docker / Portainer](docs/DEPLOIEMENT.md) · [Journal des versions](CHANGELOG.md) · [API SPA / AniPic](docs/API_ANIMAUX.md) · [Google et bénévoles](GOOGLE.md) · [Agenda partagé](docs/AGENDA.md) · [Suivi des TV](docs/SUIVI_TV.md) · [Tests et validation](VALIDATION.md)
+[Release 3.11.1](RELEASE_v3.11.1.md) · [Installation Docker / Portainer](docs/DEPLOIEMENT.md) · [Journal des versions](CHANGELOG.md) · [API SPA / AniPic](docs/API_ANIMAUX.md) · [Google et bénévoles](GOOGLE.md) · [Agenda partagé](docs/AGENDA.md) · [Suivi des TV](docs/SUIVI_TV.md) · [Tests et validation](VALIDATION.md)
 
 ## Présentation
+
+**Installation Android :** la page `/android` fournit l’APK signée et son QR code. Le dépôt contient les sources Android et `public/downloads/AniPic-3.11.0.apk`, également livré par l’image Docker. Une fois ce projet déployé : **https://anipic.gaerisson.fr/android**.
+
+**Android :** une [APK reliée au site](docs/ANDROID.md), avec accueil mobile et accès Adoptions / Photos / C8. La version web installable depuis Chrome reste disponible. Le guide explique le déploiement du fichier d’association, les mises à jour et la signature privée.
 
 Deux montages de **24,5 secondes**, 30 images/s : portraits en relief et présentation de la photothèque, retouche, affiches, studio et écran TV. Transitions synchronisées sur un extrait de **Borderline — Tame Impala**, fourni pour cette présentation. Le morceau d’origine reste hors du dépôt.
 
@@ -19,7 +23,11 @@ Deux montages de **24,5 secondes**, 30 images/s : portraits en relief et présen
 
 [Composition et reproduction du montage](PRESENTATION.md).
 
-## Nouveautés 3.10
+## Nouveautés 3.11
+
+- APK Android, accueil mobile et mode hors connexion sans cache de données privées.
+- Météo compacte à côté de l’horloge ; effectifs chiens/chats/NAC et progression des portraits locaux.
+- Petites photos et décisions d’adoption directement dans le fil ; confirmation automatique ou après 24 h sans réponse, annulation et historique pour les agents.
 
 - Fil d’accueil avec +/−/cœur et dates ; file « Adoptions à confirmer » pour les agents, compteur et validation sans double comptage.
 - Nouveau poster en silhouette SPA, portraits regroupés dans le logo et noms toujours lisibles, exports A4/A3/A2.
@@ -33,7 +41,7 @@ Deux montages de **24,5 secondes**, 30 images/s : portraits en relief et présen
 - Suivi des TV : connexion, actualisation, séquence en cours et historique des incidents.
 - Ententes nuancées en orange, thèmes clairs et placements mobiles corrigés.
 
-[Notes de version](RELEASE_v3.10.4.md) · [Atelier du refuge](docs/ATELIER_REFUGE.md) · [Historique complet](CHANGELOG.md).
+[Notes de version](RELEASE_v3.11.1.md) · [Atelier du refuge](docs/ATELIER_REFUGE.md) · [Historique complet](CHANGELOG.md).
 
 ## Les espaces
 
@@ -79,9 +87,9 @@ docker compose -f compose.yml exec -it anipic npm run setup
 
 Le conteneur utilise un compte non root et une racine en lecture seule. SQLite et le cache restent dans des volumes locaux ; les originaux et les sauvegardes peuvent être sur le NAS. Une instance utilise la base. [Guide complet, Portainer, Apache et C8](docs/DEPLOIEMENT.md).
 
-Trois modes sont proposés : `compose.yml` pour compiler depuis Git, `portainer-stack.yml` pour une image locale et `portainer-ghcr.yml` pour télécharger `ghcr.io/gaerisson/anipic:3.10.4` après sa publication GitHub. Conserver la stack, les volumes et les chemins NAS existants. [Procédure de mise à jour](docs/DEPLOIEMENT.md#portainer-et-apache).
+Trois modes sont proposés : `compose.yml` pour compiler depuis Git, `portainer-stack.yml` pour une image locale et `portainer-ghcr.yml` pour télécharger `ghcr.io/gaerisson/anipic:3.11.1` après sa publication GitHub. Conserver la stack, les volumes et les chemins NAS existants. [Procédure de mise à jour](docs/DEPLOIEMENT.md#portainer-et-apache).
 
-La publication de l’image et de la release est déclenchée par un tag `v3.10.4` ou manuellement dans Actions → Validation Anipic, option **publish**. Elle attend les tests, les deux builds, la construction Docker et un rendu MP4 réel. Au premier envoi, vérifier que le package GHCR est public. [Publication et dépannage](docs/CONTROLES_RELEASE.md).
+La publication de l’image et de la release est déclenchée par un tag `v3.11.1` ou manuellement dans Actions → Validation Anipic, option **publish**. Elle attend les tests, les deux builds, la construction Docker, un rendu MP4 réel et la validation Android (compilation, signature et manifeste de l’APK distribuée). Au premier envoi, vérifier que le package GHCR est public. [Publication et dépannage](docs/CONTROLES_RELEASE.md).
 
 ## Configurer les services
 

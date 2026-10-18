@@ -375,6 +375,9 @@ const actionNames = {
   source_adoption_reversed: "Animal réapparu · adoption automatique corrigée",
   source_adoption_confirmed:
     "Adoption automatique confirmée par un statut source",
+  source_adoption_pending: "Départ archivé · adoption en attente pendant 24 h",
+  adoption_review_auto_confirmed: "Adoption confirmée automatiquement",
+  adoption_review_rejected: "Adoption annulée ou refusée par l’équipe",
   adoption_review_confirmed: "Adoption validée par l’équipe",
   animal_restored: "Album restauré",
   photos_uploaded: "Photos importées",

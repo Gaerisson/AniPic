@@ -26,3 +26,19 @@ outputs/
 /anipic-story-*.png
 
 .google-oauth-secret*
+
+# Android local builds and signing keys
+android/.gradle/
+android/**/build/
+android/local.properties
+*.jks
+*.keystore
+*.apk
+*.aab
+*.apksig
+*.idsig
+
+# Signed APK distributed by the installation page, with public metadata only.
+!public/downloads/
+!public/downloads/AniPic-*.apk
+

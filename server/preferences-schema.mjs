@@ -91,7 +91,7 @@ export const sourceFields = {
   sourceStaleHours: z.number().int().min(1).max(48).default(24),
   sourceAbsenceIntervalHours: z.number().min(0.25).max(168).default(24),
   sourceMissingOutcome: z
-    .enum(["unconfirmed", "adopted"])
+    .enum(["unconfirmed", "adopted", "automatic", "after24h"])
     .default("unconfirmed"),
 };
 export const interfaceDefaults = {

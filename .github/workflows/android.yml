@@ -1,0 +1,49 @@
+name: Validation Android
+on:
+  workflow_call:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Compile and lint Android without a private release key
+        working-directory: android
+        run: bash gradlew --no-daemon assembleDebug assembleRelease lintRelease
+      - name: Verify the signed APK served by the website
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, subprocess
+          meta = json.loads(pathlib.Path('public/android-download.json').read_text())
+          apk = pathlib.Path('public/downloads') / meta['filename']
+          assert hashlib.sha256(apk.read_bytes()).hexdigest() == meta['sha256']
+          signer = pathlib.Path(os.environ['ANDROID_HOME']) / 'build-tools/35.0.0/apksigner'
+          report = subprocess.check_output([str(signer), 'verify', '--print-certs', str(apk)], text=True)
+          print(report)
+          expected = meta['certificateSha256'].replace(':', '').lower()
+          assert any(line.startswith('Signer #1 certificate SHA-256 digest:') and line.split(':', 1)[1].strip().lower() == expected for line in report.splitlines())
+          aapt = signer.parent / 'aapt'
+          package = subprocess.check_output([str(aapt), 'dump', 'badging', str(apk)], text=True).splitlines()[0]
+          assert "name='" + meta['packageId'] + "'" in package
+          assert "versionName='" + meta['version'] + "'" in package
+          assert "versionCode='" + str(meta['versionCode']) + "'" in package
+          PY
+      - uses: actions/upload-artifact@v7
+        with:
+          name: anipic-android-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+      # The debug certificate is intentionally not associated with the live site.
+      # Signing/distribution of a release APK uses the owner's private key locally.

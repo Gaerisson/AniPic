@@ -1,0 +1,15 @@
+AniPic Android — © 2026 Gaerisson
+
+Android project initially generated with GoogleChromeLabs/Bubblewrap 1.27.0.
+Template sources and Gradle wrapper include components under Apache License 2.0.
+Copyright 2019–2021 Google Inc. Original copyright headers are preserved.
+https://github.com/GoogleChromeLabs/bubblewrap
+
+Runtime library: com.google.androidbrowserhelper:androidbrowserhelper:2.6.2
+https://github.com/GoogleChrome/android-browser-helper
+Apache License 2.0. Transitive AndroidX/Kotlin libraries retain their respective
+notices within the APK. See LICENSE-APACHE-2.0.txt.
+
+Application identity: fr.gaerisson.anipic
+Website: https://anipic.gaerisson.fr
+The private signing key is not included in this source project.

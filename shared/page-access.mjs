@@ -12,6 +12,8 @@ export const pageAccessLabels = {
   activity: "Fil du refuge et historique",
 };
 export function accessForPage(page, access = {}) {
-  const key = ["feed", "history"].includes(page) ? "activity" : page;
+  const key = ["feed", "history", "mobileAdoptions"].includes(page)
+    ? "activity"
+    : page;
   return access[key] || pageAccessDefaults[key] || "public";
 }

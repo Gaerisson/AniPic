@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "fr.gaerisson.anipic",
+      "sha256_cert_fingerprints": [
+        "57:8F:15:C8:85:0A:53:26:4A:D5:E1:15:86:AE:35:49:33:86:4A:5A:A0:CB:65:B2:7F:EA:BC:DE:BE:C9:17:80"
+      ]
+    }
+  }
+]

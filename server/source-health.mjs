@@ -86,7 +86,8 @@ export function sourceHealth(db, cfg = settings(db), clock = Date.now()) {
     basedOn: useReport ? "diagnostic" : "synchronization",
     refreshing: latest?.state === "running",
     canInferAdoption: Boolean(
-      cfg.archiveMissing && cfg.sourceMissingOutcome === "adopted",
+      cfg.archiveMissing &&
+      ["adopted", "automatic", "after24h"].includes(cfg.sourceMissingOutcome),
     ),
     absencePolicy: {
       outcome: cfg.archiveMissing ? cfg.sourceMissingOutcome : "review",

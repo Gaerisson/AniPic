@@ -348,6 +348,8 @@ export function Library({
           animations={animations}
           user={user}
           overview={overview}
+          notify={notify}
+          reload={reload}
           ui={ui}
         />
       )}
@@ -576,12 +578,6 @@ export function Library({
           </div>
         </div>
       </div>
-      {["recent", "oldest"].includes(sort) && (
-        <p className="small-note library-sort-note">
-          Tri : dernière série locale ajoutée. Les portraits SPA seuls sont
-          classés ensuite.
-        </p>
-      )}
       {filtersOpen && (
         <LibraryFilters
           page={page}

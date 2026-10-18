@@ -1,0 +1,261 @@
+html[data-app-layout="android"] .content {
+  padding-bottom: calc(106px + env(safe-area-inset-bottom, 0px));
+}
+.app-bottom-nav {
+  position: fixed;
+  z-index: 24;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(100%, 720px);
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  padding: 10px 8px calc(10px + env(safe-area-inset-bottom, 0px));
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -8px 36px #0002;
+}
+.app-bottom-nav a,
+.app-bottom-nav button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 48px;
+  min-width: 0;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--muted);
+  text-decoration: none;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  touch-action: manipulation;
+  padding: 7px 2px;
+}
+.app-bottom-nav span {
+  font-size: 10px;
+}
+.app-bottom-nav [aria-current="page"] {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent-readable, var(--accent));
+}
+.app-bottom-nav :is(a, button):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.mobile-home {
+  max-width: 1100px;
+  margin-inline: auto;
+}
+.mobile-welcome {
+  position: relative;
+  padding: 24px 0 34px;
+}
+.mobile-welcome > img {
+  position: absolute;
+  right: 12px;
+  top: 25px;
+  width: 76px;
+  height: 76px;
+  opacity: 0.94;
+}
+.mobile-welcome h1 {
+  font-size: clamp(35px, 5vw, 64px);
+  line-height: 1.1;
+  letter-spacing: -0.045em;
+  margin: 20px 0;
+  max-width: 850px;
+}
+.mobile-welcome h1 em {
+  font-style: normal;
+  color: var(--accent-readable, var(--accent));
+}
+.mobile-welcome p,
+.mobile-data-note {
+  color: var(--muted);
+  line-height: 1.7;
+}
+.mobile-welcome .eyebrow {
+  padding-right: 88px;
+}
+.mobile-destination-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+.mobile-destination {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+  min-width: 0;
+  text-decoration: none;
+  color: var(--ink);
+  border-color: var(--border);
+  transition:
+    transform 0.18s,
+    border-color 0.18s;
+}
+.mobile-destination:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent);
+}
+.mobile-destination > svg:first-child {
+  color: var(--accent-readable, var(--accent));
+}
+.mobile-destination > svg:last-child {
+  position: absolute;
+  right: 24px;
+  top: 28px;
+  color: var(--muted);
+}
+.mobile-destination strong {
+  font-size: 22px;
+  letter-spacing: -0.025em;
+}
+.mobile-destination p {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--muted);
+  margin-bottom: 0;
+}
+.mobile-review,
+.mobile-account,
+.mobile-install {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 24px;
+  margin-top: 20px;
+}
+.mobile-review > div,
+.mobile-account > div,
+.mobile-install > div {
+  flex: 1;
+  min-width: 0;
+}
+.mobile-home :is(.mobile-review, .mobile-account, .mobile-install) h2 {
+  margin: 0 0 7px;
+  font-size: 18px;
+}
+.mobile-home :is(.mobile-review, .mobile-account, .mobile-install) p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+.mobile-review-count {
+  min-width: 46px;
+  height: 46px;
+  padding: 8px;
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent-readable, var(--accent));
+  font-size: 24px;
+}
+.mobile-account > svg,
+.mobile-install > svg {
+  flex-shrink: 0;
+  color: var(--accent-readable, var(--accent));
+}
+.mobile-data-note {
+  font-size: 11px;
+  margin: 24px 0;
+}
+.app-offline-banner {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 16px;
+  margin-bottom: 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
+}
+html[data-app-layout="android"] .toast {
+  bottom: calc(94px + env(safe-area-inset-bottom, 0px));
+}
+@media (max-width: 800px) {
+  .mobile-destination-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .mobile-destination {
+    flex-direction: row;
+    align-items: center;
+    gap: 18px;
+    padding: 22px 18px;
+  }
+  .mobile-destination > svg:first-child {
+    flex-shrink: 0;
+  }
+  .mobile-destination > div {
+    padding-right: 18px;
+  }
+  .mobile-destination > svg:last-child {
+    right: 16px;
+    top: 24px;
+    width: 16px;
+  }
+  .mobile-welcome h1 {
+    padding-right: 18px;
+    font-size: clamp(32px, 8.5vw, 49px);
+  }
+  .mobile-welcome > img {
+    width: 52px;
+    height: 52px;
+    right: 0;
+    top: 22px;
+  }
+  .mobile-review,
+  .mobile-account,
+  .mobile-install {
+    flex-wrap: wrap;
+    padding: 20px;
+    gap: 12px;
+  }
+  .mobile-review > .button,
+  .mobile-account > .button,
+  .mobile-install > .button {
+    width: 100%;
+  }
+  .mobile-review > div,
+  .mobile-account > div,
+  .mobile-install > div {
+    flex-basis: calc(100% - 70px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mobile-destination {
+    transition: none;
+  }
+  .mobile-destination:hover {
+    transform: none;
+  }
+}
+.footer-android {
+  color: var(--muted);
+  font-size: 11px;
+  text-underline-offset: 4px;
+}
+.mobile-apk-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  margin-top: 14px;
+  color: var(--accent-readable, var(--accent));
+  text-underline-offset: 4px;
+}

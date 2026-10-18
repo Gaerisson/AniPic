@@ -1006,8 +1006,7 @@ export default function Gazette({ user, notify }) {
                             <div>
                               <span className={`gazette-kind ${row.kind}`}>
                                 {row.kind === "adoption"
-                                  ? row.adoption_origin?.kind ===
-                                    "automatic_absence"
+                                  ? ["automatic_absence", "automatic_confirmed"].includes(row.adoption_origin?.kind)
                                     ? "Adoption automatique"
                                     : row.adoption_origin?.kind ===
                                         "team_confirmed"

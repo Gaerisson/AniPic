@@ -38,13 +38,21 @@ export function animalCsv(rows) {
         species[a.species],
         a.sex === "male" ? "Mâle" : a.sex === "female" ? "Femelle" : "",
         statuses[a.status] || a.status,
-        a.adoption_origin?.kind === "automatic_absence"
+        ["automatic_absence", "automatic_confirmed"].includes(
+          a.adoption_origin?.kind,
+        )
           ? "Règle automatique d’absence AniPic"
-          : a.adoption_origin?.kind === "team_confirmed"
-            ? "Adoption validée par l’équipe AniPic"
-            : "",
+          : a.adoption_origin?.kind === "pending_review"
+            ? "En attente de l’équipe · délai 24 h"
+            : a.adoption_origin?.kind === "team_rejected"
+              ? "Adoption écartée par l’équipe"
+              : a.adoption_origin?.kind === "team_confirmed"
+                ? "Adoption validée par l’équipe AniPic"
+                : "",
         a.source_presence?.state === "missing"
-          ? a.adoption_origin?.kind === "automatic_absence"
+          ? ["automatic_absence", "automatic_confirmed"].includes(
+              a.adoption_origin?.kind,
+            )
             ? "Absent — adoption automatique"
             : "Absent — à vérifier"
           : a.source_presence?.state === "present"

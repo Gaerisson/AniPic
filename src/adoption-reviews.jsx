@@ -1,3 +1,4 @@
+import { AdoptionActions, decideAdoption } from "./adoption-actions.jsx";
 import { useEffect, useState } from "react";
 import { Heart, Check, RefreshCw, ArrowUpRight, PawPrint } from "lucide-react";
 import { api, imageUrl, speciesName, date } from "./api.js";
@@ -13,13 +14,15 @@ export default function AdoptionReviews({
 }) {
   const [data, setData] = useState(null),
     [page, setPage] = useState(1),
+    [filter, setFilter] = useState("pending"),
+    [revision, setRevision] = useState(0),
     [busy, setBusy] = useState(""),
     [error, setError] = useState("");
   useEffect(() => {
     if (!["admin", "agent"].includes(user?.role)) return;
     let active = true;
     const load = () =>
-      api(`/adoption-reviews?page=${page}`)
+      api(`/adoption-reviews?page=${page}&state=${filter}`)
         .then((d) => {
           if (active) {
             setData(d);
@@ -36,7 +39,7 @@ export default function AdoptionReviews({
       clearInterval(timer);
       window.removeEventListener("focus", load);
     };
-  }, [user?.id, version, page]);
+  }, [user?.id, version, page, filter, revision]);
   if (!["admin", "agent"].includes(user?.role))
     return (
       <Empty
@@ -45,20 +48,22 @@ export default function AdoptionReviews({
         text="Cette liste est réservée aux agents SPA et à l’administration."
       />
     );
-  const confirm = async (a) => {
+  const decide = async (a, action) => {
     setBusy(a.id);
     try {
-      await api(`/adoption-reviews/${a.id}/confirm`, {
-        method: "POST",
-        body: { expectedAt: a.at },
-      });
-      notify(`Adoption de ${a.name} confirmée.`);
+      await decideAdoption(a.id, a.adoption_review, action);
+      notify(
+        action === "confirm"
+          ? `Adoption de ${a.name} confirmée.`
+          : `Adoption de ${a.name} annulée.`,
+      );
       reload();
     } catch (e) {
       setError(e.message);
       reload();
     } finally {
       setBusy("");
+      setRevision((r) => r + 1);
     }
   };
   return (
@@ -67,12 +72,12 @@ export default function AdoptionReviews({
         <div>
           <div className="eyebrow">LE REFUGE · VALIDATION ÉQUIPE</div>
           <h1>
-            Adoptions à confirmer
+            Suivi des adoptions
             {data ? <span className="review-total">{data.total}</span> : null}
           </h1>
           <p>
-            Les départs ont déjà été archivés automatiquement. Confirmez les
-            adoptions connues de l’équipe.
+            Confirmez les départs et retrouvez les décisions de l’équipe ou de
+            la règle automatique.
           </p>
         </div>
         <Button variant="secondary" onClick={reload} disabled={!!busy}>
@@ -83,13 +88,30 @@ export default function AdoptionReviews({
       <p className="panel adoption-review-help">
         <Heart size={20} />
         <span>
-          Ces adoptions sont déduites des absences sur le site SPA et déjà
-          incluses dans les statistiques. Votre validation les marque comme
-          confirmées par l’équipe, sans les compter deux fois. Les photos sont
-          conservées ; un retour dans l’inventaire SPA corrige automatiquement
-          le départ.
+          Les absences sont déduites des inventaires SPA. En mode 24 h,
+          l’adoption reste en attente avant d’être comptée. Vous pouvez refuser
+          une proposition ou annuler une décision à tout moment dans
+          l’historique. Le refus conserve la fiche dans les archives, sans
+          compter d’adoption. Les photos sont conservées. Un retour sur le site
+          SPA corrige le départ.
         </span>
       </p>
+      <label className="adoption-review-filter">
+        Afficher{" "}
+        <select
+          value={filter}
+          onChange={(e) => {
+            setFilter(e.target.value);
+            setPage(1);
+            setData(null);
+          }}
+        >
+          <option value="pending">À confirmer</option>
+          <option value="all">Toutes les décisions</option>
+          <option value="confirmed">Adoptions confirmées</option>
+          <option value="rejected">Adoptions annulées / refusées</option>
+        </select>
+      </label>
       {error && (
         <p role="alert" className="error-text">
           {error}
@@ -108,7 +130,7 @@ export default function AdoptionReviews({
         <Empty
           icon={Check}
           title="Tout est à jour."
-          text="Aucune adoption automatique en attente de validation."
+          text="Aucune décision dans cette liste."
         />
       ) : (
         <>
@@ -133,16 +155,29 @@ export default function AdoptionReviews({
                   <small>
                     {speciesName[a.species]} · {a.source_id}
                   </small>
+                  <small>
+                    {
+                      {
+                        pending: "En attente de validation",
+                        confirmed:
+                          a.adoption_review.by === "automatic"
+                            ? "Confirmée automatiquement"
+                            : "Confirmée par l’équipe",
+                        rejected: "Adoption écartée par l’équipe",
+                      }[a.adoption_review.state]
+                    }
+                  </small>
                   <time dateTime={a.at}>Départ détecté le {date(a.at)}</time>
                   <small>
                     {a.confirmations} inventaires complets concordants
                   </small>
                 </div>
                 <div className="review-actions">
-                  <Button onClick={() => confirm(a)} disabled={!!busy}>
-                    <Check size={16} />
-                    {busy === a.id ? "Validation…" : "Confirmer l’adoption"}
-                  </Button>
+                  <AdoptionActions
+                    review={a.adoption_review}
+                    busy={!!busy}
+                    onDecide={(action) => decide(a, action)}
+                  />
                   <Button
                     variant="secondary"
                     onClick={() => open({ type: "animal", id: a.id })}

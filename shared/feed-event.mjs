@@ -1,5 +1,17 @@
 // Event kind takes precedence: an arrival with an adopted source status is still an arrival.
 export function refugeEvent(event) {
+  if (event.adoption_origin?.kind === "team_rejected")
+    return {
+      type: "departure",
+      label: "Adoption écartée par l’équipe",
+      symbol: "minus",
+    };
+  if (event.adoption_origin?.kind === "pending_review")
+    return {
+      type: "pending",
+      label: "Départ · adoption à vérifier",
+      symbol: "heart",
+    };
   if (event.adoption_origin?.kind === "automatic_reversed")
     return {
       type: "returned",
@@ -16,7 +28,9 @@ export function refugeEvent(event) {
       type: automatic ? "pending" : "adoption",
       label: automatic
         ? "Adoption automatique · à confirmer"
-        : "Adoption confirmée",
+        : event.adoption_origin?.kind === "automatic_confirmed"
+          ? "Adoption confirmée automatiquement"
+          : "Adoption confirmée",
       symbol: "heart",
     };
   }

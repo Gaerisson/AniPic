@@ -25,7 +25,9 @@ export function AnimalStatus({
     !["adopted", "source_missing", "deceased", "transferred"].includes(value);
   const automatic =
     value === "adopted" &&
-    animal?.adoption_origin?.kind === "automatic_absence";
+    ["automatic_absence", "automatic_confirmed"].includes(
+      animal?.adoption_origin?.kind,
+    );
   const teamConfirmed =
     value === "adopted" && animal?.adoption_origin?.kind === "team_confirmed";
   const label = sourceMissing

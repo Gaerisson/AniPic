@@ -10,6 +10,7 @@ import {
   Undo2,
   RefreshCw,
 } from "lucide-react";
+import { AdoptionActions, decideAdoption } from "./adoption-actions.jsx";
 import { refugeEvent } from "../shared/feed-event.mjs";
 import { api, imageUrl } from "./api.js";
 import { SpaPhoto } from "./spa-photo.jsx";
@@ -17,8 +18,10 @@ import { parisDate, agendaDateLabel } from "../shared/agenda.mjs";
 const Player = lazy(() =>
   import("./show-player.jsx").then((m) => ({ default: m.ShowPlayer })),
 );
-export function HomeWidgets({ widgets, user, overview, open }) {
+export function HomeWidgets({ widgets, user, overview, open, notify, reload }) {
   const [tasks, setTasks] = useState([]),
+    [revision, setRevision] = useState(0),
+    [deciding, setDeciding] = useState(""),
     [feed, setFeed] = useState(null),
     [feedError, setFeedError] = useState(""),
     [tv, setTv] = useState(null),
@@ -69,9 +72,33 @@ export function HomeWidgets({ widgets, user, overview, open }) {
       if (inFlight || document.visibilityState === "hidden") return;
       inFlight = true;
       try {
-        const v = await api("/feed?latest=1&limit=4");
+        const [v, reviews] = await Promise.all([
+          api("/feed?latest=1&limit=12"),
+          ["admin", "agent"].includes(user?.role)
+            ? api("/adoption-reviews?limit=2")
+            : Promise.resolve(null),
+        ]);
+        const combined = [
+          ...(reviews?.items || []).map((a) => ({
+            ...a,
+            id: "review:" + a.id,
+            animal_id: a.id,
+            photo_id: a.cover_id,
+            kind: "removed",
+            created_at: a.at,
+          })),
+          ...(v.events || []),
+        ];
+        const ids = new Set();
+        const recent = combined
+          .filter((a) => {
+            if (ids.has(a.animal_id)) return false;
+            ids.add(a.animal_id);
+            return true;
+          })
+          .slice(0, 4);
         if (active) {
-          setFeed(v.events || []);
+          setFeed(recent);
           setFeedError("");
         }
       } catch {
@@ -90,7 +117,7 @@ export function HomeWidgets({ widgets, user, overview, open }) {
       clearInterval(timer);
       window.removeEventListener("focus", load);
     };
-  }, [widgets.includes("activity"), user?.id, overview]);
+  }, [widgets.includes("activity"), user?.id, overview, revision]);
   useEffect(() => {
     if (!widgets.includes("tv")) return;
     const load = () =>
@@ -114,15 +141,38 @@ export function HomeWidgets({ widgets, user, overview, open }) {
             {key === "stats" ? (
               <>
                 <h2>La photothèque</h2>
-                <div className="home-widget-stats">
-                  {[
-                    [overview?.stats?.total, "compagnons"],
-                    [overview?.stats?.photos, "photos"],
-                    [overview?.stats?.needPhotos, "à photographier"],
-                  ].map(([n, label]) => (
-                    <div key={label}>
-                      <strong>{n || 0}</strong>
-                      <span>{label}</span>
+                <p className="small-note">
+                  Animaux présents · portraits réalisés par l’équipe
+                </p>
+                <div className="photo-coverage-grid">
+                  {(overview?.stats?.photoCoverage || []).map((c) => (
+                    <div className="photo-coverage" key={c.species}>
+                      <div>
+                        <strong>{c.total}</strong>
+                        <span>
+                          {
+                            { dog: "chiens", cat: "chats", other: "NAC" }[
+                              c.species
+                            ]
+                          }
+                        </span>
+                      </div>
+                      <p>
+                        <b>{c.photographed}</b> photographiés sur {c.total}
+                        <small>
+                          {c.remaining} restant{c.remaining > 1 ? "s" : ""}
+                        </small>
+                      </p>
+                      <div
+                        className="photo-coverage-track"
+                        role="progressbar"
+                        aria-label={`Portraits locaux · ${{ dog: "chiens", cat: "chats", other: "NAC" }[c.species]}`}
+                        aria-valuenow={c.photographed}
+                        aria-valuemin={0}
+                        aria-valuemax={Math.max(1, c.total)}
+                      >
+                        <i style={{ width: `${c.percent}%` }} />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -212,6 +262,7 @@ export function HomeWidgets({ widgets, user, overview, open }) {
                                   name: t.animal_name,
                                 }}
                                 compact
+                                watermark={false}
                               />
                             )}
                           </span>
@@ -242,6 +293,11 @@ export function HomeWidgets({ widgets, user, overview, open }) {
                     Tout voir <ArrowUpRight size={14} />
                   </a>
                 </h2>
+                {feedError && feed !== null && (
+                  <p role="alert" className="error-text">
+                    {feedError}
+                  </p>
+                )}
                 <div className="home-widget-list refuge-mini-feed">
                   {(feed || []).slice(0, 4).map((t) => {
                     const event = refugeEvent(t),
@@ -253,33 +309,80 @@ export function HomeWidgets({ widgets, user, overview, open }) {
                         update: RefreshCw,
                       }[event.symbol];
                     return (
-                      <button
+                      <article
                         className={`refuge-mini-event event-${event.type}`}
                         key={t.id || t.seq}
-                        onClick={() =>
-                          open({ type: "animal", id: t.animal_id })
-                        }
                       >
-                        <span className="refuge-event-icon" aria-hidden="true">
-                          <Icon size={18} />
-                        </span>
-                        <strong>
-                          {t.name}
-                          <small className="refuge-event-label">
-                            {event.label}
-                          </small>
-                          <time dateTime={t.created_at}>
-                            {new Date(t.created_at).toLocaleString("fr-FR", {
-                              timeZone: "Europe/Paris",
-                              day: "numeric",
-                              month: "short",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </time>
-                        </strong>
-                        <ArrowUpRight size={15} className="refuge-event-open" />
-                      </button>
+                        <button
+                          className="refuge-event-main"
+                          onClick={() =>
+                            open({ type: "animal", id: t.animal_id })
+                          }
+                        >
+                          <span className="refuge-event-portrait">
+                            {t.photo_id ? (
+                              <img src={imageUrl(t.photo_id, 160)} alt="" />
+                            ) : (
+                              <SpaPhoto
+                                animal={{ ...t, id: t.animal_id }}
+                                compact
+                                watermark={false}
+                              />
+                            )}
+                          </span>
+                          <span
+                            className="refuge-event-icon"
+                            aria-hidden="true"
+                          >
+                            <Icon size={18} />
+                          </span>
+                          <strong>
+                            {t.name}
+                            <small className="refuge-event-label">
+                              {event.label}
+                            </small>
+                            <time dateTime={t.created_at}>
+                              {new Date(t.created_at).toLocaleString("fr-FR", {
+                                timeZone: "Europe/Paris",
+                                day: "numeric",
+                                month: "short",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </time>
+                          </strong>
+                          <ArrowUpRight
+                            size={15}
+                            className="refuge-event-open"
+                          />
+                        </button>
+                        <AdoptionActions
+                          review={t.adoption_review}
+                          busy={deciding === t.animal_id}
+                          onDecide={async (action) => {
+                            setDeciding(t.animal_id);
+                            try {
+                              await decideAdoption(
+                                t.animal_id,
+                                t.adoption_review,
+                                action,
+                              );
+                              notify?.(
+                                action === "confirm"
+                                  ? `Adoption de ${t.name} confirmée.`
+                                  : `Adoption de ${t.name} annulée.`,
+                              );
+                              reload?.();
+                            } catch (e) {
+                              setFeedError(e.message);
+                              notify?.(e.message);
+                            } finally {
+                              setDeciding("");
+                              setRevision((r) => r + 1);
+                            }
+                          }}
+                        />
+                      </article>
                     );
                   })}
                   {feed === null && (

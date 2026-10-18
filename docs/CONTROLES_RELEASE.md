@@ -53,7 +53,7 @@ Modifier les dépendances directes avec npm sous Node 24, par exemple `npm insta
 
 - `denied` pour `ghcr.io/gaerisson/anipic` : vérifier que le job de publication a réussi, que la version demandée existe et que le package GHCR est public. Utiliser `portainer-ghcr.yml`, pas le nom court Docker Hub `anipic`.
 
-- `pull access denied for anipic` / `Failed to pull images of the stack` : désactiver **Re-pull image**. `compose.yml` compile depuis Git avec `pull_policy: build` ; `portainer-stack.yml` utilise une image locale préconstruite avec `pull_policy: never`. Cette image n’est pas publiée sur Docker Hub. Avec le second fichier, la construire sur le moteur de Portainer (`docker build -t anipic:3.10.4 .`) avant de redéployer. Consulter les [deux procédures](DEPLOIEMENT.md#portainer-et-apache) et conserver le nom de stack et ses volumes. Un `docker login` ne crée pas une image absente du registre.
+- `pull access denied for anipic` / `Failed to pull images of the stack` : désactiver **Re-pull image**. `compose.yml` compile depuis Git avec `pull_policy: build` ; `portainer-stack.yml` utilise une image locale préconstruite avec `pull_policy: never`. Cette image n’est pas publiée sur Docker Hub. Avec le second fichier, la construire sur le moteur de Portainer (`docker build -t anipic:3.11.1 .`) avant de redéployer. Consulter les [deux procédures](DEPLOIEMENT.md#portainer-et-apache) et conserver le nom de stack et ses volumes. Un `docker login` ne crée pas une image absente du registre.
 
 - `mkdir: File exists` : les chemins d’images de base peuvent déjà exister. Le Dockerfile utilise `mkdir -p` pour `/data`, `/media`, `/cache` et `/backups`.
 - `bind source path does not exist` : Docker contrôle les chemins **sur l’hôte du moteur**, avant le démarrage d’AniPic. Exécuter la [préparation NAS](DEPLOIEMENT.md#préparer-le-stockage-nas) sur cet hôte, puis reporter les chemins absolus dans Portainer. L’application ne peut pas créer un bind mount qui l’empêche de démarrer.
@@ -71,3 +71,13 @@ Contrôler santé, connexion, galerie, upload, sauvegarde et rendu vidéo après
 ### Logo introuvable pendant un export
 
 `POST /api/group-posters` avec `HTTP 500 · ENOENT` sur une ancienne version : les ressources de l’image Docker sont dans `dist/`, pas dans `public/`. La version 3.10.3 corrige la lecture pour les grandes affiches, la gazette et les affiches de box. Recompiler l’image complète puis mettre à jour la même stack. Ne créer aucun nouveau montage de logo ni ne réinitialiser les volumes de données. Une ressource réellement absente produit désormais `ASSET_MISSING`, avec une invitation à recompiler l’image.
+
+
+## Évolution Android
+
+Avant de distribuer une nouvelle APK, compiler aussi les sources `android/` : JDK 17, SDK API 36 et Build Tools 35.0.0, puis `bash gradlew --no-daemon assembleDebug assembleRelease lintRelease`. Le workflow Validation Android exécute ces contrôles sur les PR et pushes `main`, sans clé de signature privée.
+
+Pour la distribution, utiliser la clé privée existante, augmenter le versionCode lors d’un changement natif et suivre [le guide Android](ANDROID.md). Vérifier l’APK signée avec apksigner et comparer l’empreinte publique à celle du domaine. Ne jamais publier la sauvegarde de signature ou son mot de passe dans une release GitHub. Le ZIP source exclut clés, SDK, caches Gradle et APK de build. L’exception publique est l’APK signée référencée par `public/android-download.json`, dans `public/downloads/`, afin que la page d’installation fonctionne depuis le même dépôt. Lancer aussi `node scripts/check-android-download.mjs` ; la CI contrôle sa signature avec apksigner. Les mises à jour web ordinaires ne demandent généralement pas de recompilation Android.
+
+
+La CI principale appelle maintenant la validation Android réutilisable. La publication attend les jobs application, Docker et Android : une APK distribuée dont la signature, le certificat ou la version est invalide empêche la publication. Cette vérification utilise uniquement le certificat public ; aucune clé privée n’est nécessaire dans GitHub Actions.

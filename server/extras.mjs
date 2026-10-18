@@ -7,7 +7,7 @@ import {
 import { themedNames, nameThemes } from "../shared/name-themes.mjs";
 import { registerAuthorAvatar } from "./author-avatar.mjs";
 import { registerSourceMatches } from "./source-match.mjs";
-import { feedAdoptionOrigin } from "./source-adoption.mjs";
+import { feedAdoptionOrigin, reviewForAnimal } from "./source-adoption.mjs";
 import { registerGeoIP } from "./geoip.mjs";
 import { z } from "zod";
 import path from "node:path";
@@ -361,7 +361,7 @@ export async function registerExtras(app, { db, c, authorized, job }) {
         .parse(req.query);
       const events = db
         .prepare(
-          `SELECT e.*,a.source_metadata,a.breed,a.sex,a.source_id,substr(a.description,1,180) description,(SELECT COUNT(*) FROM photos p WHERE p.animal_id=e.animal_id AND ${req.user ? "1=1" : "p.hidden=0"}) photo_count,(SELECT p.id FROM photos p WHERE p.animal_id=e.animal_id AND (?=1 OR p.hidden=0) ORDER BY p.archived_at IS NOT NULL,p.created_at DESC LIMIT 1) photo_id FROM feed_events e LEFT JOIN animals a ON a.id=e.animal_id WHERE ${q.latest === "1" ? "e.seq<?" : "e.seq>?"} AND (?='all' OR (?='adopted' AND e.status='adopted') OR (?!='adopted' AND e.kind=?)) ORDER BY e.seq ${q.latest === "1" ? "DESC" : "ASC"} LIMIT ?`,
+          `SELECT e.*,a.source_metadata,a.breed,a.sex,a.source_id,substr(a.description,1,180) description,(SELECT COUNT(*) FROM photos p WHERE p.animal_id=e.animal_id AND p.deleted_at IS NULL AND ${req.user ? "1=1" : "p.hidden=0"}) photo_count,(SELECT p.id FROM photos p WHERE p.animal_id=e.animal_id AND p.deleted_at IS NULL AND (?=1 OR p.hidden=0) ORDER BY p.archived_at IS NOT NULL,p.created_at DESC LIMIT 1) photo_id FROM feed_events e LEFT JOIN animals a ON a.id=e.animal_id WHERE ${q.latest === "1" ? "e.seq<?" : "e.seq>?"} AND (?='all' OR (?='adopted' AND e.status='adopted') OR (?!='adopted' AND e.kind=?)) ORDER BY e.seq ${q.latest === "1" ? "DESC" : "ASC"} LIMIT ?`,
         )
         .all(
           req.user ? 1 : 0,
@@ -375,8 +375,10 @@ export async function registerExtras(app, { db, c, authorized, job }) {
       return {
         events: events.map(({ source_metadata, ...event }) => ({
           ...event,
-          ...(event.status === "adopted"
-            ? { adoption_origin: feedAdoptionOrigin(db, event) }
+          adoption_origin: feedAdoptionOrigin(db, event),
+          ...(["admin", "agent"].includes(req.user?.role) &&
+          ["removed", "adopted"].includes(event.kind)
+            ? { adoption_review: reviewForAnimal(db, event.animal_id) }
             : {}),
           source_metadata: {
             ageLabel: publicAnimalMetadata(JSON.parse(source_metadata || "{}"))

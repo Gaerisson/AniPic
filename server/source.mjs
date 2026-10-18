@@ -10,6 +10,9 @@ import { savePresence, readPresence } from "./source-presence.mjs";
 import {
   adoptionOrigin,
   inferAdoption,
+  automaticAdoption,
+  adoptionPolicies,
+  settleDueAdoptions,
   reconcileAdoption,
 } from "./source-adoption.mjs";
 import {
@@ -544,9 +547,14 @@ export function applySnapshot(db, snapshot) {
         )
         .all(
           snapshot.scope,
-          Number(cfg.archiveMissing && cfg.sourceMissingOutcome === "adopted"),
+          Number(
+            cfg.archiveMissing &&
+              adoptionPolicies.includes(cfg.sourceMissingOutcome),
+          ),
         )) {
         if (seen.has(a.source_id)) continue;
+        // A pending deadline or a team refusal must survive subsequent absences.
+        if (automaticAdoption(db, a.id)) continue;
         const count = a.missing_count + 1;
         db.prepare("UPDATE animals SET missing_count=? WHERE id=?").run(
           count,
@@ -556,16 +564,17 @@ export function applySnapshot(db, snapshot) {
           const before = db
             .prepare("SELECT * FROM animals WHERE id=?")
             .get(a.id);
-          const outcome =
-            cfg.sourceMissingOutcome === "adopted"
-              ? "adopted"
-              : "source_missing";
+          const outcome = ["adopted", "automatic"].includes(
+            cfg.sourceMissingOutcome,
+          )
+            ? "adopted"
+            : "source_missing";
           db.prepare(
             "UPDATE animals SET archived_at=COALESCE(archived_at,?),departed_at=COALESCE(departed_at,?),status=?,updated_at=? WHERE id=?",
           ).run(date, date, outcome, date, a.id);
-          if (outcome === "adopted") {
+          if (adoptionPolicies.includes(cfg.sourceMissingOutcome)) {
             inferAdoption(db, before, snapshot, cfg, date, count);
-            autoAdopted++;
+            if (outcome === "adopted") autoAdopted++;
           }
           recordAnimalChanges(
             db,
@@ -578,7 +587,9 @@ export function applySnapshot(db, snapshot) {
             db,
             db.prepare("SELECT * FROM animals WHERE id=?").get(a.id),
             "removed",
-            outcome === "adopted" ? adoptionOrigin(db, a.id) : null,
+            adoptionPolicies.includes(cfg.sourceMissingOutcome)
+              ? adoptionOrigin(db, a.id)
+              : null,
           );
           absent++;
         }
@@ -590,6 +601,7 @@ export function applySnapshot(db, snapshot) {
         JSON.stringify({ at: date, fetchedAt: snapshot.fetchedAt }),
       );
     }
+    autoAdopted += settleDueAdoptions(db, cfg);
   });
   return {
     created,

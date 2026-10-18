@@ -15,7 +15,7 @@ RUN npm run build && npm run video:build && VIDEO_BROWSER_INSTALL_DIR=/opt/remot
 FROM node:24-bookworm-slim
 ARG VCS_REF=unknown
 LABEL org.opencontainers.image.title="AniPic" \
-      org.opencontainers.image.version="3.10.4" \
+      org.opencontainers.image.version="3.11.1" \
       org.opencontainers.image.revision=$VCS_REF \
       org.opencontainers.image.source="https://github.com/Gaerisson/AniPic" \
       org.opencontainers.image.authors="Gaerisson"

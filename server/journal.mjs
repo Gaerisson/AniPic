@@ -1,5 +1,8 @@
 import { id, now } from "./db.mjs";
 const names = {
+  source_adoption_pending: "Départ archivé · adoption en attente pendant 24 h",
+  adoption_review_auto_confirmed: "Adoption confirmée automatiquement",
+  adoption_review_rejected: "Adoption annulée ou refusée par l’équipe",
   adoption_review_confirmed: "Adoption validée par l’équipe",
   photo_reviewed: "Analyse du tri photo",
   animal_cutout: "Détourage d’un animal",

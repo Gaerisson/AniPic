@@ -549,15 +549,22 @@ export function SourceSettings({ values: v, change, notify }) {
               value={
                 !v.archiveMissing
                   ? "keep"
-                  : v.sourceMissingOutcome === "adopted"
-                    ? "adopted"
+                  : ["adopted", "automatic", "after24h"].includes(
+                        v.sourceMissingOutcome,
+                      )
+                    ? v.sourceMissingOutcome
                     : "archive"
               }
               onChange={(e) =>
                 change({
                   archiveMissing: e.target.value !== "keep",
-                  sourceMissingOutcome:
-                    e.target.value === "adopted" ? "adopted" : "unconfirmed",
+                  sourceMissingOutcome: [
+                    "adopted",
+                    "automatic",
+                    "after24h",
+                  ].includes(e.target.value)
+                    ? e.target.value
+                    : "unconfirmed",
                 })
               }
             >
@@ -566,18 +573,27 @@ export function SourceSettings({ values: v, change, notify }) {
                 Archiver sans compter une adoption
               </option>
               <option value="adopted">
-                Archiver et compter automatiquement comme adoption
+                Compter l’adoption et demander la validation de l’équipe
+              </option>
+              <option value="automatic">
+                Confirmer automatiquement l’adoption
+              </option>
+              <option value="after24h">
+                Demander à l’équipe, puis confirmer après 24 h sans réponse
               </option>
             </select>
           </label>
           <p className="fineprint">
             Seuls les inventaires complets et fiables, espacés du délai
-            configuré (15 minutes minimum), confirment les absences. En mode
-            adoption automatique, AniPic applique votre règle et indique «
-            Adopté · automatique » : aucune validation manuelle n’est
-            nécessaire. Si l’animal réapparaît, son statut et les statistiques
-            sont corrigés. Les photos restent conservées. Une baisse suspecte,
-            un inventaire incomplet ou ancien suspendent ce traitement.
+            configuré (15 minutes minimum), confirment les absences. Le mode 24
+            h archive d’abord la fiche sans compter d’adoption. Après ce délai
+            sans réponse, un nouvel inventaire fiable doit encore confirmer
+            l’absence. Les agents peuvent confirmer, refuser ou annuler une
+            décision depuis l’accueil ou l’historique des adoptions. Un refus
+            reste mémorisé tant que l’animal est absent. S’il réapparaît, son
+            statut et les statistiques sont corrigés. Les photos restent
+            conservées. Une baisse suspecte, un inventaire incomplet ou ancien
+            suspendent ce traitement.
           </p>
         </details>
       </section>

@@ -1,5 +1,18 @@
 # Journal des versions
 
+## 3.11.1 — Installation Android dans le même projet
+
+- Page `/android` avec téléchargement direct de l’APK signée, instructions, QR code et empreintes publiques.
+- APK livrée dans le dépôt, le ZIP et l’image web ; contrôles de contenu, reprise du téléchargement et certificat en CI.
+- Liens d’installation depuis le site et l’accueil mobile ; corrections web 3.11.0 conservées.
+
+## 3.11.0 — Android, accueil et adoptions
+
+- APK Android signée pour anipic.gaerisson.fr, navigation mobile Adoptions / Photos / C8 / Plus, association de domaine et écran hors connexion public.
+- Météo compacte près de l’horloge ; effectifs et progression des portraits locaux par espèce ; photos et validation directe dans le fil d’accueil.
+- Confirmation automatique ou après 24 h sans réponse, historique des décisions, annulation/rétablissement par les agents et refus conservés entre synchronisations.
+- Compilation Android et lint en CI ; documentation d’installation, signature et mises à jour. PIN, rôles et volumes existants conservés.
+
 ## 3.10.4 — 18 octobre 2026
 
 Fil d’accueil avec +/−/cœur, couleurs des mouvements et dates. Liste « Adoptions à confirmer » avec compteur dans le menu et validation par les agents sans double comptage. Profil rapide 2 confirmations / 30 min, synchronisation 15 min. Poster en silhouette SPA avec noms lisibles, jusqu’à 60 portraits. [Détail](RELEASE_v3.10.4.md).

@@ -26,3 +26,14 @@ examples
 *.md
 
 .google-oauth-secret*
+
+android
+*.jks
+*.keystore
+*.apk
+*.aab
+*.idsig
+
+# Ship the signed public download inside the same web image.
+!public/downloads/AniPic-*.apk
+

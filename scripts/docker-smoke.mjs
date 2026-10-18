@@ -21,6 +21,19 @@ const app = await createApp({
 });
 try {
   assert.equal((await app.inject({ url: "/api/health" })).statusCode, 200);
+  const installer = await app.inject({ url: "/android" });
+  assert.equal(installer.statusCode, 200);
+  const android = (await app.inject({ url: "/android-download.json" })).json();
+  const apk = await app.inject({ url: `/downloads/${android.filename}` });
+  assert.equal(apk.statusCode, 200);
+  assert.equal(apk.rawPayload.length, android.bytes);
+  assert.equal(
+    (await import("node:crypto"))
+      .createHash("sha256")
+      .update(apk.rawPayload)
+      .digest("hex"),
+    android.sha256,
+  );
   assert.equal(app.db.prepare("SELECT COUNT(*) n FROM animals").get().n, 0);
   const aid = crypto.randomUUID(),
     date = new Date().toISOString();

@@ -1,4 +1,10 @@
 import { browserTheme, rememberTheme } from "./theme-store.mjs";
+import {
+  useMobileApp,
+  MobileHome,
+  AppBottomNav,
+  AppConnection,
+} from "./mobile-app.jsx";
 const InternalRegister = lazy(() => import("./internal-register.jsx"));
 const GroupPoster = lazy(() => import("./group-poster.jsx"));
 const AdoptionReviews = lazy(() => import("./adoption-reviews.jsx"));
@@ -52,6 +58,7 @@ import {
   Info,
   Undo2,
   CalendarDays,
+  Smartphone,
 } from "lucide-react";
 import { api, setCsrf, uid } from "./api.js";
 import { createRoot } from "react-dom/client";
@@ -131,6 +138,9 @@ import "./update31.css";
 
 const iconProps = { size: 19, strokeWidth: 1.7 };
 const pages = {
+  mobile: { name: "Mon refuge", icon: Smartphone, group: "library" },
+  mobileAdoptions: { name: "Les adoptions", icon: Heart, group: "library" },
+  mobilePhotos: { name: "Photos", icon: Images, group: "library" },
   adoptionReviews: {
     name: "Adoptions à confirmer",
     icon: Heart,
@@ -206,6 +216,7 @@ function App() {
     [mobile, setMobile] = useState(false),
     [connectionError, setConnectionError] = useState("");
   const [theme, setTheme] = useState(() => browserTheme());
+  const appRuntime = useMobileApp();
   const [animations, setAnimations] = useState(
     () =>
       localStorage.getItem("anipic-animations") !== "false" &&
@@ -225,6 +236,12 @@ function App() {
   const [editorDraft, setEditorDraft] = useState(null);
   useEffect(() => {
     document.documentElement.dataset.theme = theme || "night";
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute(
+        "content",
+        ["spa", "sage"].includes(theme) ? "#fff8f0" : "#121315",
+      );
   }, [theme]);
   useEffect(() => {
     document.documentElement.dataset.motion = animations ? "on" : "off";
@@ -609,7 +626,13 @@ function App() {
             {[
               [
                 "PHOTOTHÈQUE",
-                ["gallery", "animals", "favorites", "collections"],
+                [
+                  ...(appRuntime.appMode ? ["mobile", "mobileAdoptions"] : []),
+                  "gallery",
+                  "animals",
+                  "favorites",
+                  "collections",
+                ],
               ],
               ["PRISE DE VUE", ["todo", "inbox", "print"]],
               [
@@ -823,6 +846,7 @@ function App() {
             </div>
           </header>
           <div className="content">
+            <AppConnection offline={appRuntime.offline} />
             {undo.label && (
               <div className="undo-strip" role="status">
                 <span>{undo.label}</span>
@@ -854,6 +878,21 @@ function App() {
                   </Button>
                 }
               />
+            ) : page === "mobile" ? (
+              <MobileHome
+                {...actions}
+                runtime={appRuntime}
+                pendingAdoptions={pendingAdoptions}
+              />
+            ) : page === "mobileAdoptions" ? (
+              <Feed
+                {...actions}
+                initialKind="adopted"
+                title="Les adoptions"
+                autoRefresh
+              />
+            ) : page === "mobilePhotos" ? (
+              <Library page="animals" q={q} setQ={setQ} {...actions} />
             ) : page === "displaySettings" ? (
               canManageDisplay(user) ? (
                 <Suspense fallback={<Spinner />}>
@@ -997,6 +1036,9 @@ function App() {
               <button className="footer-about" onClick={() => go("about")}>
                 © {new Date().getFullYear()} Gaerisson · À propos
               </button>
+              <a className="footer-android" href="/android">
+                Installer sur Android
+              </a>
               <span>
                 {session?.demo
                   ? "Démonstration · Profils fictifs / photos d’illustration"
@@ -1005,6 +1047,14 @@ function App() {
             </footer>
           </div>
         </main>
+        {appRuntime.appMode && !modal && (
+          <AppBottomNav
+            page={page}
+            go={go}
+            more={() => (narrow ? setMobile((v) => !v) : go("tools"))}
+            expanded={mobile}
+          />
+        )}
         {toast && (
           <div role="status" className={`toast ${toast.type}`}>
             <span>
@@ -1139,3 +1189,5 @@ import "./update36.css";
 import "./update39.css";
 import "./update312.css";
 import "./update314.css";
+import "./mobile-app.css";
+import "./update3110.css";

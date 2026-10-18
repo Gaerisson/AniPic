@@ -5,6 +5,7 @@ import {
 import { hasAnimalInfo } from "../shared/animal-info.mjs";
 import { registerInternalRegister } from "./internal-register.mjs";
 import { registerGroupPosters } from "./group-posters.mjs";
+import { registerMobileWeb } from "./mobile-web.mjs";
 import { registerCreativeWorkshop } from "./creative-workshop.mjs";
 import { registerArchiveCompression } from "./archive-compression.mjs";
 import { appVersion } from "../shared/version.mjs";
@@ -22,6 +23,8 @@ import {
   adoptionOrigin,
   pendingAdoptionCount,
   registerAdoptionReviews,
+  reviewForAnimal,
+  settleDueAdoptions,
 } from "./source-adoption.mjs";
 import { cachedSourceMatch } from "./source-match.mjs";
 import {
@@ -369,6 +372,9 @@ export async function createApp(overrides = {}) {
     return {
       ...row,
       adoption_origin: adoptionOrigin(db, row.id),
+      ...(["admin", "agent"].includes(req.user?.role)
+        ? { adoption_review: reviewForAnimal(db, row.id) }
+        : {}),
       source_presence: animalPresence(
         db,
         row,
@@ -458,6 +464,30 @@ export async function createApp(overrides = {}) {
         `SELECT COUNT(*) total,SUM(species='dog') dogs,SUM(species='cat') cats,SUM(species='other') others,SUM(archived_at IS NOT NULL) archived FROM animals WHERE NOT EXISTS(SELECT 1 FROM settings s WHERE s.key='animalTrash:'||animals.id)`,
       )
       .get();
+    const absentIds = JSON.stringify(missingAnimalIds(db));
+    const coverageRows = db
+      .prepare(
+        `SELECT a.species, COUNT(*) total,
+      SUM(EXISTS(SELECT 1 FROM photos p WHERE p.animal_id=a.id AND p.archived_at IS NULL AND ${photoCondition(req)})) photographed
+      FROM animals a WHERE a.archived_at IS NULL AND a.status NOT IN ('adopted','source_missing','deceased','transferred')
+      AND a.id NOT IN (SELECT value FROM json_each(?))
+      AND NOT EXISTS(SELECT 1 FROM settings s WHERE s.key='animalTrash:'||a.id) GROUP BY a.species`,
+      )
+      .all(absentIds);
+    const photoCoverage = ["dog", "cat", "other"].map((species) => {
+      const row = coverageRows.find((r) => r.species === species) || {
+        total: 0,
+        photographed: 0,
+      };
+      return {
+        species,
+        ...row,
+        remaining: row.total - row.photographed,
+        percent: row.total
+          ? Math.round((row.photographed / row.total) * 100)
+          : 0,
+      };
+    });
     const photos = db
       .prepare(
         `SELECT COUNT(*) count FROM photos p WHERE ${photoCondition(req)} AND p.archived_at IS NULL`,
@@ -492,6 +522,7 @@ export async function createApp(overrides = {}) {
       ),
       stats: {
         ...stats,
+        photoCoverage,
         localPhotos: req.user
           ? db
               .prepare(
@@ -1428,6 +1459,7 @@ export async function createApp(overrides = {}) {
   await registerInternalRegister(app, { db, authorized });
   await registerGroupPosters(app, { db, c, authorized });
   await registerAdoptionReviews(app, { db, authorized });
+  await registerMobileWeb(app);
   await registerCreativeWorkshop(app, { db, c, authorized });
   if (existsSync(path.join(root, "dist", "index.html"))) {
     await app.register(serveStatic, {
@@ -1440,6 +1472,7 @@ export async function createApp(overrides = {}) {
         req.method === "GET" &&
         !req.url.startsWith("/api/") &&
         !req.url.startsWith("/assets/") &&
+        !req.url.startsWith("/downloads/") &&
         !req.url.startsWith("/media/")
       )
         return reply.sendFile("index.html");
@@ -1473,6 +1506,14 @@ export async function createApp(overrides = {}) {
         .all();
       if (scheduledSyncDue(cfg, sync))
         await job("sync", null, () => synchronize(db)).catch(() => {});
+      try {
+        transaction(db, () => settleDueAdoptions(db, settings(db)));
+      } catch (error) {
+        app.log.error(
+          error,
+          "Confirmation automatique des adoptions impossible",
+        );
+      }
     }, 60_000);
   timer?.unref();
   app.addHook("onClose", async () => {

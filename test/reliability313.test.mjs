@@ -49,6 +49,17 @@ test("real group poster endpoint works in a production-shaped checkout with dist
     process.platform === "win32" ? "junction" : "dir",
   );
   await fs.mkdir(path.join(dir, "dist"));
+  for (const name of ["android-download.json", "android-install.html"]) {
+    await fs.copyFile(
+      path.join(root, "public", name),
+      path.join(dir, "dist", name),
+    );
+  }
+  await fs.cp(
+    path.join(root, "public/downloads"),
+    path.join(dir, "dist/downloads"),
+    { recursive: true },
+  );
   await fs.copyFile(
     path.join(root, "public/spa-logo.png"),
     path.join(dir, "dist/spa-logo.png"),

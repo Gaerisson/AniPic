@@ -94,36 +94,39 @@ export function Weather({ compact = false }) {
               {Math.round(current.wind_speed_10m)} km/h
             </span>
           </div>
-          <div className="meteo-forecast">
-            {weather.days.slice(0, compact ? 3 : 7).map((day, i) => {
-              const DayIcon =
-                day.rainProbability >= 40
-                  ? CloudRain
-                  : day.code < 3
-                    ? Sun
-                    : Cloud;
-              return (
-                <div key={day.date}>
-                  <span>
-                    {i === 0
-                      ? "Aujourd’hui"
-                      : new Date(day.date + "T12:00:00").toLocaleDateString(
-                          "fr-FR",
-                          { weekday: "short" },
-                        )}
-                  </span>
-                  <DayIcon size={20} />
-                  <strong>
-                    {Math.round(day.max)}° <small>{Math.round(day.min)}°</small>
-                  </strong>
-                  <em>
-                    <Droplets size={10} />
-                    {day.rainProbability}%
-                  </em>
-                </div>
-              );
-            })}
-          </div>
+          {!compact && (
+            <div className="meteo-forecast">
+              {weather.days.slice(0, compact ? 3 : 7).map((day, i) => {
+                const DayIcon =
+                  day.rainProbability >= 40
+                    ? CloudRain
+                    : day.code < 3
+                      ? Sun
+                      : Cloud;
+                return (
+                  <div key={day.date}>
+                    <span>
+                      {i === 0
+                        ? "Aujourd’hui"
+                        : new Date(day.date + "T12:00:00").toLocaleDateString(
+                            "fr-FR",
+                            { weekday: "short" },
+                          )}
+                    </span>
+                    <DayIcon size={20} />
+                    <strong>
+                      {Math.round(day.max)}°{" "}
+                      <small>{Math.round(day.min)}°</small>
+                    </strong>
+                    <em>
+                      <Droplets size={10} />
+                      {day.rainProbability}%
+                    </em>
+                  </div>
+                );
+              })}
+            </div>
+          )}
           <div className={`meteo-slot ${window ? "suitable" : ""}`}>
             <Camera size={16} />
             <span>
@@ -250,6 +253,8 @@ export function Home({
   ui = {},
   user,
   overview,
+  notify,
+  reload,
 }) {
   // Three real faces rotate around one axis, as in the requested reference.
   const candidates = animals.filter((a) => a.cover_id).slice(0, 3);
@@ -293,7 +298,7 @@ export function Home({
           className="photo-carousel prism-carousel"
           style={{
             order: widgets.indexOf("photos"),
-            gridColumn: widgets.includes("clockWeather") ? "span 8" : "1 / -1",
+            gridColumn: "1 / -1",
           }}
           aria-label="Les regards du refuge"
           onMouseEnter={() => setHovered(true)}
@@ -408,7 +413,7 @@ export function Home({
           className="home-aside"
           style={{
             order: widgets.indexOf("clockWeather"),
-            gridColumn: widgets.includes("photos") ? "span 4" : "1 / -1",
+            gridColumn: "1 / -1",
           }}
         >
           {ui.showClock !== false && <ClockFace clock={clock} />}
@@ -420,6 +425,8 @@ export function Home({
         user={user}
         overview={overview}
         open={open}
+        notify={notify}
+        reload={reload}
       />
     </div>
   );
