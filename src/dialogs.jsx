@@ -36,6 +36,7 @@ import {
   Flag,
   Share2,
   Palette,
+  ArrowRightLeft,
 } from "lucide-react";
 import {
   copyText,
@@ -165,6 +166,9 @@ export function AnimalDetail({
   video,
   editPhoto,
   pushUndo,
+  undoAction,
+  undoLabel,
+  undoBusy,
 }) {
   const [animal, setAnimal] = useState(null),
     [index, setIndex] = useState(0),
@@ -274,14 +278,27 @@ export function AnimalDetail({
       wide
       className={"photo-modal " + (fullscreen ? "is-fullscreen" : "")}
       headerActions={
-        photo && (
-          <a
-            className="button"
-            href={`/api/photos/${photo.id}/download?format=jpeg&size=medium`}
-          >
-            <Download size={17} /> Télécharger
-          </a>
-        )
+        <>
+          {canEdit && undoLabel && (
+            <Button
+              variant="secondary"
+              icon={Undo2}
+              disabled={undoBusy}
+              onClick={undoAction}
+              title={undoLabel}
+            >
+              Annuler · Ctrl+Z
+            </Button>
+          )}
+          {photo && (
+            <a
+              className="button"
+              href={`/api/photos/${photo.id}/download?format=jpeg&size=medium`}
+            >
+              <Download size={17} /> Télécharger
+            </a>
+          )}
+        </>
       }
     >
       {!animal ? (
@@ -532,6 +549,21 @@ export function AnimalDetail({
               {photo && (
                 <div className="photo-downloads">
                   <DownloadOptions photoId={photo.id} user={user} />
+                  {canEdit && (
+                    <Button
+                      variant="secondary"
+                      icon={ArrowRightLeft}
+                      onClick={() =>
+                        open({
+                          type: "reassign-photos",
+                          photos: [photo],
+                          animal: { id: animal.id, name: animal.name },
+                        })
+                      }
+                    >
+                      Réattribuer cette photo
+                    </Button>
+                  )}
                 </div>
               )}
               {photo && user && (
@@ -883,6 +915,19 @@ export function AnimalDetail({
                 En couverture
               </Button>
               <Button
+                variant="secondary"
+                icon={ArrowRightLeft}
+                onClick={() =>
+                  open({
+                    type: "reassign-photos",
+                    photos: [photo],
+                    animal: { id: animal.id, name: animal.name },
+                  })
+                }
+              >
+                Réattribuer à un autre animal
+              </Button>
+              <Button
                 variant="quiet"
                 icon={Archive}
                 onClick={() => updatePhoto({ archived: true })}
@@ -901,6 +946,21 @@ export function AnimalDetail({
           {canEdit && selected.length > 0 && (
             <div className="selection-bar">
               <span>{selected.length} photo(s) sélectionnée(s)</span>
+              <Button
+                variant="secondary"
+                icon={ArrowRightLeft}
+                onClick={() =>
+                  open({
+                    type: "reassign-photos",
+                    photos: animal.photos.filter((p) =>
+                      selected.includes(p.id),
+                    ),
+                    animal: { id: animal.id, name: animal.name },
+                  })
+                }
+              >
+                Réattribuer la sélection
+              </Button>
               <Button
                 icon={FolderPlus}
                 onClick={() => open({ type: "collection", photoIds: selected })}

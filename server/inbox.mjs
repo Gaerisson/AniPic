@@ -1,3 +1,5 @@
+import { registerPhotoAssignments } from "./photo-assignment.mjs";
+export { assignInbox } from "./photo-assignment.mjs";
 import { z } from "zod";
 import path from "node:path";
 import { promises as fs, createReadStream } from "node:fs";
@@ -16,49 +18,6 @@ const folderName = (value) =>
     .join("/")
     .replace(/[\x00-\x1f]/g, "")
     .slice(0, 400);
-
-export function assignInbox(db, ids, animalId, hidden = true) {
-  const animal = db.prepare("SELECT * FROM animals WHERE id=?").get(animalId);
-  if (!animal || animal.archived_at)
-    throw fail("Choisissez un animal présent dans le refuge.", 404);
-  const result = { added: 0, duplicates: 0, animalId };
-  transaction(db, () => {
-    const photos = ids.map((value) =>
-      db
-        .prepare(
-          "SELECT * FROM inbox_photos WHERE id=? AND archived_at IS NULL",
-        )
-        .get(value),
-    );
-    if (photos.some((p) => !p))
-      throw fail("Une photo n’est plus à trier. Actualisez la sélection.", 409);
-    for (const photo of photos) {
-      const existing = db
-        .prepare("SELECT * FROM photos WHERE animal_id=? AND hash=?")
-        .get(animalId, photo.hash);
-      if (existing) result.duplicates++;
-      else {
-        const photoId = id();
-        db.prepare(
-          "INSERT INTO photos(id,animal_id,hash,filename,hidden,created_at) VALUES (?,?,?,?,?,?)",
-        ).run(
-          photoId,
-          animalId,
-          photo.hash,
-          photo.filename,
-          Number(hidden),
-          photo.created_at,
-        );
-        db.prepare(
-          "UPDATE animals SET cover_id=COALESCE(cover_id,?),updated_at=? WHERE id=?",
-        ).run(photoId, now(), animalId);
-        result.added++;
-      }
-      db.prepare("DELETE FROM inbox_photos WHERE id=?").run(photo.id);
-    }
-  });
-  return result;
-}
 
 export async function scanImports(db, c, userId = null) {
   assertStorage(c);
@@ -161,6 +120,7 @@ export async function scanImports(db, c, userId = null) {
 }
 
 export async function registerInbox(app, { db, c, authorized }) {
+  await registerPhotoAssignments(app, { db, c, authorized });
   let scanning = false;
   let last = null,
     nextAt = 0,
@@ -435,51 +395,6 @@ export async function registerInbox(app, { db, c, authorized }) {
       return reply.type("image/webp").send(createReadStream(file));
     },
   );
-  app.post("/api/inbox/assign", { preHandler: authorized() }, async (req) => {
-    assertStorage(c);
-    const input = z
-      .object({
-        photoIds: z
-          .array(UUID)
-          .min(1)
-          .max(200)
-          .refine((v) => new Set(v).size === v.length),
-        animalId: UUID,
-        hidden: z.boolean().default(true),
-        rememberFolder: z.boolean().default(false),
-      })
-      .parse(req.body);
-    const folders = input.rememberFolder
-      ? [
-          ...new Set(
-            input.photoIds
-              .map(
-                (value) =>
-                  db
-                    .prepare("SELECT folder FROM inbox_photos WHERE id=?")
-                    .get(value)?.folder,
-              )
-              .filter(Boolean),
-          ),
-        ]
-      : [];
-    const result = assignInbox(
-      db,
-      input.photoIds,
-      input.animalId,
-      input.hidden,
-    );
-    for (const folder of folders)
-      db.prepare(
-        "INSERT INTO import_folders VALUES (?,?,?) ON CONFLICT(folder) DO UPDATE SET animal_id=excluded.animal_id,updated_at=excluded.updated_at",
-      ).run(folder, input.animalId, now());
-    audit(db, req.user, "inbox_assigned", {
-      ...result,
-      photoIds: input.photoIds,
-      hidden: input.hidden,
-    });
-    return result;
-  });
   app.post("/api/inbox/archive", { preHandler: authorized() }, async (req) => {
     const input = z
       .object({

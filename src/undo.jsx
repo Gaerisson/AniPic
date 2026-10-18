@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { isUndoShortcut } from "../shared/undo-shortcut.mjs";
 export function useUndo(user, notify, reload) {
   const [stack, setStack] = useState([]),
     [busy, setBusy] = useState(false),
@@ -30,7 +31,7 @@ export function useUndo(user, notify, reload) {
         }
       }
       setStack(current.current);
-      notify("Action annulée.");
+      notify(item.successMessage || "Action annulée.");
       reload();
     } catch (e) {
       notify(e.message, "error");
@@ -47,13 +48,7 @@ export function useUndo(user, notify, reload) {
   }, [user?.id]);
   useEffect(() => {
     const key = (e) => {
-      if (
-        (e.ctrlKey || e.metaKey) &&
-        e.key.toLowerCase() === "z" &&
-        !e.shiftKey &&
-        !e.altKey &&
-        !e.target.closest("input,textarea,select,[contenteditable=true]")
-      ) {
+      if (isUndoShortcut(e)) {
         if (current.current.length) {
           e.preventDefault();
           action.current();

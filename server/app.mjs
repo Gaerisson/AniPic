@@ -811,7 +811,15 @@ export async function createApp(overrides = {}) {
       const revision = (p) =>
         createHash("sha256")
           .update(
-            JSON.stringify([p.caption, p.hidden, p.archived_at, p.deleted_at]),
+            JSON.stringify([
+              p.animal_id,
+              p.hash,
+              p.filename,
+              p.caption,
+              p.hidden,
+              p.archived_at,
+              p.deleted_at,
+            ]),
           )
           .digest("hex");
       if (

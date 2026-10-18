@@ -57,6 +57,7 @@ import { createRoot } from "react-dom/client";
 import { Spinner, Empty, Button } from "./ui.jsx";
 import { Library } from "./library.jsx";
 import { Inbox } from "./inbox.jsx";
+import { PhotoAssignmentDialog } from "./photo-assignment.jsx";
 import { ShootSheet } from "./shoot-sheet.jsx";
 import { StatusAppearanceContext } from "./animal-status.jsx";
 import { DownloadDialog } from "./downloads.jsx";
@@ -419,6 +420,9 @@ function App() {
   const team = useTeamMessages(user, version, notify);
   const actions = {
     pushUndo: undo.push,
+    undoAction: undo.run,
+    undoLabel: undo.label,
+    undoBusy: undo.busy,
     popupAllowed: !modal,
     teamMessages: team.messages,
     readMessage: team.read,
@@ -988,6 +992,20 @@ function App() {
         )}
         {modal?.type === "animal" && (
           <AnimalDetail animalId={modal.id} {...actions} />
+        )}
+        {modal?.type === "reassign-photos" && canEdit && (
+          <PhotoAssignmentDialog
+            mode="reassign"
+            photos={modal.photos}
+            sourceAnimal={modal.animal}
+            pushUndo={undo.push}
+            notify={notify}
+            close={() => setModal({ type: "animal", id: modal.animal.id })}
+            done={(animal) => {
+              setModal({ type: "animal", id: animal.id });
+              reload();
+            }}
+          />
         )}
         {modal?.type === "download" && (
           <DownloadDialog

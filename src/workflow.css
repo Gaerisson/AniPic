@@ -308,6 +308,17 @@
   overflow-wrap: anywhere;
   color: var(--muted);
 }
+.assignment-explanation {
+  padding: 14px 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  color: var(--ink);
+  line-height: 1.6;
+}
+.assign-footer [aria-busy="true"] svg {
+  animation: spin 1s linear infinite;
+}
 .print-plan-controls {
   display: flex;
   align-items: end;
@@ -694,4 +705,95 @@ html[data-theme] .shoot-sheet :is(h2, h3, h4, p, strong, small) {
   html[data-print-plan] .shoot-sheet > header {
     break-after: avoid;
   }
+}
+.assignment-visual {
+  padding: 18px;
+  margin: 16px 0;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+}
+.assignment-visual header,
+.assignment-visual header > div,
+.assignment-analysis {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.assignment-visual header {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.assignment-visual header h3 {
+  margin: 0;
+}
+.assignment-visual header > div > svg {
+  color: var(--accent);
+}
+.assignment-visual .small-note {
+  margin: 10px 0;
+}
+.assignment-analysis {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 12px 0;
+}
+.assignment-visual-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 10px;
+}
+.assignment-visual-results > button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  min-width: 0;
+  text-align: left;
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.assignment-visual-results > button[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.assignment-visual-results > button > span:nth-child(2) {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.assignment-visual-results small,
+.assignment-visual-results code {
+  color: var(--muted);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.assignment-reference {
+  position: relative;
+  flex: 0 0 64px;
+  height: 72px;
+  overflow: hidden;
+  border-radius: 9px;
+}
+.assignment-reference img,
+.assignment-reference .spa-source-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.assignment-reference > i {
+  position: absolute;
+  bottom: 3px;
+  left: 3px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  color: #fff;
+  background: #161616cc;
+  font-size: 9px;
+  font-style: normal;
+}
+.assignment-reference .spa-source-photo > span {
+  display: none;
 }

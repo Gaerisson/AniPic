@@ -1,3 +1,4 @@
+import { PhotoAssignmentDialog } from "./photo-assignment.jsx";
 import { UploadPreviews } from "./upload-feedback.jsx";
 import { uploadWithProgress } from "./api.js";
 import { useState, useEffect, useRef } from "react";
@@ -56,7 +57,15 @@ async function droppedFiles(transfer) {
     for (const file of transfer.files) output.push({ file, path: file.name });
   return output;
 }
-export function Inbox({ user, canEdit, notify, reload, version, open }) {
+export function Inbox({
+  user,
+  canEdit,
+  notify,
+  reload,
+  version,
+  open,
+  pushUndo,
+}) {
   const [data, setData] = useState(null),
     [selected, setSelected] = useState([]),
     [folder, setFolder] = useState(""),
@@ -536,10 +545,11 @@ export function Inbox({ user, canEdit, notify, reload, version, open }) {
         </Modal>
       )}
       {assign && (
-        <AssignInbox
+        <PhotoAssignmentDialog
           photos={data.items.filter((p) => selected.includes(p.id))}
           close={() => setAssign(false)}
           notify={notify}
+          pushUndo={pushUndo}
           done={() => {
             setAssign(false);
             setSelected([]);
@@ -548,205 +558,5 @@ export function Inbox({ user, canEdit, notify, reload, version, open }) {
         />
       )}
     </>
-  );
-}
-function AssignInbox({ photos, close, notify, done }) {
-  const [suggestions, setSuggestions] = useState([]),
-    [rememberFolder, setRememberFolder] = useState(false);
-  useEffect(() => {
-    api("/inbox/suggestions", {
-      method: "POST",
-      body: { photoIds: photos.map((p) => p.id) },
-    })
-      .then((r) => setSuggestions(r.items))
-      .catch((e) => notify(e.message, "error"));
-  }, []);
-  const [query, setQuery] = useState(""),
-    [species, setSpecies] = useState("all"),
-    [animals, setAnimals] = useState(null),
-    [chosen, setChosen] = useState(null),
-    [hidden, setHidden] = useState(true),
-    [busy, setBusy] = useState(false);
-  useEffect(() => {
-    let alive = true;
-    const timer = setTimeout(
-      () =>
-        api(
-          `/animals?limit=30&sort=name&species=${species}&q=${encodeURIComponent(query)}`,
-        )
-          .then((d) => {
-            if (alive) setAnimals(d.items);
-          })
-          .catch((e) => notify(e.message, "error")),
-      180,
-    );
-    return () => {
-      alive = false;
-      clearTimeout(timer);
-    };
-  }, [query, species]);
-  return (
-    <Modal
-      title={`Attribuer ${photos.length} photo${photos.length > 1 ? "s" : ""}`}
-      wide
-      onClose={() => !busy && close()}
-    >
-      <div className="assign-photo-strip">
-        {photos.slice(0, 12).map((p) => (
-          <img key={p.id} src={preview(p.id, 160)} alt={p.filename} />
-        ))}
-        {photos.length > 12 && <span>+{photos.length - 12}</span>}
-      </div>
-      <div className="assign-search">
-        {suggestions.length > 0 && (
-          <section className="assign-suggestions">
-            <h3>Suggestions d’après le dossier</h3>
-            <div>
-              {suggestions.map((a) => (
-                <button
-                  key={a.id}
-                  className={chosen?.id === a.id ? "selected" : ""}
-                  onClick={() => setChosen(a)}
-                >
-                  {a.cover_id ? (
-                    <img src={imageUrl(a.cover_id, 320)} alt="" />
-                  ) : a.hasSpaPhoto ? (
-                    <span className="assign-animal-thumb">
-                      <SpaPhoto animal={a} compact />
-                      <i aria-hidden="true">SPA</i>
-                    </span>
-                  ) : (
-                    <Camera size={24} />
-                  )}
-                  <span>
-                    <strong>
-                      {a.name} · {speciesName[a.species]}
-                    </strong>
-                    <code>{a.source_id || a.id.slice(0, 8)}</code>
-                    <small>{a.reason}</small>
-                  </span>
-                  {chosen?.id === a.id && <Check size={18} />}
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
-        <label className="search">
-          <Search size={16} />
-          <input
-            aria-label="Rechercher l’animal destinataire"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Nom ou identifiant SPA…"
-          />
-        </label>
-        <select
-          aria-label="Espèce de l’animal destinataire"
-          value={species}
-          onChange={(e) => setSpecies(e.target.value)}
-        >
-          <option value="all">Toutes les espèces</option>
-          <option value="dog">Chiens</option>
-          <option value="cat">Chats</option>
-          <option value="other">NAC</option>
-        </select>
-      </div>
-      <div className="assign-animals">
-        {animals === null ? (
-          <Spinner />
-        ) : !animals.length ? (
-          <p>Aucun animal ne correspond à la recherche.</p>
-        ) : (
-          animals.map((a) => (
-            <button
-              key={a.id}
-              aria-pressed={chosen?.id === a.id}
-              onClick={() => setChosen(a)}
-            >
-              {a.cover_id ? (
-                <img src={imageUrl(a.cover_id, 320)} alt="" />
-              ) : a.source_metadata?.thumbnail ? (
-                <span className="assign-animal-thumb">
-                  <SpaPhoto animal={a} compact />
-                  <i aria-hidden="true">SPA</i>
-                </span>
-              ) : (
-                <span className="assign-placeholder">
-                  <Camera size={23} />
-                </span>
-              )}
-              <span>
-                <strong>{a.name}</strong>
-                <small>
-                  {speciesName[a.species]} ·{" "}
-                  {a.sex === "female"
-                    ? "Femelle"
-                    : a.sex === "male"
-                      ? "Mâle"
-                      : "Sexe non précisé"}
-                </small>
-                <code>{a.source_id || a.id.slice(0, 8)}</code>
-              </span>
-              <AnimalStatus animal={a} compact />
-              {chosen?.id === a.id && <Check size={19} />}
-            </button>
-          ))
-        )}
-      </div>
-      <label className="checkbox-label inbox-private-choice">
-        <input
-          type="checkbox"
-          checked={hidden}
-          onChange={(e) => setHidden(e.target.checked)}
-        />
-        Garder les photos privées après attribution
-      </label>
-      {photos.some((p) => p.folder) && (
-        <label className="checkbox-label inbox-private-choice">
-          <input
-            type="checkbox"
-            checked={rememberFolder}
-            onChange={(e) => setRememberFolder(e.target.checked)}
-          />
-          Suggérer cet animal pour les prochains exports dans ce dossier
-        </label>
-      )}
-      <div className="assign-footer">
-        <span>
-          {chosen
-            ? `${chosen.name} · ${chosen.source_id || chosen.id.slice(0, 8)}`
-            : "Choisissez le bon animal avant de valider."}
-        </span>
-        <Button
-          icon={ArrowRight}
-          disabled={!chosen || busy}
-          onClick={async () => {
-            setBusy(true);
-            try {
-              const result = await api("/inbox/assign", {
-                method: "POST",
-                body: {
-                  photoIds: photos.map((p) => p.id),
-                  animalId: chosen.id,
-                  hidden,
-                  rememberFolder,
-                },
-              });
-              notify(
-                `${result.added} photo(s) attribuée(s) à ${chosen.name}${result.duplicates ? ` · ${result.duplicates} déjà présente(s)` : ""}.`,
-              );
-              done();
-            } catch (e) {
-              notify(e.message, "error");
-              setBusy(false);
-            }
-          }}
-        >
-          {busy
-            ? "Attribution…"
-            : `Attribuer${chosen ? " à " + chosen.name : ""}`}
-        </Button>
-      </div>
-    </Modal>
   );
 }

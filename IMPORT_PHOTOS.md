@@ -35,3 +35,14 @@ La lecture crée une copie dans le stockage Anipic ; le dossier d’exports rest
 **Planning photo → Liste imprimable**. Choisir les demandes de l’équipe, les animaux sans photo ou leur réunion ; filtrer par espèce, sélectionner les animaux, renseigner éventuellement date et photographe. Les portraits peuvent être masqués pour économiser l’encre.
 
 **Imprimer / PDF** ouvre l’impression du navigateur : choisir l’imprimante ou « Enregistrer au format PDF ». La feuille A4 contient noms, espèces, IDs, priorités, demandes, notes et trois cases : **Photographié / Traité / Importé**. La navigation et les commandes ne sont pas imprimées. Une coche sur papier ne modifie pas automatiquement le planning du site.
+# Corriger une attribution et trouver la bonne fiche
+
+Dans une fiche animal, **Réattribuer cette photo** déplace le portrait affiché vers un autre animal. Pour une série, cocher les miniatures puis **Réattribuer la sélection**. Les originaux, légendes, commentaires, favoris, albums et réglages privé/public sont conservés. Le déplacement est atomique : si une photo existe déjà à destination, y compris dans la corbeille, aucune photo du lot n’est déplacée.
+
+Après une attribution depuis **Photos à trier** ou une réattribution, utiliser **Ctrl+Z** (Cmd+Z sur Mac) ou **Annuler**. L’historique de navigation conserve 30 actions ; les attributions restent annulables pendant 30 minutes, jusqu’au rechargement de page ou au redémarrage du serveur. Une modification ultérieure ou une nouvelle utilisation d’une photo peut empêcher l’annulation pour protéger le travail de l’équipe ; la réattribution manuelle reste possible.
+
+La case **Photos privées · comptes connectés uniquement** est décochée par défaut. La cocher masque la série aux visiteurs anonymes après attribution. Réattribuer une photo conserve son réglage actuel.
+
+Le bloc **Ça ressemble à…** compare localement les couleurs et le contraste des photos sélectionnées avec jusqu’à deux portraits locaux par animal et sa photo de référence SPA. Les fiches parties/archivées et la fiche d’origine sont exclues. Aucun service IA externe n’est utilisé. Les arrière-plans et pelages proches peuvent produire de faux rapprochements : vérifier le portrait et l’identifiant avant de valider. La comparaison ne choisit jamais un animal à votre place.
+
+Les résultats et leur provenance **Locale / SPA** apparaissent progressivement. Jusqu’à quatre images réparties dans un grand lot sont comparées ; éviter de mélanger les photos de plusieurs animaux dans une même attribution. Une image illisible ou une indisponibilité SPA n’empêche pas la recherche manuelle. La recherche s’arrête après environ une minute (les requêtes en cours peuvent finir ensuite) ou 2 000 fiches ; le résultat signale une comparaison partielle. Le bouton **Comparer** relance l’analyse avec les aperçus déjà en cache.

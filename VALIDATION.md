@@ -1,4 +1,18 @@
-# Vérifications — AniPic 3.10.0
+# Vérifications — AniPic 3.10.1
+
+## V3.10.1 — Attribution, réattribution et suggestions visuelles
+
+**221 tests réussis**, aucun échec ni test ignoré, suite complète en 121,0 secondes sous Node.js 24.18.1. Les dix nouveaux tests couvrent l’attribution publique par défaut, le choix privé explicite, les doublons (dont la corbeille), la conservation des octets/identités/légendes/commentaires/favoris/albums/tags, les couvertures, l’annulation successive, les modifications concurrentes, les références créées après attribution, les rôles, CSRF et origine, le propriétaire d’un jeton et son expiration. Le raccourci respecte l’annulation native des champs texte et fonctionne depuis les cases de sélection.
+
+Les suggestions sont testées avec des images synthétiques, un redimensionnement/recompression JPEG et un serveur SPA simulé : résultats progressifs, provenance locale/SPA, exclusion des fiches parties/archivées/d’origine, indisponibilité d’une image, cache, sélection périmée, permissions et absence de modification des originaux ou des attributions. Ces tests ne mesurent pas une précision de reconnaissance sur de vrais animaux. La comparaison de couleurs et de contraste reste indicative, avec validation manuelle obligatoire.
+
+**Installation propre `npm ci` réussie** dans un dossier neuf sous Node.js 24 : 464 packages installés, 465 audités, zéro vulnérabilité signalée. Aucune dépendance ajoutée ; versions manifest/lockfile mises à jour via npm. Builds frontend et vidéo réussis. Les six configurations Compose (source, image locale, GHCR, chacune avec et sans C8+Import) passent le contrôle des versions et protections de montage. Métadonnées de release vérifiées avec un environnement CI simulé ; aucune publication exécutée.
+
+**Contrôle statique SSR** des deux dialogues avec portail aplati uniquement pour ce contrôle : composants chargés, case privée décochée, absence de cette case en réattribution, libellés et chargement des suggestions présents. Ce contrôle ne remplace pas une vérification visuelle interactive.
+
+**Démonstration relancée**, après sauvegarde SQLite cohérente : toutes les tables hors sessions strictement conservées par comparaison des lignes et hachages, sessions encore valides intactes, intégrité et clés étrangères valides. Les 79 animaux, 14 photos, 17 blobs, trois albums, deux imports et quatre projets restent intacts. Aucun déplacement effectué sur les photos réelles de démonstration. Schéma SQLite 21 inchangé ; aucun volume ou montage modifié.
+
+**Non exécutés :** vérification visuelle interactive, essai sur un vrai catalogue de portraits SPA, construction/démarrage Docker (moteur absent), CI GitHub en ligne et déploiement Portainer/NAS. Les pannes SPA sont simulées explicitement dans les tests ; l’accès réel au site n’est pas nécessaire à ces tests. L’image GHCR 3.10.1 ne doit être considérée comme publiée qu’après réussite du workflow prévu.
 
 ## Livraison Docker / GitHub — 18 octobre 2026
 

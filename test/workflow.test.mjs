@@ -99,7 +99,7 @@ test("inbox stays private, deduplicates originals and atomically assigns a selec
     method: "POST",
     url: "/api/inbox/assign",
     headers,
-    payload: { animalId: b, photoIds: [p.id, q.id] },
+    payload: { animalId: b, photoIds: [p.id, q.id], hidden: true },
   });
   assert.equal(assigned.statusCode, 200, assigned.body);
   assert.equal(assigned.json().added, 2);

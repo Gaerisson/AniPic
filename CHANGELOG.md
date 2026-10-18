@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 3.10.1 — 18 octobre 2026
+
+Attribution et réattribution de photos avec annulation Ctrl+Z, conservation des originaux et de la confidentialité, protection contre les doublons et les modifications concurrentes. Suggestions progressives de fiches par ressemblance des couleurs et du contraste, à partir des photos locales et SPA. Case « Photos privées » décochée par défaut à l’attribution. Aucun changement des dépendances, du schéma SQLite ou des montages NAS. [Détail](RELEASE_v3.10.1.md).
+
 ## 3.10.0 — 18 octobre 2026
 
 Livraison : images Compose alignées sur 3.10.0, option GHCR dédiée et publication image/release conditionnée aux tests, builds et rendu Docker réel. Correction du contrôle des bind mounts pour Compose v2/v5 sans diminuer les protections NAS. Anciennes notes regroupées dans `docs/history/`.
