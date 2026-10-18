@@ -4,7 +4,7 @@ import path from "node:path";
 import sharp from "sharp";
 import { PDFDocument } from "pdf-lib";
 import yazl from "yazl";
-import { root } from "./config.mjs";
+import { publicAsset } from "./public-assets.mjs";
 import { now, audit, settings } from "./db.mjs";
 import {
   animalReference,
@@ -244,9 +244,7 @@ export async function registerGazette(app, { db, c, authorized, jobs }) {
                 j.done++;
               }
               j.stage = "Mise en page et préparation des exports…";
-              const logo = await fs.readFile(
-                  path.join(root, "public/spa-logo.png"),
-                ),
+              const logo = await publicAsset("spa-logo.png"),
                 refuge = settings(db).refugeName,
                 stats = { ...snapshot, arrivals, adopted };
               const pages = await gazettePages(

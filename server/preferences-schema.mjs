@@ -89,7 +89,7 @@ export const sourceFields = {
   sourceImportReserved: z.boolean().default(true),
   sourceRobotsPolicy: z.enum(["respect", "spa_public_api"]).default("respect"),
   sourceStaleHours: z.number().int().min(1).max(48).default(24),
-  sourceAbsenceIntervalHours: z.number().int().min(24).max(168).default(24),
+  sourceAbsenceIntervalHours: z.number().min(0.25).max(168).default(24),
   sourceMissingOutcome: z
     .enum(["unconfirmed", "adopted"])
     .default("unconfirmed"),

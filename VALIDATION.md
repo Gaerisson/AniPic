@@ -1,4 +1,18 @@
-# Vérifications — AniPic 3.10.2
+# Vérifications — AniPic 3.10.3
+
+## V3.10.3 — Interface, posters et synchronisation réactive
+
+**244 tests réussis**, aucun échec ni test ignoré, suite complète en 131,8 secondes sous Node.js 24.18.1. Huit tests ajoutés : ressources `dist/` avec repli développement, erreur explicite si absentes, export réel de poster dans une copie de production sans `public/`, intervalles de 15 minutes validés par l’API, refus des confirmations trop rapprochées ou rejouées, reprise progressive des jobs échoués/partiels, alerte après synchronisation partielle, contrôle indépendant des totaux par espèce et refus des identifiants présents dans plusieurs espèces.
+
+**Vérification réelle de l’API SPA le 18 octobre 2026 à 05:58, heure de Paris :** trois passages complets et stables de 66 animaux, 16 requêtes, aucune erreur. Le diagnostic a utilisé une base de démonstration en lecture seule et n’a appliqué aucune fiche (`applied: false`). Ce contrôle ponctuel ne garantit pas la disponibilité future du service SPA et ne remplace pas une inspection de l’installation Portainer.
+
+**Vérification visuelle interactive dans le navigateur :** thèmes SPA clair et Studio nuit ; menu de liste devant l’alerte, menu de fiche, bouton séance ouvrant son formulaire, retouche accessible depuis le menu, Échap fermant seulement le menu, disposition des informations hors menu, page équipe/Google et cartes d’accueil. Essais à la taille de fenêtre existante puis à 390 × 844 px : menu dans l’écran, formulaire en une colonne, aucune largeur de document dépassant le viewport sur les pages contrôlées. Surfaces, bordures, transparence, ombres et arrondis de l’horloge/météo comparés aux cartes de la photothèque en sombre. Taille temporaire et thème initial rétablis après les essais. Aucune demande ni configuration Google n’a été enregistrée pendant ces contrôles. Cette revue des écrans signalés ne garantit pas tous les états possibles du logiciel.
+
+**Installation propre `npm ci` réussie** avec les manifestes 3.10.3 : 464 packages installés, 465 audités, aucune vulnérabilité signalée. Aucune dépendance ajoutée. Builds frontend et vidéo réussis ; avertissement Vite non bloquant pour le bundle principal d’environ 504 kB minifiés. Les six variantes Compose et les métadonnées de release sont contrôlées séparément. Le test de métadonnées utilise un environnement CI simulé.
+
+**Démonstration relancée en 3.10.3** après sauvegarde SQLite cohérente. Tables métier, médias et sessions encore valides conservés, schéma 21 inchangé, intégrité et clés étrangères vérifiées. Les requêtes de test ont normalement alimenté les visites et le journal HTTP ; la rotation existante a retiré des entrées HTTP les plus anciennes au-delà de la limite de conservation. Aucun animal, photo, album ou projet réel de la démonstration n’a été modifié. Aucun paramètre de fréquence ou d’adoption n’a été changé dans cette base.
+
+**Non exécutés :** construction/démarrage de l’image Docker, workflow GitHub en ligne et déploiement réel Portainer/NAS, faute de moteur Docker disponible. La simulation de structure de production exporte réellement un PNG mais ne remplace pas un démarrage de conteneur. Le smoke test de l’image en CI inclut désormais ce poster en plus du rendu MP4. Aucun volume ni montage persistant modifié ; aucune publication GitHub/GHCR effectuée ici.
 
 ## V3.10.2 — Synchronisation, interface, listes et corbeille
 

@@ -69,7 +69,7 @@ import { diagnoseSource } from "./source-diagnostics.mjs";
 import { publicAnimalMetadata, publicCompatibility } from "./animal-facts.mjs";
 import { assistantAvatarUrl, adminSettingsView } from "./assistant-avatar.mjs";
 import { photoPriority, photoPrioritySql } from "../shared/photo-priority.mjs";
-import { syncDue } from "../shared/sync-schedule.mjs";
+import { scheduledSyncDue } from "../shared/sync-schedule.mjs";
 const UUID = z.string().uuid();
 const Settings = z.object({
   ...sourceFields,
@@ -81,7 +81,11 @@ const Settings = z.object({
   subtitle: z.string().max(150),
   cacheMB: z.number().int().min(16).max(16384),
   thumbQuality: z.number().int().min(40).max(90),
-  syncIntervalHours: z.number().int().min(0).max(168),
+  syncIntervalHours: z
+    .number()
+    .min(0)
+    .max(168)
+    .refine((v) => v === 0 || v >= 0.25, "Intervalle minimum : 15 minutes."),
   missingThreshold: z.number().int().min(2).max(10),
   sourceMode: z.enum(["disabled", "json", "html", "spa"]),
   sourceUrl: z.union([z.literal(""), z.string().url().max(500)]),
@@ -1456,10 +1460,10 @@ export async function createApp(overrides = {}) {
         }).catch(() => {});
       const sync = db
         .prepare(
-          "SELECT created_at FROM jobs WHERE kind='sync' ORDER BY created_at DESC LIMIT 1",
+          "SELECT state,detail,created_at,finished_at FROM jobs WHERE kind='sync' ORDER BY created_at DESC,rowid DESC LIMIT 8",
         )
-        .get();
-      if (syncDue(cfg, sync?.created_at))
+        .all();
+      if (scheduledSyncDue(cfg, sync))
         await job("sync", null, () => synchronize(db)).catch(() => {});
     }, 60_000);
   timer?.unref();

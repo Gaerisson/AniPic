@@ -68,6 +68,14 @@ try {
     "x-csrf-token": login.json().user.csrf,
     origin: app.anipicConfig.origin,
   };
+  const poster = await app.inject({
+    method: "POST",
+    url: "/api/group-posters",
+    headers,
+    payload: { animals: [{ id: aid }], output: "preview" },
+  });
+  assert.equal(poster.statusCode, 200, poster.body.slice(0, 120));
+  assert.equal((await sharp(poster.rawPayload).metadata()).width, 868);
   const album = (
     await app.inject({
       method: "POST",
@@ -132,7 +140,7 @@ try {
     200,
   );
   console.log(
-    "Image de production : HTTP, SQLite, Sharp et rendu Remotion réels réussis.",
+    "Image de production : HTTP, SQLite, Sharp, affiche avec logo de production et rendu Remotion réels réussis.",
     metadata,
   );
 } finally {

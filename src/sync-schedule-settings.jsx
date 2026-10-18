@@ -39,14 +39,15 @@ export function SyncScheduleSettings({ values: v, change }) {
         </label>
         {mode === "interval" && (
           <label>
-            Intervalle en heures
+            Intervalle en minutes
             <input
               type="number"
-              min="1"
-              max="168"
-              value={v.syncIntervalHours}
+              min="15"
+              max="10080"
+              step="15"
+              value={(v.syncIntervalHours || 0) * 60}
               onChange={(e) =>
-                change("syncIntervalHours", Number(e.target.value))
+                change("syncIntervalHours", Number(e.target.value) / 60)
               }
             />
           </label>

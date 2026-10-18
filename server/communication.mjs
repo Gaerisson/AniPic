@@ -16,6 +16,7 @@ import sharp from "sharp";
 import QRCode from "qrcode";
 import { PDFDocument } from "pdf-lib";
 import yazl from "yazl";
+import { publicAsset } from "./public-assets.mjs";
 import { root } from "./config.mjs";
 import { audit, settings } from "./db.mjs";
 import { exportPhoto, presentationCard } from "./exports.mjs";
@@ -170,11 +171,7 @@ export async function posterImage(
     })
     .jpeg({ quality: 95 })
     .toBuffer();
-  const logo = (
-    await fs
-      .readFile(path.join(root, "dist/spa-logo.png"))
-      .catch(() => fs.readFile(path.join(root, "public/spa-logo.png")))
-  ).toString("base64");
+  const logo = (await publicAsset("spa-logo.png")).toString("base64");
   const meta = publicAnimalMetadata(JSON.parse(animal.source_metadata || "{}"));
   const facts = [
     { dog: "Chien", cat: "Chat", other: "NAC" }[animal.species],

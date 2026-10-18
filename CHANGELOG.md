@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 3.10.3 — 18 octobre 2026
+
+Menus au-dessus des cartes et des fenêtres, actions séance/publication visibles, badges sans chevauchement, formulaires équipe et titres corrigés. Horloge/météo harmonisées en sombre. Correction de l’export poster dans Docker avec ressources `dist/` et test de production ajouté. Fréquence et confirmations réglables dès 15 minutes, reprise progressive après échec/inventaire partiel, contrôles SPA par espèce renforcés et listes actualisées en arrière-plan. [Détail](RELEASE_v3.10.3.md).
+
 ## 3.10.2 — 18 octobre 2026
 
 Alerte d’écart SPA sur l’accueil, présence « à vérifier » et diagnostic de comparaison locale/source. Option pour archiver et compter automatiquement les adoptions après absences confirmées, avec provenance et correction lors d’un retour. Interface allégée par menus contextuels, jusqu’à 200 animaux par page et export CSV filtré. Halo corrigé en thème clair/glass, dates de tri explicites et portraits de suggestions dégagés. Suppression/restauration des archives et vidage de corbeille après sauvegarde vérifiée, avec protection des originaux partagés. [Détail](RELEASE_v3.10.2.md).

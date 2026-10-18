@@ -95,6 +95,37 @@ export function syncDue(cfg, last, date = new Date()) {
     cronMatches(cfg.syncCron, cfg.syncTimeZone, date)
   );
 }
+export function scheduledSyncDue(cfg, jobs = [], date = new Date()) {
+  if (
+    cfg.sourceMode === "disabled" ||
+    cfg.syncScheduleMode === "manual" ||
+    (cfg.syncScheduleMode !== "cron" && !cfg.syncIntervalHours)
+  )
+    return false;
+  const incomplete = (job) => {
+    if (["failed", "interrupted"].includes(job.state)) return true;
+    if (job.state !== "done") return false;
+    try {
+      return JSON.parse(job.detail)?.complete === false;
+    } catch {
+      return false;
+    }
+  };
+  const last = jobs[0];
+  if (last?.state === "running") return false;
+  if (last && incomplete(last)) {
+    let failures = 0;
+    for (const job of jobs) {
+      if (!incomplete(job)) break;
+      failures++;
+    }
+    const minutes = Math.min(30, 5 * 2 ** Math.min(3, failures - 1));
+    return (
+      +date - Date.parse(last.finished_at || last.created_at) >= minutes * 60000
+    );
+  }
+  return syncDue(cfg, last?.created_at, date);
+}
 export function nextSyncDates(cfg, from = new Date(), count = 3) {
   if (
     cfg.syncScheduleMode === "manual" ||

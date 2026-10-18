@@ -53,7 +53,7 @@ Modifier les dépendances directes avec npm sous Node 24, par exemple `npm insta
 
 - `denied` pour `ghcr.io/gaerisson/anipic` : vérifier que le job de publication a réussi, que la version demandée existe et que le package GHCR est public. Utiliser `portainer-ghcr.yml`, pas le nom court Docker Hub `anipic`.
 
-- `pull access denied for anipic` / `Failed to pull images of the stack` : désactiver **Re-pull image**. `compose.yml` compile depuis Git avec `pull_policy: build` ; `portainer-stack.yml` utilise une image locale préconstruite avec `pull_policy: never`. Cette image n’est pas publiée sur Docker Hub. Avec le second fichier, la construire sur le moteur de Portainer (`docker build -t anipic:3.10.2 .`) avant de redéployer. Consulter les [deux procédures](DEPLOIEMENT.md#portainer-et-apache) et conserver le nom de stack et ses volumes. Un `docker login` ne crée pas une image absente du registre.
+- `pull access denied for anipic` / `Failed to pull images of the stack` : désactiver **Re-pull image**. `compose.yml` compile depuis Git avec `pull_policy: build` ; `portainer-stack.yml` utilise une image locale préconstruite avec `pull_policy: never`. Cette image n’est pas publiée sur Docker Hub. Avec le second fichier, la construire sur le moteur de Portainer (`docker build -t anipic:3.10.3 .`) avant de redéployer. Consulter les [deux procédures](DEPLOIEMENT.md#portainer-et-apache) et conserver le nom de stack et ses volumes. Un `docker login` ne crée pas une image absente du registre.
 
 - `mkdir: File exists` : les chemins d’images de base peuvent déjà exister. Le Dockerfile utilise `mkdir -p` pour `/data`, `/media`, `/cache` et `/backups`.
 - `bind source path does not exist` : Docker contrôle les chemins **sur l’hôte du moteur**, avant le démarrage d’AniPic. Exécuter la [préparation NAS](DEPLOIEMENT.md#préparer-le-stockage-nas) sur cet hôte, puis reporter les chemins absolus dans Portainer. L’application ne peut pas créer un bind mount qui l’empêche de démarrer.
@@ -67,3 +67,7 @@ Modifier les dépendances directes avec npm sous Node 24, par exemple `npm insta
 Créer une sauvegarde vérifiée, noter l’image/commit actuel et les montages, construire l’image puis redéployer **le même projet Compose** avec ses overrides habituels. Conserver les volumes SQLite/cache et les chemins photos/sauvegardes. Ne pas supprimer/recréer les volumes, ne pas utiliser `down -v` ou `volume prune`. La migration est additive ; revenir à une ancienne application après migration nécessite une restauration cohérente, préparée dans une nouvelle destination, jamais une base remise à zéro.
 
 Contrôler santé, connexion, galerie, upload, sauvegarde et rendu vidéo après mise à jour. Les essais sur NAS réel, panne réelle et Portainer restent nécessaires pour valider l’installation propre à votre hôte.
+
+### Logo introuvable pendant un export
+
+`POST /api/group-posters` avec `HTTP 500 · ENOENT` sur une ancienne version : les ressources de l’image Docker sont dans `dist/`, pas dans `public/`. La version 3.10.3 corrige la lecture pour les grandes affiches, la gazette et les affiches de box. Recompiler l’image complète puis mettre à jour la même stack. Ne créer aucun nouveau montage de logo ni ne réinitialiser les volumes de données. Une ressource réellement absente produit désormais `ASSET_MISSING`, avec une invitation à recompiler l’image.

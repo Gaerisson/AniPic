@@ -97,6 +97,8 @@ export async function boundedFetch(
         headers: {
           "User-Agent": userAgent,
           Accept: "application/json,text/html,text/plain",
+          "Cache-Control": "no-cache",
+          Pragma: "no-cache",
         },
         timeout: Math.max(1, Math.min(30000, timeoutMs)),
         lookup: (hostname, options, cb) => {

@@ -468,12 +468,6 @@ export function SourceSettings({ values: v, change, notify }) {
               0,
               100,
             )}
-            {num(
-              "sourceAbsenceIntervalHours",
-              "Intervalle entre confirmations (h)",
-              24,
-              168,
-            )}
           </div>
           {flag(
             "sourceAllowPartial",
@@ -492,6 +486,36 @@ export function SourceSettings({ values: v, change, notify }) {
             2,
             10,
           )}
+          <label>
+            Délai minimum entre confirmations (minutes)
+            <input
+              type="number"
+              min="15"
+              max="10080"
+              step="15"
+              value={(v.sourceAbsenceIntervalHours || 24) * 60}
+              onChange={(e) =>
+                change(
+                  "sourceAbsenceIntervalHours",
+                  Number(e.target.value) / 60,
+                )
+              }
+            />
+          </label>
+          <p className="fineprint absence-timing-help">
+            Les {v.sourceAttempts || 3} passages du collecteur sont réalisés
+            pendant une seule synchronisation : ils ne représentent pas des
+            jours d’attente. Le départ demande {v.missingThreshold || 3}{" "}
+            confirmations distinctes, espacées d’au moins{" "}
+            {(v.sourceAbsenceIntervalHours || 24) * 60} minutes. Avec une
+            synchronisation assez fréquente, le délai depuis la dernière
+            confirmation peut aller jusqu’à environ{" "}
+            {(
+              (v.missingThreshold || 3) * (v.sourceAbsenceIntervalHours || 24)
+            ).toLocaleString("fr-FR")}{" "}
+            h, hors panne ou inventaire rejeté. Les arrivées et modifications
+            sont actualisées à chaque synchronisation sans attendre ce délai.
+          </p>
           <label>
             Après les absences confirmées
             <select
@@ -521,12 +545,12 @@ export function SourceSettings({ values: v, change, notify }) {
           </label>
           <p className="fineprint">
             Seuls les inventaires complets et fiables, espacés du délai
-            configuré (24 h minimum), confirment les absences. En mode adoption
-            automatique, AniPic applique votre règle et indique « Adopté ·
-            automatique » : aucune validation manuelle n’est nécessaire. Si
-            l’animal réapparaît, son statut et les statistiques sont corrigés.
-            Les photos restent conservées. Une baisse suspecte, un inventaire
-            incomplet ou ancien suspendent ce traitement.
+            configuré (15 minutes minimum), confirment les absences. En mode
+            adoption automatique, AniPic applique votre règle et indique «
+            Adopté · automatique » : aucune validation manuelle n’est
+            nécessaire. Si l’animal réapparaît, son statut et les statistiques
+            sont corrigés. Les photos restent conservées. Une baisse suspecte,
+            un inventaire incomplet ou ancien suspendent ce traitement.
           </p>
         </details>
       </section>

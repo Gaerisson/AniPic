@@ -4,9 +4,10 @@ import path from "node:path";
 import { promises as fs } from "node:fs";
 import { PDFDocument } from "pdf-lib";
 import QRCode from "qrcode";
-import { root, assertStorage } from "./config.mjs";
+import { assertStorage } from "./config.mjs";
 import { sourcePhotoBuffer } from "./source-photo.mjs";
 import { settings, audit } from "./db.mjs";
+import { publicAsset } from "./public-assets.mjs";
 const UUID = z.string().uuid();
 export const groupPosterOptions = z
   .object({
@@ -235,7 +236,7 @@ export async function registerGroupPosters(app, { db, c, authorized }) {
           c,
           items,
           o,
-          await fs.readFile(path.join(root, "public", "spa-logo.png")),
+          await publicAsset("spa-logo.png"),
         );
         reply.header("Cache-Control", "private, no-store");
         if (o.output === "preview") return reply.type("image/png").send(png);

@@ -58,7 +58,7 @@ export function Weather({ compact = false }) {
     : null;
   return (
     <section
-      className={`weather-widget meteo-card ${compact ? "compact" : ""}`}
+      className={`panel weather-widget meteo-card ${compact ? "compact" : ""}`}
     >
       <div className="meteo-heading">
         <span>Morée</span>
@@ -182,7 +182,7 @@ function ClockFace({ clock }) {
     m = n("minute"),
     sec = n("second");
   return (
-    <div className="clock-widget clock-card">
+    <div className="panel clock-widget clock-card">
       <div>
         <span className="clock-city">
           Morée <i /> Heure locale

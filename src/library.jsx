@@ -166,15 +166,35 @@ export function Library({
     if (year) params.set("year", String(year));
     if (page === "favorites" && !user) params.set("ids", favorites.join(","));
     requestParams.current = params.toString();
-    api("/animals?" + params)
-      .then((result) => {
-        if (cancelled) return;
-        setData(result);
-      })
-      .catch((e) => !cancelled && notify(e.message, "error"))
-      .finally(() => !cancelled && setLoading(false));
+    let inFlight = false;
+    const load = (background = false) => {
+      if (cancelled || inFlight) return;
+      inFlight = true;
+      if (!background) setLoading(true);
+      api("/animals?" + params)
+        .then((result) => {
+          if (!cancelled) setData(result);
+        })
+        .catch((e) => {
+          if (!cancelled && !background) notify(e.message, "error");
+        })
+        .finally(() => {
+          inFlight = false;
+          if (!cancelled && !background) setLoading(false);
+        });
+    };
+    const refresh = () => {
+      if (document.visibilityState === "visible") load(true);
+    };
+    load();
+    const timer = setInterval(refresh, 60000);
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
     return () => {
       cancelled = true;
+      clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
     };
   }, [
     species,
@@ -776,7 +796,7 @@ export function AnimalCard({
   const ageProfile = (Date.now() - Date.parse(a.created_at)) / 86400_000;
   const recentSeries = agePhoto >= 0 && agePhoto < (ui.recentDays || 7);
   const newProfile = ageProfile >= 0 && ageProfile < (ui.recentDays || 7);
-  const recent = !archived && (recentSeries || newProfile);
+  const recent = !archived && recentSeries;
   const highlight =
     a.tags.find((tag) => /^sos(?:\s|$)/i.test(tag)) || a.tags[0];
   const liked = a.favorite || favorites.includes(a.id);
@@ -864,16 +884,17 @@ export function AnimalCard({
           >
             <Heart size={17} fill={liked ? "currentColor" : "none"} />
           </button>
-          {recent && !archived ? (
-            <span className="recent-label">
-              {recentSeries
-                ? agePhoto < 2
-                  ? "Nouvelle série · 48 h"
-                  : "Photos locales récentes"
-                : "Nouvelle fiche"}
-            </span>
-          ) : null}
           <div className="photo-badge-stack">
+            {recent && !archived ? (
+              <span className="recent-label">
+                {recentSeries
+                  ? agePhoto < 2
+                    ? "Nouvelle série · 48 h"
+                    : "Photos locales récentes"
+                  : "Nouvelle fiche"}
+              </span>
+            ) : null}
+
             {archived ? (
               <span className="photo-badge archived">
                 <Archive size={12} />
@@ -969,6 +990,14 @@ export function AnimalCard({
                 ? " · " + a.source_metadata.ageLabel
                 : ""}
           </span>
+          {newProfile && !recentSeries && !archived && (
+            <small
+              className="new-profile-note"
+              title={"Ajoutée le " + date(a.created_at)}
+            >
+              Fiche récemment ajoutée
+            </small>
+          )}
           {a.photoWorkflow === "progress" && (
             <span className="workflow-treatment">
               Photographié · en traitement

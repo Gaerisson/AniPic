@@ -132,8 +132,28 @@ export async function collectSpa(options = {}) {
             else expected += firstTotal;
           }
           pages = parsed.pages;
-          for (const record of parsed.records)
+          for (const record of parsed.records) {
+            if (
+              Object.entries(passLists).some(
+                ([key, list]) =>
+                  key !== kind + "_list" && Object.hasOwn(list, record.id),
+              )
+            )
+              throw Object.assign(
+                Error(
+                  "Un identifiant SPA apparaît dans plusieurs espèces. Inventaire refusé.",
+                ),
+                { code: "INVALID_SPA" },
+              );
             passLists[kind + "_list"][record.id] = record;
+          }
+        }
+        const received = Object.keys(passLists[kind + "_list"]).length;
+        if (firstTotal !== null && received !== firstTotal) {
+          hasTotals = false;
+          failures.push(
+            `Inventaire ${slug} incomplet : ${received} fiches uniques reçues, ${firstTotal} annoncées.`,
+          );
         }
       }
     } catch (e) {

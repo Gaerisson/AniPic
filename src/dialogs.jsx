@@ -716,6 +716,115 @@ export function AnimalDetail({
                   onUpdate={load}
                 />
               )}
+              {canEdit && (
+                <div className="detail-actions detail-primary-actions">
+                  <Button
+                    icon={Upload}
+                    onClick={() => open({ type: "upload", id: animal.id })}
+                  >
+                    Ajouter des photos
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    icon={Share2}
+                    onClick={() =>
+                      open({ type: "post", animal, photoId: photo?.id })
+                    }
+                  >
+                    Préparer une publication
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    icon={Flag}
+                    onClick={() => open({ type: "task", animal })}
+                  >
+                    Demander une séance
+                  </Button>
+                  <ActionMenu label="Autres actions">
+                    {photo && user?.role === "admin" && (
+                      <Button
+                        variant="secondary"
+                        icon={Edit3}
+                        onClick={() =>
+                          editPhoto({
+                            photoId: photo.id,
+                            filename: photo.filename,
+                          })
+                        }
+                      >
+                        Retoucher cette photo
+                      </Button>
+                    )}
+
+                    <Button icon={Video} onClick={() => video(animal)}>
+                      Créer sa vidéo
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      icon={Palette}
+                      onClick={() => {
+                        location.hash = "canva/" + animal.id;
+                        open({
+                          type: "canva",
+                          animalId: animal.id,
+                          photoId: photo?.id,
+                        });
+                      }}
+                    >
+                      Créer dans Canva
+                    </Button>
+                    <hr className="action-menu-divider" />
+                    <Button
+                      variant="quiet"
+                      icon={animal.archived_at ? Undo2 : Archive}
+                      onClick={async () => {
+                        try {
+                          await api(`/animals/${animal.id}/archive`, {
+                            method: "POST",
+                            body: { archived: !animal.archived_at },
+                          });
+                          notify(
+                            animal.archived_at
+                              ? "Album restauré."
+                              : "Album archivé. Tous les originaux sont conservés.",
+                          );
+                          reload();
+                          load();
+                        } catch (e) {
+                          notify(e.message, "error");
+                        }
+                      }}
+                    >
+                      {animal.archived_at
+                        ? "Sortir des archives"
+                        : "Archiver la fiche"}
+                    </Button>
+                    {animal.archived_at && (
+                      <Button
+                        variant="quiet"
+                        icon={Trash2}
+                        onClick={async () => {
+                          try {
+                            await api(`/animals/${animal.id}/trash`, {
+                              method: "POST",
+                              body: {},
+                            });
+                            notify(
+                              "Archive placée dans la corbeille. Elle reste restaurable depuis Archives.",
+                            );
+                            reload();
+                            close();
+                          } catch (e) {
+                            notify(e.message, "error");
+                          }
+                        }}
+                      >
+                        Supprimer l’archive · corbeille
+                      </Button>
+                    )}
+                  </ActionMenu>
+                </div>
+              )}
               <AnimalHistory animalId={animal.id} user={user} compact />
               {animal.source_metadata?.descriptionEntente && (
                 <p className="entente-description">
@@ -772,7 +881,7 @@ export function AnimalDetail({
                 </a>
               )}
               {canCreate && !canEdit && (
-                <div className="detail-actions">
+                <div className="detail-actions detail-primary-actions">
                   <Button icon={Video} onClick={() => video(animal)}>
                     Créer sa vidéo
                   </Button>
@@ -790,113 +899,6 @@ export function AnimalDetail({
                       Retoucher une copie
                     </Button>
                   )}
-                </div>
-              )}
-              {canEdit && (
-                <div className="detail-actions">
-                  <Button
-                    icon={Upload}
-                    onClick={() => open({ type: "upload", id: animal.id })}
-                  >
-                    Ajouter des photos
-                  </Button>
-                  <ActionMenu label="Créer & gérer">
-                    {photo && user?.role === "admin" && (
-                      <Button
-                        variant="secondary"
-                        icon={Edit3}
-                        onClick={() =>
-                          editPhoto({
-                            photoId: photo.id,
-                            filename: photo.filename,
-                          })
-                        }
-                      >
-                        Retoucher cette photo
-                      </Button>
-                    )}
-                    <Button icon={Video} onClick={() => video(animal)}>
-                      Créer sa vidéo
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      icon={Palette}
-                      onClick={() => {
-                        location.hash = "canva/" + animal.id;
-                        open({
-                          type: "canva",
-                          animalId: animal.id,
-                          photoId: photo?.id,
-                        });
-                      }}
-                    >
-                      Créer dans Canva
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      icon={Share2}
-                      onClick={() =>
-                        open({ type: "post", animal, photoId: photo?.id })
-                      }
-                    >
-                      Préparer une publication
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      icon={Flag}
-                      onClick={() => open({ type: "task", animal })}
-                    >
-                      Demander une séance
-                    </Button>
-                    <Button
-                      variant="quiet"
-                      icon={animal.archived_at ? Undo2 : Archive}
-                      onClick={async () => {
-                        try {
-                          await api(`/animals/${animal.id}/archive`, {
-                            method: "POST",
-                            body: { archived: !animal.archived_at },
-                          });
-                          notify(
-                            animal.archived_at
-                              ? "Album restauré."
-                              : "Album archivé. Tous les originaux sont conservés.",
-                          );
-                          reload();
-                          load();
-                        } catch (e) {
-                          notify(e.message, "error");
-                        }
-                      }}
-                    >
-                      {animal.archived_at
-                        ? "Sortir des archives"
-                        : "Archiver la fiche"}
-                    </Button>
-                    {animal.archived_at && (
-                      <Button
-                        variant="quiet"
-                        icon={Trash2}
-                        onClick={async () => {
-                          try {
-                            await api(`/animals/${animal.id}/trash`, {
-                              method: "POST",
-                              body: {},
-                            });
-                            notify(
-                              "Archive placée dans la corbeille. Elle reste restaurable depuis Archives.",
-                            );
-                            reload();
-                            close();
-                          } catch (e) {
-                            notify(e.message, "error");
-                          }
-                        }}
-                      >
-                        Supprimer l’archive · corbeille
-                      </Button>
-                    )}
-                  </ActionMenu>
                 </div>
               )}
             </div>

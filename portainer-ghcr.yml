@@ -2,7 +2,7 @@
 # Conserver la stack, ses volumes et ses chemins NAS existants.
 services:
   anipic:
-    image: "${ANIPIC_IMAGE:-ghcr.io/gaerisson/anipic:3.10.2}"
+    image: "${ANIPIC_IMAGE:-ghcr.io/gaerisson/anipic:3.10.3}"
     pull_policy: always
     container_name: anipic
     init: true

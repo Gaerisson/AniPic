@@ -41,11 +41,18 @@ export function sourceHealth(db, cfg = settings(db), clock = Date.now()) {
     incoming = ids ? [...ids].filter((id) => !locals.has(id)) : [];
   const latest = db
     .prepare(
-      "SELECT state,created_at,finished_at FROM jobs WHERE kind='sync' ORDER BY created_at DESC,id DESC LIMIT 1",
+      "SELECT state,detail,created_at,finished_at FROM jobs WHERE kind='sync' ORDER BY created_at DESC,rowid DESC LIMIT 1",
     )
     .get();
+  let partialSync = false;
+  try {
+    partialSync =
+      latest?.state === "done" && JSON.parse(latest.detail)?.complete === false;
+  } catch {
+    /* Legacy jobs may not contain JSON. */
+  }
   const failure =
-    latest?.state === "failed" &&
+    (latest?.state === "failed" || partialSync) &&
     (!inventory?.appliedAt ||
       Date.parse(latest.created_at) >= Date.parse(inventory.appliedAt));
   const testFailed =

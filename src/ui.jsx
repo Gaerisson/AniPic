@@ -81,7 +81,7 @@ export function Modal({
           ...ref.current.querySelectorAll(
             'button,a[href],input,select,textarea,summary,[tabindex="0"]',
           ),
-        ].filter((el) => !el.disabled && el.offsetParent !== null);
+        ].filter((el) => !el.disabled && el.getClientRects().length > 0);
         const first = elements[0],
           last = elements.at(-1);
         if (e.shiftKey && document.activeElement === first) {
