@@ -1,5 +1,7 @@
 # Présentation AniPic 3.2
 
+Le visuel du README réunit des captures de démonstration de la photothèque, du studio vidéo et d’un portrait TV, avec le logo AniPic. Il se régénère avec `node scripts/build-readme-visual.mjs` dans `docs/images/anipic-overview.png`. Les images sources restent dans le projet ; ce montage ne contient aucune donnée d’une installation réelle.
+
 Montage court de **24,5 secondes** en story 1080 × 1920 et paysage 1920 × 1080, H.264/AAC, 30 images/s. Portraits en relief, photothèque, retouche en direct, affiches, studio vidéo et programmation TV. Aucune vue de l’ancien GPIC dans ce montage. La signature finale indique le dépôt et Gaerisson × Codex.
 
 La grille est issue d’une analyse des transitoires du fichier fourni : période **0,6122 s**, environ **98 BPM**, extrait à partir de **10,2922 s**, 40 temps. Les changements de scène suivent les temps 0 / 4 / 10 / 16 / 22 / 28 / 34 / 40. Le son et l’image se fondent en début/fin.

@@ -1,9 +1,4 @@
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="public/anipic-logo.svg">
-    <img src="public/anipic-logo-dark.svg" alt="Anipic" width="290">
-  </picture>
-</p>
+![AniPic — photothèque, studio vidéo et écran du refuge](docs/images/anipic-overview.png)
 
 <p align="center"><strong>Photothèque, création et outils pour l’équipe du refuge.</strong></p>
 <p align="center">React · Tailwind CSS · Fastify · SQLite · Sharp · Remotion · Docker</p>
@@ -13,8 +8,6 @@ Anipic reprend le projet GPIC SPA pour organiser les photos des animaux, prépar
 **Projet vibecodé par [Gaerisson](https://github.com/Gaerisson/), avec Codex, assistant d’OpenAI.** L’idée, les besoins métier, les choix visuels et la direction du projet viennent de Gaerisson.
 
 [Release 3.10.0](RELEASE_v3.10.0.md) · [Installation Docker / Portainer](docs/DEPLOIEMENT.md) · [Journal des versions](CHANGELOG.md) · [API SPA / AniPic](docs/API_ANIMAUX.md) · [Google et bénévoles](GOOGLE.md) · [Agenda partagé](docs/AGENDA.md) · [Suivi des TV](docs/SUIVI_TV.md) · [Tests et validation](VALIDATION.md)
-
-![La photothèque AniPic](public/presentation-v32/home.png)
 
 ## Présentation
 
