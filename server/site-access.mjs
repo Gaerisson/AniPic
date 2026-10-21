@@ -116,7 +116,7 @@ export function siteAccessHook(db, c) {
               .get(cfg.refugeAgentId)
           : null;
       if (user && accountAllowsIP(db, user.id, req.ip)) {
-        const session = createSession(db, user.id);
+        const session = createSession(db, user.id, 43200);
         db.prepare("INSERT INTO ip_sessions VALUES (?,?)").run(
           hashToken(session.token),
           network,
@@ -134,6 +134,7 @@ export function siteAccessHook(db, c) {
     }
     if (
       siteGateRequired(db, req) &&
+      !["/api/privacy", "/api/privacy/consent"].includes(entryPath) &&
       !googleEntry &&
       /^(?:\/api\/|\/media\/|\/feed\.xml)/.test(req.url) &&
       !/^\/api\/(?:health|session|gate(?:\/|$)|login(?:\?|$)|demo-session(?:\?|$))/.test(

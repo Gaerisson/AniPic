@@ -302,12 +302,20 @@ export async function posterPdf(png, paper = "a4") {
   return Buffer.from(await doc.save());
 }
 export async function registerCommunication(app, { db, c, authorized }) {
-  async function printPage(id, template) {
+  async function printPage(id, template, publicOnly = false) {
     const animal = db.prepare("SELECT * FROM animals WHERE id=?").get(id);
-    if (!animal) throw fail("Animal introuvable.", 404);
+    if (
+      !animal ||
+      (publicOnly &&
+        (animal.archived_at ||
+          db
+            .prepare("SELECT 1 FROM settings WHERE key='animalTrash:'||?")
+            .get(id)))
+    )
+      throw fail("Animal introuvable.", 404);
     const photo = db
       .prepare(
-        "SELECT * FROM photos WHERE animal_id=? AND deleted_at IS NULL AND archived_at IS NULL ORDER BY id=? DESC,created_at DESC LIMIT 1",
+        `SELECT * FROM photos WHERE animal_id=? AND deleted_at IS NULL AND archived_at IS NULL ${publicOnly ? "AND hidden=0" : ""} ORDER BY id=? DESC,created_at DESC LIMIT 1`,
       )
       .get(id, animal.cover_id || "") || {
       buffer: await sourcePhotoBuffer(db, c, id, 1280),
@@ -334,6 +342,59 @@ export async function registerCommunication(app, { db, c, authorized }) {
       );
     active++;
   };
+  app.post(
+    "/api/public/posters",
+    { config: { rateLimit: { max: 3, timeWindow: "1 minute" } } },
+    async (req, reply) => {
+      if (
+        !settings(db).publicPosters &&
+        settings(db).publicPosters !== undefined
+      )
+        throw fail("La création publique des affiches est désactivée.", 403);
+      if (req.headers.origin !== c.origin) throw fail("Origine refusée.", 403);
+      const v = z
+        .object({
+          animalIds: z.array(UUID).min(1).max(20),
+          template: z
+            .enum(["spa", "editorial", "glass", "contrast"])
+            .default("spa"),
+        })
+        .strict()
+        .parse(req.body);
+      acquire();
+      try {
+        const doc = await PDFDocument.create();
+        let bytes = 0;
+        for (const key of new Set(v.animalIds)) {
+          const jpeg = await printPage(key, v.template, true);
+          bytes += jpeg.length;
+          if (bytes > 50 * 1024 ** 2)
+            throw fail(
+              "Sélection trop volumineuse pour un export public.",
+              413,
+            );
+          const image = await doc.embedJpg(jpeg);
+          doc
+            .addPage([595.2756, 841.8898])
+            .drawImage(image, {
+              x: 0,
+              y: 0,
+              width: 595.2756,
+              height: 841.8898,
+            });
+        }
+        return reply
+          .type("application/pdf")
+          .header(
+            "Content-Disposition",
+            'attachment; filename="affiches-box.pdf"',
+          )
+          .send(Buffer.from(await doc.save()));
+      } finally {
+        active--;
+      }
+    },
+  );
   async function selection(animalId, photoId) {
     const animal = db
       .prepare("SELECT * FROM animals WHERE id=?")

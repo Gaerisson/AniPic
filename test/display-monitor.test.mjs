@@ -71,6 +71,8 @@ test("TV heartbeat records only a write-only identity and keeps the global PIN a
   });
   assert.equal(result.statusCode, 200, result.body);
   assert.deepEqual(Object.keys(result.json()).sort(), [
+    "commands",
+    "config",
     "id",
     "intervalMs",
     "name",
@@ -304,7 +306,7 @@ test("schema 20 migration preserves data and sessions, and screen identities sur
     "DROP TABLE display_screen_events;DROP TABLE display_screens;PRAGMA user_version=20;",
   );
   const migrated = openDb(c);
-  assert.equal(migrated.prepare("PRAGMA user_version").get().user_version, 21);
+  assert.equal(migrated.prepare("PRAGMA user_version").get().user_version, 22);
   assert.equal(migrated.prepare("SELECT COUNT(*) n FROM sessions").get().n, 1);
   assert.equal(
     migrated.prepare("SELECT id FROM animals WHERE id=?").get(aid).id,

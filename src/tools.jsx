@@ -415,7 +415,7 @@ export function ShootBoard({
     </>
   );
 }
-export function AgentTools({ notify, open, go, user }) {
+export function AgentTools({ notify, open, go, user, ui = {} }) {
   const [sex, setSex] = useState("any"),
     [theme, setTheme] = useState("all"),
     [themes, setThemes] = useState({ all: "Toutes les inspirations" }),
@@ -484,9 +484,15 @@ export function AgentTools({ notify, open, go, user }) {
           <p>Un prénom, un créneau de lumière, une prochaine histoire.</p>
         </div>
       </div>
-      <TeamUtilities go={go} />
+      <TeamUtilities go={go} modules={ui.enabledModules} />
       <Suspense fallback={<Spinner />}>
-        <CreativeWorkshop user={user} notify={notify} open={open} go={go} />
+        <CreativeWorkshop
+          user={user}
+          notify={notify}
+          open={open}
+          go={go}
+          ui={ui}
+        />
       </Suspense>
       <div className="tool-links">
         {["admin", "agent"].includes(user?.role) && (

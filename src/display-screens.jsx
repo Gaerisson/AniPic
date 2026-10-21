@@ -20,6 +20,7 @@ import {
   displayOfflineMs,
 } from "../shared/display-monitor.mjs";
 import "./display-screens.css";
+import { ScreenControls } from "./screen-controls.jsx";
 const date = (value) =>
   value ? new Date(value).toLocaleString("fr-FR") : "Pas encore reçue";
 const elapsed = (value, at) => {
@@ -129,6 +130,17 @@ function ScreenCard({ screen, at, onChange, notify }) {
             Fermer
           </Button>
         </form>
+      )}
+      <ScreenControls screen={screen} notify={notify} />
+      {screen.status.telemetry && (
+        <p className="tv-capture-note">
+          Lecteur ouvert depuis{" "}
+          {Math.floor(screen.status.telemetry.uptimeSeconds / 3600)} h{" "}
+          {Math.floor(screen.status.telemetry.uptimeSeconds / 60) % 60} min ·
+          Réseau : {screen.status.telemetry.network} ·{" "}
+          {screen.status.telemetry.reconnections} reconnexion(s) · Densité{" "}
+          {screen.status.telemetry.pixelRatio}×
+        </p>
       )}
       <div className="tv-screen-meta">
         <span>

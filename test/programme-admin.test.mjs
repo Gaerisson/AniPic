@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { fixture, login } from "./helpers.mjs";
+import { fixture, login, audienceConsent } from "./helpers.mjs";
 import { id, now, saveSettings } from "../server/db.mjs";
 import { parseShow } from "../server/signage-schema.mjs";
 import { showTimeline } from "../shared/signage.mjs";
@@ -160,9 +160,10 @@ test("visitor views are bounded, deduplicated, account-linked and private; untru
     }),
     admin = await login(app),
     viewer = await login(app, "viewer");
+  const consented = await audienceConsent(app,admin.headers);
   const payload = { session: id(), path: "#animals" },
     headers = {
-      ...admin.headers,
+      ...consented,
       "cf-ipcountry": "FR",
       "user-agent": "Mozilla/5.0 (Windows NT 10.0) Chrome/120.0",
     };
@@ -202,7 +203,7 @@ test("visitor views are bounded, deduplicated, account-linked and private; untru
   );
   assert.equal(
     (
-      await call(app, admin.headers, "POST", "/api/visit", {
+      await call(app, consented, "POST", "/api/visit", {
         session: id(),
         path: "#animals?q=secret",
       })

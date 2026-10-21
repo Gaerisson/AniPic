@@ -247,7 +247,14 @@ export default function CreativeWorkshop(props) {
     ["boxes", "Suivi des affiches", ClipboardCheck],
     ["agenda", "Agenda partagé", CalendarDays],
     ...(canCreate ? [["gazette", "Gazette du refuge", Newspaper]] : []),
-  ];
+  ]
+    .filter(
+      ([key]) =>
+        key !== "gazette" || props.ui?.enabledModules?.gazette !== false,
+    )
+    .filter(
+      ([key]) => key !== "boxes" || props.ui?.enabledModules?.posters !== false,
+    );
   return (
     <section className="panel creative-workshop">
       <div className="panel-heading">

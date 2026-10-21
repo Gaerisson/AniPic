@@ -71,7 +71,11 @@ export async function api(url, options = {}) {
   const data = await response
     .json()
     .catch(() => ({ error: "Réponse serveur invalide." }));
-  if (!response.ok) throw new Error(data.error || "Opération impossible.");
+  if (!response.ok)
+    throw Object.assign(new Error(data.error || "Opération impossible."), {
+      code: data.code,
+      status: response.status,
+    });
   return data;
 }
 export async function apiBlob(url, body) {

@@ -4,17 +4,17 @@
 
 La page **https://anipic.gaerisson.fr/android** est fournie par le même projet et la même stack. Elle est accessible depuis le pied de page et l’accueil mobile, avec bouton de téléchargement, QR code, étapes et empreintes. Elle ne contient aucune donnée du refuge et ne désactive pas le PIN des API.
 
-L’APK native 3.11.0 est incluse dans `public/downloads/`, avec son checksum. Vite la copie dans `dist/downloads/` et l’image Docker la livre avec le site. Il n’est pas nécessaire de créer un autre dépôt, une release APK séparée ou un serveur de fichiers. La version web 3.11.1 peut donc distribuer la même APK native 3.11.0. Les exceptions Git/Docker ne concernent que cette distribution publique ; les clés et mots de passe restent exclus.
+L’APK native 3.12.0 est incluse dans `public/downloads/`, avec son checksum. Vite la copie dans `dist/downloads/` et l’image Docker la livre avec le site. Il n’est pas nécessaire de créer un autre dépôt, une release APK séparée ou un serveur de fichiers. La version web 3.12.0 distribue cette APK native 3.12.0. Les exceptions Git/Docker ne concernent que cette distribution publique ; les clés et mots de passe restent exclus.
 
 Lors d’une future mise à jour native, compiler et signer avec la même clé, mettre à jour `public/android-download.json`, le fichier APK et son `.sha256`, puis lancer `node scripts/check-android-download.mjs`. Les tests contrôlent aussi le paquet livré. La CI Android vérifie sa signature cryptographique et le certificat associé au domaine.
 
 ## Installer l’APK
 
-**AniPic 3.11.0** (`fr.gaerisson.anipic`) ouvre **https://anipic.gaerisson.fr/?app=android#mobile**. L’application utilise les pages, médias, comptes et droits du même site, sans seconde base à synchroniser.
+**AniPic 3.12.0** (`fr.gaerisson.anipic`) ouvre **https://anipic.gaerisson.fr/?app=android#mobile**. L’application utilise les pages, médias, comptes et droits du même site, sans seconde base à synchroniser.
 
 1. Mettre à jour la stack web avec le projet complet, en conservant ses volumes.
 2. Vérifier que `https://anipic.gaerisson.fr/.well-known/assetlinks.json` répond **200, en JSON, sans connexion ni redirection**. AniPic sert ce fichier public ; un proxy protégeant tout le domaine doit laisser passer ce seul fichier de vérification. Les API restent protégées.
-3. Installer `AniPic-3.11.0.apk` depuis le fichier fourni. Android peut demander d’autoriser ponctuellement l’installation depuis l’application ouvrant ce fichier. Aucune publication Play Store n’a été effectuée.
+3. Installer `AniPic-3.12.0.apk` depuis le fichier fourni. Android peut demander d’autoriser ponctuellement l’installation depuis l’application ouvrant ce fichier. Aucune publication Play Store n’a été effectuée.
 4. Utiliser un navigateur Android compatible et à jour, par exemple Chrome. Ouvrir AniPic, saisir le PIN si demandé puis se connecter normalement.
 
 L’APK est une **Trusted Web Activity**, utilisant le navigateur Android dans une fenêtre dédiée. L’association domaine/certificat permet de retirer la barre d’adresse. Tant que la nouvelle version web et son fichier d’association ne sont pas déployés, le navigateur peut garder sa barre. Les connexions Google passent par le navigateur, sans authentification dans une WebView.
@@ -23,14 +23,22 @@ Le fichier [android-assetlinks.json](../public/android-assetlinks.json) contient
 
 ## Utilisation et mises à jour
 
-- **Adoptions** : fil filtré, actualisé chaque minute et au retour dans l’application ; liste de validation et historique pour les agents/administrateurs.
+- **Fil** : fil filtré, actualisé chaque minute et au retour dans l’application ; liste de validation et historique pour les agents/administrateurs.
 - **Photos** : animaux, portraits, albums, filtres, téléchargements et outils autorisés.
 - **C8** : catalogue, reprise de lecture et commande plein écran du site. Les fichiers restent sur le serveur/NAS et doivent être lisibles par le navigateur du téléphone.
 - **Plus** : tous les autres outils du site, selon les droits du compte.
 
 Les modifications du site deviennent disponibles après actualisation, sans nouvelle APK à chaque évolution web. Un changement du conteneur Android, du domaine, de l’icône native ou de fonctions natives demande une nouvelle compilation avec un `versionCode` augmenté et **la même clé de signature**. Une mise à jour normale ne demande pas de désinstaller l’application.
 
-Le fil conserve l’historique déjà chargé : l’actualisation automatique s’arrête après le chargement de pages anciennes. Il n’y a pas encore de notifications push en arrière-plan. `?app=web#gallery` retrouve la disposition web. Le thème reste mémorisé par navigateur.
+Le fil conserve l’historique déjà chargé : l’actualisation automatique s’arrête après le chargement de pages anciennes. Les notifications push se configurent dans Compte & appareils, par catégorie puis par appareil. `?app=web#gallery` retrouve la disposition web. Le thème reste mémorisé par navigateur.
+
+## Mise à jour intégrée
+
+Installer une fois l’APK 3.12 depuis `/android` pour disposer du gestionnaire de mise à jour. La version 3.11 ne disposait pas du code natif nécessaire. Les versions suivantes sont détectées à l’ouverture, au retour dans l’application et toutes les 15 minutes lorsque la page est visible.
+
+**Mettre à jour** ouvre le gestionnaire AniPic : il télécharge exclusivement depuis le domaine HTTPS prévu, refuse les redirections, contrôle la taille et le SHA-256, le nom de paquet, le code de version et la signature comparée à celle de l’application installée. Android peut demander l’autorisation « Installer des applications inconnues » pour AniPic, puis **toujours confirmer l’installation**. Les données restent conservées ; aucune désinstallation préalable. Ce mécanisme ne contourne pas les règles d’Android et ne publie pas sur Google Play.
+
+Une mise à jour web propose simplement une actualisation. Enregistrer son travail avant de recharger. Les sessions sont mémorisées 90 jours et renouvelées à l’usage ; elles se révoquent dans Compte & appareils. Les notifications nécessitent une autorisation du navigateur et des essais sur les téléphones réellement utilisés.
 
 ## PIN et hors connexion
 
@@ -56,7 +64,7 @@ Pour des essais sans clé privée : `./scripts/build-android.ps1 -DebugBuild`. S
 
 Le workflow [Validation Android](../.github/workflows/android.yml) compile ces variantes à chaque PR et push vers `main`. L’artefact debug est réservé aux essais, avec un certificat différent qui n’est pas associé au site public. Le workflow ne possède pas la clé de distribution.
 
-Pour changer le domaine, adapter `twa-manifest.json`, les valeurs du `twaManifest` dans `app/build.gradle`, `assetStatements` dans `strings.xml` et publier l’association sur le nouveau domaine. Bubblewrap est une référence de génération ; conserver les corrections Gradle, de sauvegarde et de liens des sources maintenues lors d’une éventuelle régénération. Régénérer les icônes web : `node scripts/build-app-icons.mjs`.
+Pour changer le domaine, adapter `twa-manifest.json`, le domaine fixe de `UpdateActivity.java`, les métadonnées `public/android-download.json`, les liens de mise à jour web, les valeurs du `twaManifest` dans `app/build.gradle`, `assetStatements` dans `strings.xml` et publier l’association sur le nouveau domaine. Bubblewrap est une référence de génération ; conserver les corrections Gradle, de sauvegarde et de liens des sources maintenues lors d’une éventuelle régénération. Régénérer les icônes web : `node scripts/build-app-icons.mjs`.
 
 ## Vérifications et limites
 

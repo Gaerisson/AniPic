@@ -294,7 +294,7 @@ test("box posters track installation, become stale after relevant changes and re
     reopened.prepare("SELECT COUNT(*) n FROM box_posters").get().n,
     1,
   );
-  assert.equal(reopened.prepare("PRAGMA user_version").get().user_version, 21);
+  assert.equal(reopened.prepare("PRAGMA user_version").get().user_version, 22);
   reopened.close();
 });
 test("public gazette sources skip private photos and reject explicitly requested private originals", async (t) => {

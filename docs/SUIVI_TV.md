@@ -42,3 +42,12 @@ Le suivi repose sur les signaux du navigateur. Il ne peut pas confirmer physique
 Le navigateur possède uniquement un secret permettant d’envoyer son propre état. Il ne peut ni lister les autres écrans, ni consulter les informations de gestion. Le secret reste hors des URLs et son empreinte seule est conservée sur le serveur. Le PIN global continue de protéger les requêtes lorsqu’il est activé ; le secret de suivi ne le contourne pas. Les écritures des gestionnaires demandent une session, le rôle autorisé et le jeton CSRF.
 
 Aucun service externe, port supplémentaire ou dépendance n’est nécessaire. Les données sont sauvegardées avec SQLite. La migration **20 → 21** ajoute deux tables et un index, sans modifier les volumes, photos, comptes ou paramètres existants. Les nouvelles inscriptions sont limitées à dix par heure et adresse réseau, et cent écrans actifs ; un écran déjà inscrit continue à transmettre normalement.
+
+
+## Réglages par écran et aperçu réel (3.12)
+
+Dans la carte d’une TV, ouvrir **Réglages & aperçu réel**. Chaque écran peut remplacer l’orientation, la durée des photos, les espèces, les statistiques et le QR du programme général, et choisir sa fréquence d’actualisation (15–300 secondes). La prise en compte intervient au prochain contact du lecteur, généralement sous 20 secondes.
+
+**Capturer l’écran** demande un JPEG du lecteur AniPic connecté, pas du bureau de la télévision. **Suivi visuel · 45 s** renouvelle la demande tant que ce panneau est ouvert et visible. La date de capture reste affichée : une ancienne capture n’est pas présentée comme une vidéo en direct. Les images restent privées aux agents/administrateurs et ne sont conservées que 24 h. Une capture peut être désactivée écran par écran.
+
+Le suivi affiche aussi la durée d’ouverture, le réseau déclaré par le navigateur, les reconnexions et la densité d’affichage. Au retour du réseau, le programme est rechargé ; pendant une interruption, le dernier reçu est gardé tant que la page reste ouverte. Un redémarrage de navigateur recharge sa configuration avec l’identité d’écran conservée localement. AniPic ne peut pas rallumer une TV éteinte, démarrer son navigateur à la place du système, ni rétablir un plein écran nécessitant un geste utilisateur : configurer le navigateur/kiosque de l’appareil pour ces points.

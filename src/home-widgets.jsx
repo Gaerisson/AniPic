@@ -130,6 +130,7 @@ export function HomeWidgets({ widgets, user, overview, open, notify, reload }) {
   }, [widgets.includes("tv")]);
   return (
     <>
+      <a className="home-android-link panel" href="/android"><span className="home-app-icon"><img src="/anipic-icon.svg" alt=""/></span><span><strong>AniPic sur Android</strong><small>Le fil, les photos et votre planning, dans la poche.</small></span><span className="button secondary">Télécharger l’app ↗</span></a>
       {widgets
         .filter((k) => !["photos", "clockWeather"].includes(k))
         .map((key) => (
@@ -141,9 +142,7 @@ export function HomeWidgets({ widgets, user, overview, open, notify, reload }) {
             {key === "stats" ? (
               <>
                 <h2>La photothèque</h2>
-                <p className="small-note">
-                  Animaux présents · portraits réalisés par l’équipe
-                </p>
+
                 <div className="photo-coverage-grid">
                   {(overview?.stats?.photoCoverage || []).map((c) => (
                     <div className="photo-coverage" key={c.species}>

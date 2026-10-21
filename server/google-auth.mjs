@@ -292,7 +292,7 @@ export async function registerGoogleAuth(app, { db, c, authorized }) {
         httpOnly: true,
         sameSite: "strict",
         secure: c.secureCookie || c.origin.startsWith("https://"),
-        maxAge: 43200,
+        maxAge: 90*86400,
       });
       reply.setCookie("anipic_manual", "1", {
         path: "/",

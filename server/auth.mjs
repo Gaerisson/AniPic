@@ -37,14 +37,14 @@ export async function createUser(db, name, password, role = "admin") {
   ).run(user.id, name, await hashPassword(password), role, now());
   return user;
 }
-export function createSession(db, userId) {
+export function createSession(db, userId, seconds = 90 * 86400) {
   const token = randomBytes(32).toString("base64url");
   const csrf = randomBytes(24).toString("base64url");
   db.prepare("INSERT INTO sessions VALUES (?,?,?,?)").run(
     hashToken(token),
     userId,
     csrf,
-    new Date(Date.now() + 12 * 3600_000).toISOString(),
+    new Date(Date.now() + seconds * 1000).toISOString(),
   );
   db.prepare("UPDATE users SET last_login_at=? WHERE id=?").run(now(), userId);
   return { token, csrf };

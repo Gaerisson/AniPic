@@ -39,6 +39,7 @@ class TVPlaybackBoundary extends Component {
 }
 export function RefugeScreen() {
   const monitor = useDisplayMonitor();
+  const [recovery, setRecovery] = useState(0);
   const [show, setShow] = useState(null),
     [error, setError] = useState("");
   useEffect(() => {
@@ -55,16 +56,47 @@ export function RefugeScreen() {
         .catch((e) => {
           if (alive) {
             setError(e.message);
+            if (e.code === "MODULE_DISABLED" || e.code === "SITE_PIN_REQUIRED")
+              setShow((s) => (s ? { ...s, enabled: false } : null));
             monitor.failed();
           }
         });
     load();
-    const timer = setInterval(load, 60000);
+    const refresh = () => load();
+    const timer = setInterval(
+      load,
+      (monitor.config?.refreshSeconds || 60) * 1000,
+    );
+    window.addEventListener("online", refresh);
+    window.addEventListener("anipic-tv-refresh", refresh);
     return () => {
       alive = false;
       clearInterval(timer);
+      window.removeEventListener("online", refresh);
+      window.removeEventListener("anipic-tv-refresh", refresh);
     };
-  }, []);
+  }, [monitor.config?.refreshSeconds]);
+  useEffect(() => {
+    if (!monitor.config?.autoReconnect) return;
+    const retry = setInterval(() => {
+      if (error && navigator.onLine)
+        window.dispatchEvent(new Event("anipic-tv-refresh"));
+    }, 10000);
+    return () => clearInterval(retry);
+  }, [error, monitor.config?.autoReconnect]);
+  useEffect(() => {
+    let timer;
+    const report = (e) => {
+      clearTimeout(timer);
+      if (monitor.config?.autoReconnect && e.detail?.state === "error")
+        timer = setTimeout(() => setRecovery((n) => n + 1), 15000);
+    };
+    window.addEventListener("anipic-tv-playback", report);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("anipic-tv-playback", report);
+    };
+  }, [monitor.config?.autoReconnect]);
   if (!show)
     return (
       <main className="show-loading">
@@ -93,10 +125,37 @@ export function RefugeScreen() {
     );
   return (
     <>
-      <TVPlaybackBoundary key={show.revision} onStatus={monitor.onStatus}>
+      <TVPlaybackBoundary
+        key={show.revision + ":" + recovery}
+        onStatus={monitor.onStatus}
+      >
         <ShowPlayer
           full
-          show={show}
+          show={
+            monitor.config
+              ? {
+                  ...show,
+                  items: show.items.filter((a) =>
+                    monitor.config.species.includes(a.species),
+                  ),
+                  program: {
+                    ...show.program,
+                    ...(monitor.config.orientation !== "inherit"
+                      ? { orientation: monitor.config.orientation }
+                      : {}),
+                    ...(monitor.config.photoSeconds
+                      ? { photoSeconds: monitor.config.photoSeconds }
+                      : {}),
+                    ...(monitor.config.stats !== "inherit"
+                      ? { statsEnabled: monitor.config.stats === "on" }
+                      : {}),
+                    ...(monitor.config.showQr !== "inherit"
+                      ? { showQr: monitor.config.showQr === "on" }
+                      : {}),
+                  },
+                }
+              : show
+          }
           synced
           onStatus={monitor.onStatus}
           monitorControl={<DisplayMonitorControl monitor={monitor} />}

@@ -72,7 +72,7 @@ export default function GroupPoster({ user, overview, notify }) {
     },
     [],
   );
-  if (!["admin", "editor", "agent"].includes(user?.role))
+  if (false)
     return (
       <Empty
         title="Grande affiche du refuge"

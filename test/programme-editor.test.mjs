@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { fixture, login } from "./helpers.mjs";
+import { fixture, login, audienceConsent } from "./helpers.mjs";
 import { id, saveSettings } from "../server/db.mjs";
 import { showTimeline, moveScene } from "../shared/signage.mjs";
 import { parseShow } from "../server/signage-schema.mjs";
@@ -46,7 +46,8 @@ test("public page access controls both C8 catalog and byte ranges, with private 
 
 test("visitor dashboard returns filled daily series, breakdowns and account/page search without exposing session hashes", async t => {
   const {app}=await fixture(t),admin=await login(app),session=id();
-  for(const page of ["#gallery","#studio"]) await app.inject({method:"POST",url:"/api/visit",headers:{...admin.headers,"user-agent":"Mozilla/5.0 Windows Chrome/155.0"},payload:{session,path:page}});
+  const consented=await audienceConsent(app,admin.headers);
+  for(const page of ["#gallery","#studio"]) await app.inject({method:"POST",url:"/api/visit",headers:{...consented,"user-agent":"Mozilla/5.0 Windows Chrome/155.0"},payload:{session,path:page}});
   const r=await app.inject({url:"/api/admin/visitors?days=7&query=studio",headers:admin.headers}),d=r.json();
   assert.equal(r.statusCode,200,r.body);assert.equal(d.daily.length,7);assert.equal(d.daily.reduce((n,x)=>n+x.views,0),2);
   assert.equal(d.breakdowns.browsers[0].name,"Chrome");assert.equal(d.breakdowns.browsers[0].views,2);

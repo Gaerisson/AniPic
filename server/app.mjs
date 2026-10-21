@@ -77,6 +77,16 @@ import { publicAnimalMetadata, publicCompatibility } from "./animal-facts.mjs";
 import { assistantAvatarUrl, adminSettingsView } from "./assistant-avatar.mjs";
 import { photoPriority, photoPrioritySql } from "../shared/photo-priority.mjs";
 import { scheduledSyncDue } from "../shared/sync-schedule.mjs";
+import { registerPrivacy, privacyCleanup } from "./privacy.mjs";
+import { registerWriting } from "./writing.mjs";
+import { registerNotifications } from "./notifications.mjs";
+import { registerVolunteers } from "./volunteers.mjs";
+import { registerModules, moduleHook, modulesConfig } from "./modules.mjs";
+import {
+  registerDevices,
+  trackDevice,
+  sessionLifetime,
+} from "./account-devices.mjs";
 const UUID = z.string().uuid();
 const Settings = z.object({
   ...sourceFields,
@@ -187,6 +197,10 @@ export async function createApp(overrides = {}) {
       reply.header("Cache-Control", "no-store");
   });
   app.addHook("onRequest", siteAccessHook(db, c));
+  app.addHook("onRequest", moduleHook(db));
+  app.addHook("onRequest", async (req, reply) =>
+    trackDevice(db, c, req, reply),
+  );
   app.addHook("preHandler", async (req, reply) => {
     if (mediaMaintenance(c) && !["GET", "HEAD", "OPTIONS"].includes(req.method))
       return reply.code(423).send({
@@ -197,6 +211,8 @@ export async function createApp(overrides = {}) {
   app.addHook("onResponse", async (req, reply) => {
     if (!req.url.startsWith("/api/") || req.url.startsWith("/api/health"))
       return;
+    if(['/api/visit','/api/privacy','/api/privacy/consent'].includes(req.url.split('?')[0])&&reply.statusCode<400)return;
+    if(req.method==='GET'&&!req.user&&reply.statusCode<400)return;
     db.prepare("INSERT INTO access_log VALUES (?,?,?,?,?,?,?,?)").run(
       id(),
       req.user?.id || null,
@@ -207,6 +223,7 @@ export async function createApp(overrides = {}) {
       String(req.headers["user-agent"] || "").slice(0, 250),
       now(),
     );
+    if (Math.random() < 0.01) privacyCleanup(db);
     if (Math.random() < 0.01)
       db.exec(
         "DELETE FROM access_log WHERE id IN (SELECT id FROM access_log ORDER BY created_at DESC LIMIT -1 OFFSET 10000)",
@@ -252,6 +269,12 @@ export async function createApp(overrides = {}) {
     });
   });
   await registerSiteAccess(app, { db, c, authorized });
+  await registerPrivacy(app, { db, c, authorized });
+  await registerModules(app, { db, c, authorized });
+  await registerDevices(app, { db, c, authorized });
+  await registerNotifications(app, { db, c, authorized });
+  await registerVolunteers(app, { db, c, authorized });
+  await registerWriting(app, { db, c, authorized });
   await registerGoogleAuth(app, { db, c, authorized });
   await registerArchiveFolders(app, { db });
   await registerJournal(app, { db, authorized });
@@ -297,7 +320,7 @@ export async function createApp(overrides = {}) {
       httpOnly: true,
       sameSite: "strict",
       secure: false,
-      maxAge: 43200,
+      maxAge: sessionLifetime,
     });
     return { user: publicSession(getSession(db, session.token)) };
   });
@@ -331,7 +354,7 @@ export async function createApp(overrides = {}) {
         httpOnly: true,
         sameSite: "strict",
         secure: c.secureCookie,
-        maxAge: 43200,
+        maxAge: sessionLifetime,
       });
       audit(db, user, "login");
       return { user: publicSession(getSession(db, session.token)) };

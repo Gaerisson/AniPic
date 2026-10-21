@@ -44,3 +44,55 @@ self.addEventListener("fetch", (event) => {
     ),
   );
 });
+self.addEventListener("push", (event) => {
+  event.waitUntil(
+    (async () => {
+      let p;
+      try {
+        p = event.data.json();
+      } catch {
+        return;
+      }
+      let url;
+      try {
+        url = new URL(p.url, self.location.origin);
+        if (url.origin !== self.location.origin || url.pathname !== "/") return;
+      } catch {
+        return;
+      }
+      await self.registration.showNotification(
+        String(p.title || "AniPic").slice(0, 120),
+        {
+          body: String(p.body || "").slice(0, 300),
+          icon: "/app-icon-192.png",
+          badge: "/app-icon-192.png",
+          tag: String(p.id || "anipic").slice(0, 160),
+          data: { url: url.href },
+        },
+      );
+    })(),
+  );
+});
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    (async () => {
+      const url = new URL(
+        event.notification.data?.url || "/",
+        self.location.origin,
+      );
+      if (url.origin !== self.location.origin || url.pathname !== "/") return;
+      const windows = await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
+      for (const client of windows) {
+        if (new URL(client.url).origin === self.location.origin) {
+          await client.navigate(url.href);
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow(url.href);
+    })(),
+  );
+});

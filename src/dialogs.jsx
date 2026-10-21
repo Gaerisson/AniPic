@@ -1260,6 +1260,9 @@ export function Account({ user, close, notify, onLogout }) {
   return (
     <Modal title="Votre espace équipe." onClose={close}>
       <UserAvatarEditor user={user} notify={notify} />
+      <a className="button secondary" href="#accountHub" onClick={close}>
+        Notifications & appareils connectés
+      </a>
       <div className="account-identity">
         <UserPicture user={user} />
         <div>

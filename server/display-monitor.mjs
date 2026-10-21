@@ -1,3 +1,8 @@
+import {
+  displayConfig,
+  pendingDisplayCommands,
+  registerDisplayControls,
+} from "./display-controls.mjs";
 import { z } from "zod";
 import { createHash, timingSafeEqual } from "node:crypto";
 import { id, now, settings, audit, transaction } from "./db.mjs";
@@ -45,6 +50,16 @@ export function displayRevision(db, cfg = settings(db), at = new Date()) {
 }
 export const screenReport = z
   .object({
+    telemetry: z
+      .object({
+        uptimeSeconds: z.number().int().min(0).max(315360000),
+        pixelRatio: z.number().min(0.1).max(10),
+        online: z.boolean(),
+        network: z.string().max(20),
+        reconnections: z.number().int().min(0).max(100000),
+      })
+      .strict()
+      .optional(),
     id: z.string().uuid(),
     token: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
     state: z.enum(Object.keys(displayStateLabels)),
@@ -104,6 +119,7 @@ function addEvent(db, screenId, kind, codes, stamp) {
 }
 export async function registerDisplayMonitor(app, { db, c, authorized }) {
   const access = { preHandler: authorized(displayManagerRoles) };
+  await registerDisplayControls(app, { db, c, authorized });
   app.post(
     "/api/public/display/heartbeat",
     {
@@ -200,6 +216,8 @@ export async function registerDisplayMonitor(app, { db, c, authorized }) {
         id: key,
         name: existing?.name || `Écran ${key.slice(0, 6).toUpperCase()}`,
         intervalMs: displayHeartbeatMs,
+        config: displayConfig(db, key),
+        commands: pendingDisplayCommands(db, key),
       };
     },
   );

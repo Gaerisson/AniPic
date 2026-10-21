@@ -9,7 +9,8 @@ export function mobileAppLayout({
 }
 export const mobileDestinations = Object.freeze([
   { page: "mobile", name: "Mon refuge", symbol: "home" },
-  { page: "mobileAdoptions", name: "Adoptions", symbol: "heart" },
+  { page: "feed", name: "Le fil", symbol: "feed" },
+  { page: "volunteers", name: "Planning", symbol: "planning" },
   { page: "mobilePhotos", name: "Photos", symbol: "photos" },
   { page: "broadcasts", name: "C8", symbol: "tv" },
 ]);

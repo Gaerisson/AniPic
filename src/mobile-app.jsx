@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   Heart,
+  PawPrint,
   Images,
   Tv,
   House,
@@ -8,14 +9,16 @@ import {
   ArrowUpRight,
   Download,
   WifiOff,
-  ShieldCheck,
-  Check,
   Smartphone,
+  Rss,
+  CalendarDays,
+  Bell,
 } from "lucide-react";
 import { mobileAppLayout, mobileDestinations } from "../shared/mobile-app.mjs";
 import { Button } from "./ui.jsx";
 import { NavLink } from "./nav-link.jsx";
-
+import { api } from "./api.js";
+import { QuickTour } from "./quick-tour.jsx";
 export function useMobileApp() {
   const [appMode, setAppMode] = useState(() => {
       let remembered = false;
@@ -65,7 +68,7 @@ export function useMobileApp() {
         .register("/sw.js", { updateViaCache: "none" })
         .catch(() =>
           setInstallError(
-            "L’installation automatique est indisponible dans ce navigateur. Utilisez le menu de Chrome pour installer AniPic.",
+            "Installation web indisponible. Vous pouvez utiliser l’APK Android.",
           ),
         );
     return () => {
@@ -82,9 +85,7 @@ export function useMobileApp() {
       await installEvent.userChoice;
       setInstallEvent(null);
     } catch {
-      setInstallError(
-        "Installation annulée ou indisponible. Vous pouvez réessayer depuis le menu du navigateur.",
-      );
+      setInstallError("Installation annulée ou indisponible.");
     }
   };
   return {
@@ -96,28 +97,34 @@ export function useMobileApp() {
     installError,
   };
 }
-
-const icons = { home: House, heart: Heart, photos: Images, tv: Tv };
-export function AppBottomNav({ page, go, more, expanded }) {
+const icons = {
+  home: House,
+  heart: Heart,
+  photos: Images,
+  tv: Tv,
+  feed: Rss,
+  planning: CalendarDays,
+};
+export function AppBottomNav({ page, go, more, expanded, modules = {} }) {
   return (
     <nav className="app-bottom-nav" aria-label="Navigation de l’application">
-      {mobileDestinations.map((d) => {
-        const Icon = icons[d.symbol],
-          active =
-            page === d.page ||
-            (d.page === "mobileAdoptions" && page === "adoptionReviews");
-        return (
-          <NavLink
-            href={`#${d.page}`}
-            key={d.page}
-            aria-current={active ? "page" : undefined}
-            onClick={() => go(d.page)}
-          >
-            <Icon size={21} />
-            <span>{d.name}</span>
-          </NavLink>
-        );
-      })}
+      {mobileDestinations
+        .filter((d) => d.page !== "volunteers" || modules.planning !== false)
+        .filter((d) => d.page !== "broadcasts" || modules.broadcasts !== false)
+        .map((d) => {
+          const Icon = icons[d.symbol];
+          return (
+            <NavLink
+              href={"#" + d.page}
+              key={d.page}
+              aria-current={page === d.page ? "page" : undefined}
+              onClick={() => go(d.page)}
+            >
+              <Icon size={21} />
+              <span>{d.name}</span>
+            </NavLink>
+          );
+        })}
       <button
         aria-label="Tous les outils"
         aria-expanded={expanded}
@@ -136,134 +143,201 @@ export function MobileHome({
   open,
   runtime,
   pendingAdoptions,
+  ui = {},
 }) {
-  const canReview = ["admin", "agent"].includes(user?.role),
-    pending = pendingAdoptions ?? overview?.stats?.pendingAdoptions ?? 0;
+  const [summary, setSummary] = useState(null),
+    [error, setError] = useState("");
+  useEffect(() => {
+    let active = true;
+    const load = () => {
+      if (document.visibilityState !== "hidden")
+        api("/mobile/summary")
+          .then((d) => {
+            if (active) {
+              setSummary(d);
+              setError("");
+            }
+          })
+          .catch((e) => active && setError(e.message));
+    };
+    load();
+    const timer = setInterval(load, 60000);
+    window.addEventListener("focus", load);
+    return () => {
+      active = false;
+      clearInterval(timer);
+      window.removeEventListener("focus", load);
+    };
+  }, [user?.id]);
+  const pending = pendingAdoptions || 0,
+    today = summary?.today?.days?.[0];
   return (
-    <div className="mobile-home">
-      <section className="mobile-welcome">
-        <img src="/anipic-icon.svg" alt="AniPic" />
-        <div className="eyebrow">LE REFUGE, AVEC VOUS</div>
-        <h1>
-          Des nouvelles.
-          <br />
-          Des regards.
-          <br />
-          <em>De belles histoires.</em>
-        </h1>
-        <p>
-          {overview?.refugeName || "Votre refuge"} · AniPic vous accompagne sur
-          votre téléphone.
-        </p>
-      </section>
+    <div className="mobile-home mobile-home-recap">
+      <div className="mobile-home-title">
+        <div>
+          <span className="eyebrow">
+            {overview?.refugeName || "Votre refuge"}
+          </span>
+          <h1>{user ? "Bonjour " + user.name : "Les nouvelles du refuge"}</h1>
+          <p>
+            {new Date().toLocaleDateString("fr-FR", {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+            })}
+          </p>
+        </div>
+        <Button
+          variant="secondary"
+          aria-label="Compte et notifications"
+          onClick={() => (user ? go("accountHub") : open({ type: "login" }))}
+        >
+          <Bell size={20} />
+        </Button>
+      </div>
+      {summary?.counts && (
+        <section className="mobile-recap-stats">
+          {[
+            ["adoptions", "Adoptions", Heart],
+            ["arrivals", "Arrivées", PawIcon],
+            ["changes", "Changements", Images],
+          ].map(([k, label, Icon]) => (
+            <button
+              className="panel"
+              key={k}
+              onClick={() => go(k === "adoptions" ? "mobileAdoptions" : "feed")}
+            >
+              <Icon size={20} />
+              <strong>{summary.counts[k] || 0}</strong>
+              <span>{label}</span>
+              <small>7 derniers jours</small>
+            </button>
+          ))}
+        </section>
+      )}
+      {pending > 0 && ["admin", "agent"].includes(user?.role) && (
+        <button
+          className="panel mobile-pending"
+          onClick={() => go("adoptionReviews")}
+        >
+          <Heart size={24} />
+          <span>
+            <strong>{pending} adoption(s) à confirmer</strong>
+            <small>Vérifier les départs détectés</small>
+          </span>
+          <ArrowUpRight size={20} />
+        </button>
+      )}
+      <NavLink
+        href="#feed"
+        onClick={() => go("feed")}
+        className="panel mobile-feed-link"
+      >
+        <Rss size={25} />
+        <span>
+          <strong>Au fil du refuge</strong>
+          <small>Arrivées, adoptions et changements des fiches</small>
+        </span>
+        <ArrowUpRight size={20} />
+      </NavLink>
+      {user && ui.enabledModules?.planning !== false && (
+        <section className="panel mobile-today">
+          <div className="widget-heading">
+            <h2>Au refuge aujourd’hui</h2>
+            <Button variant="ghost" onClick={() => go("volunteers")}>
+              Planning ↗
+            </Button>
+          </div>
+          {today?.people.length ? (
+            <div className="today-people">
+              {today.people.map((p) => (
+                <span key={p.id}>
+                  <b>{p.name}</b>
+                  <small>{p.tasks.join(" · ")}</small>
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p>Aucune présence confirmée. Ajoutez votre disponibilité.</p>
+          )}
+          {summary?.next?.length > 0 && (
+            <>
+              <h3>Mes prochains créneaux</h3>
+              {summary.next.map((s) => (
+                <button
+                  className="mobile-next-shift"
+                  key={s.id}
+                  onClick={() => go("volunteers")}
+                >
+                  <CalendarDays size={18} />
+                  <span>
+                    {s.title}
+                    <small>
+                      {s.date} · {s.start}–{s.end}
+                    </small>
+                  </span>
+                </button>
+              ))}
+            </>
+          )}
+        </section>
+      )}
       <div className="mobile-destination-grid">
         {[
+          { page: "mobilePhotos", name: "Les portraits", Icon: Images },
           {
-            page: "mobileAdoptions",
-            name: "Les adoptions",
-            text: "Les départs, les confirmations et les belles nouvelles.",
-            Icon: Heart,
-          },
-          {
-            page: "mobilePhotos",
-            name: "Les photos",
-            text: "Retrouver un compagnon, ses portraits et son album.",
-            Icon: Images,
+            page: "volunteers",
+            name: "Présences & missions",
+            Icon: CalendarDays,
+            module: "planning",
           },
           {
             page: "broadcasts",
             name: "Vidéo C8",
-            text: "Vos émissions, la reprise de lecture et le plein écran.",
             Icon: Tv,
+            module: "broadcasts",
           },
-        ].map(({ page, name, text, Icon }) => (
-          <NavLink
-            key={page}
-            href={`#${page}`}
-            onClick={() => go(page)}
-            className={`panel mobile-destination destination-${page}`}
-          >
-            <Icon size={27} />
-            <div>
+          {
+            page: "posters",
+            name: "Créer une affiche",
+            Icon: Download,
+            module: "posters",
+          },
+        ]
+          .filter((d) => !d.module || ui.enabledModules?.[d.module] !== false)
+          .map(({ page, name, Icon }) => (
+            <NavLink
+              key={page}
+              href={"#" + page}
+              onClick={() => go(page)}
+              className="panel mobile-destination"
+            >
+              <Icon size={25} />
               <strong>{name}</strong>
-              <p>{text}</p>
-            </div>
-            <ArrowUpRight size={20} />
-          </NavLink>
-        ))}
+              <ArrowUpRight size={19} />
+            </NavLink>
+          ))}
       </div>
-      {canReview && (
-        <section className="panel mobile-review">
-          <span className="mobile-review-count">
-            {pending > 0 ? pending : <Check size={24} />}
-          </span>
-          <div>
-            <h2>
-              {pending
-                ? "Adoptions à confirmer"
-                : "Les validations sont à jour"}
-            </h2>
-            <p>
-              {pending
-                ? "Les départs ont été détectés automatiquement. L’équipe peut confirmer leur adoption."
-                : "Retrouvez ici les prochains départs automatiques à vérifier."}
-            </p>
-          </div>
-          <Button variant="secondary" onClick={() => go("adoptionReviews")}>
-            Voir la liste
-          </Button>
-        </section>
-      )}
+      {error && <p role="status">{error}</p>}
       {!user && (
-        <section className="panel mobile-account">
-          <ShieldCheck size={24} />
-          <div>
-            <h2>Votre espace équipe</h2>
-            <p>
-              Connectez-vous pour retrouver les outils autorisés pour votre
-              compte et les émissions réservées à l’équipe.
-            </p>
-          </div>
-          <Button onClick={() => open({ type: "login" })}>Se connecter</Button>
-        </section>
+        <Button onClick={() => open({ type: "login" })}>
+          Rejoindre mon espace équipe
+        </Button>
       )}
-      {!runtime.installed && (
-        <section className="panel mobile-install">
-          <Smartphone size={24} />
-          <div>
-            <h2>Une place sur votre écran d’accueil.</h2>
-            <p>
-              {runtime.canInstall
-                ? "Installez AniPic pour l’ouvrir dans sa propre fenêtre avec son icône."
-                : "Sur Android, ouvrez le menu de Chrome puis « Installer l’application » ou « Ajouter à l’écran d’accueil ». L’installation nécessite le site en HTTPS."}
-            </p>
-            {runtime.installError && (
-              <p role="status">{runtime.installError}</p>
-            )}
-            <a className="mobile-apk-link" href="/android">
-              <Download size={14} /> Télécharger l’APK Android
-            </a>
-          </div>
-          {runtime.canInstall && (
-            <Button onClick={runtime.install}>
-              <Download size={17} />
-              Installer AniPic
-            </Button>
-          )}
-        </section>
-      )}
-      <p className="mobile-data-note">
-        Les données restent sur votre serveur AniPic. Les droits de votre compte
-        et le code d’accès du refuge restent appliqués.
-      </p>
+      <QuickTour go={go} user={user} />
+      <a href="/android" className="mobile-apk-link">
+        <Download size={16} />
+        Télécharger ou mettre à jour l’app Android
+      </a>
     </div>
   );
 }
+const PawIcon = PawPrint;
 export function AppConnection({ offline }) {
   return offline ? (
     <div role="status" className="app-offline-banner">
       <WifiOff size={16} />
-      Appareil hors connexion · les actions nécessitent le serveur AniPic.
+      Hors connexion · les actions reprendront avec le serveur.
     </div>
   ) : null;
 }

@@ -9,7 +9,7 @@ export function openDb(c) {
     "PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;",
   );
   const version = db.prepare("PRAGMA user_version").get().user_version;
-  if (version > 21) throw new Error("Base créée par une version plus récente.");
+  if (version > 22) throw new Error("Base créée par une version plus récente.");
   if (version === 0)
     db.exec(`
     BEGIN;
@@ -217,6 +217,7 @@ export function openDb(c) {
       CREATE INDEX IF NOT EXISTS display_screen_event_time ON display_screen_events(screen_id,occurred_at);
       PRAGMA user_version=21;`);
     });
+  if(version<22)transaction(db,()=>upgrade312(db));
   db.prepare("DELETE FROM google_oauth WHERE expires_at < ?").run(now());
   db.prepare(
     "DELETE FROM site_passes WHERE expires_at<>'' AND expires_at < ?",
@@ -324,3 +325,4 @@ export function feedEvent(db, animal, kind, origin = null) {
       JSON.stringify(origin),
     );
 }
+import {upgrade312} from "./upgrade312.mjs";

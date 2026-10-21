@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import { id, now } from "./db.mjs";
 import { normalizedIP, matchesNetwork } from "./ip-access.mjs";
+import { legalConfig } from "./privacy.mjs";
 const dayKey = (at) =>
   new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/Paris",
@@ -67,6 +68,12 @@ export async function registerVisitors(app, { db, c, authorized }) {
     async (req, reply) => {
       if (req.headers.origin && req.headers.origin !== c.origin)
         return reply.code(403).send({ error: "Origine refusée." });
+      if (
+        !legalConfig(db).analyticsEnabled ||
+        !app.audienceConsent(req).analytics ||
+        req.headers["sec-gpc"] === "1"
+      )
+        return reply.code(204).send();
       const v = z
         .object({
           session: z.string().uuid(),
@@ -107,7 +114,9 @@ export async function registerVisitors(app, { db, c, authorized }) {
         now(),
       );
       db.prepare("DELETE FROM visits WHERE created_at<?").run(
-        new Date(Date.now() - 30 * 86400000).toISOString(),
+        new Date(
+          Date.now() - legalConfig(db).visitorRetentionDays * 86400000,
+        ).toISOString(),
       );
       return { ok: true };
     },

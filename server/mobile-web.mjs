@@ -2,6 +2,7 @@ import { publicAsset } from "./public-assets.mjs";
 import { appVersion } from "../shared/version.mjs";
 import { registerAndroidDownload } from "./android-download.mjs";
 export async function registerMobileWeb(app) {
+  app.get('/app-version.json',async(_req,reply)=>reply.header('Cache-Control','no-store').send({version:appVersion}));
   await registerAndroidDownload(app);
   // Public verification metadata only: no session, PIN pass or user data.
   app.get("/.well-known/assetlinks.json", async (_req, reply) =>

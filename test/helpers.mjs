@@ -73,3 +73,12 @@ export function wav(seconds = 2) {
     );
   return b;
 }
+
+export async function audienceConsent(app,headers){
+ const {legalConfig,privacyVersion}=await import('../server/privacy.mjs');
+ const {saveSettings}=await import('../server/db.mjs');
+ saveSettings(app.db,{legal:{...legalConfig(app.db),analyticsEnabled:true}});
+ const result=await app.inject({method:'POST',url:'/api/privacy/consent',headers,payload:{analytics:true,version:privacyVersion}});
+ if(result.statusCode!==200)throw Error(result.body);
+ return {...headers,cookie:headers.cookie+'; '+result.headers['set-cookie'].split(';')[0]};
+}

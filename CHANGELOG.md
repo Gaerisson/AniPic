@@ -1,5 +1,10 @@
 # Journal des versions
 
+## 3.12.0 — 21 octobre 2026
+
+Planning des bénévoles, accueil mobile et fil simplifiés, notifications et appareils révocables, mises à jour APK, page Android et lien d’accueil, modules activables, rédaction/relecture, affiches publiques, capture et configuration des TV, confidentialité et consentement avant statistiques. [Notes détaillées](RELEASE_v3.12.0.md).
+
+
 ## 3.11.1 — Installation Android dans le même projet
 
 - Page `/android` avec téléchargement direct de l’APK signée, instructions, QR code et empreintes publiques.

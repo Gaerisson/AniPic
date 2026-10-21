@@ -33,7 +33,7 @@ def twaManifest = [
     navigationDividerColor: '#000000', // The navbar divider color.
     navigationDividerColorDark: '#000000', // The dark navbar divider color.
     backgroundColor: '#18191C', // The color used for the splash screen background.
-    enableNotifications: false, // Set to true to enable notification delegation.
+    enableNotifications: true, // User-controlled notification delegation.
     // Every shortcut must include the following fields:
     // - name: String that will show up in the shortcut.
     // - short_name: Shorter string used if |name| is too long.
@@ -51,14 +51,15 @@ def twaManifest = [
 ]
 
 android {
+    buildFeatures { buildConfig true }
     compileSdkVersion 36
     namespace "fr.gaerisson.anipic"
     defaultConfig {
         applicationId "fr.gaerisson.anipic"
         minSdkVersion 23
         targetSdkVersion 36
-        versionCode 31100
-        versionName "3.11.0"
+        versionCode 31200
+        versionName "3.12.0"
 
         // The name for the application
         resValue "string", "appName", twaManifest.name

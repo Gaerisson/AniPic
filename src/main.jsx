@@ -136,6 +136,22 @@ import "./team-workflow.css";
 import "./signage.css";
 import "./update31.css";
 
+import {
+  usePrivacy,
+  CookieChoices,
+  LegalPage,
+  LegalSettings,
+} from "./privacy.jsx";
+import { AppUpdates } from "./app-updates.jsx";
+import { pageModule } from "../shared/modules.mjs";
+import "./update312.css";
+import "./features312.css";
+import { PublicPosters } from "./public-posters.jsx";
+import { QuickTour } from "./quick-tour.jsx";
+const TeamPlanning = lazy(() => import("./team-planning.jsx"));
+const WritingStudio = lazy(() => import("./writing-studio.jsx"));
+const AccountHub = lazy(() => import("./account-hub.jsx"));
+const ModuleSettings = lazy(() => import("./module-settings.jsx"));
 const iconProps = { size: 19, strokeWidth: 1.7 };
 const pages = {
   mobile: { name: "Mon refuge", icon: Smartphone, group: "library" },
@@ -146,6 +162,33 @@ const pages = {
     icon: Heart,
     group: "team",
     roles: ["admin", "agent"],
+  },
+  volunteers: {
+    name: "Présences & missions",
+    icon: CalendarDays,
+    group: "team",
+    roles: ["admin", "agent", "editor", "volunteer", "viewer"],
+  },
+  writing: {
+    name: "Rédaction & relecture",
+    icon: Wand2,
+    group: "team",
+    roles: ["admin", "agent", "editor", "volunteer", "viewer"],
+  },
+  accountHub: {
+    name: "Compte & appareils",
+    icon: Smartphone,
+    group: "team",
+    roles: ["admin", "agent", "editor", "volunteer", "viewer"],
+  },
+  modules: { name: "Modules", icon: Settings, group: "admin" },
+  privacy: { name: "Confidentialité", icon: ShieldCheck, group: "info" },
+  terms: { name: "Conditions d’utilisation", icon: Info, group: "info" },
+  legal: { name: "Mentions légales", icon: Info, group: "info" },
+  legalSettings: {
+    name: "Mentions et confidentialité",
+    icon: ShieldCheck,
+    group: "admin",
   },
   visitors: { name: "Visiteurs", icon: Eye, group: "admin" },
   history: { name: "Historique SPA", icon: RefreshCw, group: "library" },
@@ -198,6 +241,10 @@ const pages = {
   users: { name: "Équipe & accès", icon: Users, group: "admin" },
 };
 function App() {
+  const privacy = usePrivacy();
+  const [cookiePanel, setCookiePanel] = useState(false);
+  const [modules, setModules] = useState({});
+  const [publicPosters, setPublicPosters] = useState(true);
   const [page, setPage] = useState(() => {
     const value =
       location.hash.slice(1) === "departures"
@@ -217,6 +264,19 @@ function App() {
     [connectionError, setConnectionError] = useState("");
   const [theme, setTheme] = useState(() => browserTheme());
   const appRuntime = useMobileApp();
+  useEffect(() => {
+    const load = () =>
+      api("/modules")
+        .then((d) => {
+          setModules(d.modules);
+          setPublicPosters(d.publicPosters);
+        })
+        .catch(() => {});
+    load();
+    window.addEventListener("anipic-modules", load);
+    return () => window.removeEventListener("anipic-modules", load);
+  }, [version, user?.id]);
+
   const [animations, setAnimations] = useState(
     () =>
       localStorage.getItem("anipic-animations") !== "false" &&
@@ -487,7 +547,7 @@ function App() {
     favorite,
     favorites,
     animations,
-    ui: overview?.interface || {},
+    ui: { ...overview?.interface, enabledModules: modules },
     go,
     editPhoto: (photo) => {
       if (!["admin", "volunteer"].includes(user?.role))
@@ -566,6 +626,13 @@ function App() {
   }, [overview?.interface]);
   useEffect(() => {
     try {
+      if (
+        !privacy.data?.legal.analyticsEnabled ||
+        !privacy.data?.consent.analytics
+      ) {
+        sessionStorage.removeItem("anipic-visit");
+        return;
+      }
       let session = sessionStorage.getItem("anipic-visit");
       if (!session) {
         session = uid();
@@ -576,17 +643,42 @@ function App() {
         body: { session, path: "#" + page },
       }).catch(() => {});
     } catch {}
-  }, [page, user?.id]);
+  }, [page, user?.id, privacy.data?.consent.analytics]);
   const admin = pages[page].group === "admin";
+  if (["privacy", "terms", "legal"].includes(page))
+    return (
+      <main className="legal-public">
+        <a href="#gallery" onClick={() => go("gallery")}>
+          ← AniPic
+        </a>
+        <LegalPage kind={page} />
+        <button onClick={() => setCookiePanel((v) => !v)}>
+          Gérer les cookies
+        </button>
+        {cookiePanel && (
+          <CookieChoices
+            privacy={privacy}
+            onClose={() => setCookiePanel(false)}
+          />
+        )}
+      </main>
+    );
   if (gateRequired && !user)
     return (
-      <SiteGate
-        preferAccount={modal?.type === "login"}
-        session={session}
-        notify={notify}
-        reload={reload}
-        onLogin={login}
-      />
+      <>
+        <SiteGate
+          preferAccount={modal?.type === "login"}
+          session={session}
+          notify={notify}
+          reload={reload}
+          onLogin={login}
+        />
+        <div className="gate-legal-links">
+          <a href="#legal">Mentions légales</a>
+          <a href="#privacy">Confidentialité</a>
+          <a href="#terms">Conditions d’utilisation</a>
+        </div>
+      </>
     );
   if (page === "display")
     return (
@@ -653,6 +745,9 @@ function App() {
                   "stats",
                   "tools",
                   "agenda",
+                  "volunteers",
+                  "writing",
+                  "accountHub",
                   "register",
                   "archives",
                   "adoptionReviews",
@@ -670,6 +765,8 @@ function App() {
                       "RÉGLAGES",
                       [
                         "settings",
+                        "legalSettings",
+                        "modules",
                         "api",
                         "sync",
                         "storage",
@@ -706,6 +803,10 @@ function App() {
                     (key) =>
                       !pages[key].roles ||
                       pages[key].roles.includes(user?.role),
+                  )
+                  .filter(
+                    (key) =>
+                      !pageModule(key) || modules[pageModule(key)] !== false,
                   )
                   .filter((key) => key !== "inbox" || canEdit)
                   .filter(
@@ -807,7 +908,18 @@ function App() {
               <strong>{pages[page].name}</strong>
             </div>
             <div className="topbar-right">
-              <QuickAssistant pages={pages} {...actions} hidden={!!modal} />
+              {modules.assistant !== false && (
+                <QuickAssistant
+                  pages={Object.fromEntries(
+                    Object.entries(pages).filter(
+                      ([key]) =>
+                        !pageModule(key) || modules[pageModule(key)] !== false,
+                    ),
+                  )}
+                  {...actions}
+                  hidden={!!modal}
+                />
+              )}
               <label className="theme-picker">
                 <Palette size={15} />
                 <select
@@ -847,6 +959,15 @@ function App() {
           </header>
           <div className="content">
             <AppConnection offline={appRuntime.offline} />
+            <AppUpdates />
+            {(cookiePanel ||
+              (privacy.data?.legal.analyticsEnabled &&
+                !privacy.data?.consent.decided)) && (
+              <CookieChoices
+                privacy={privacy}
+                onClose={cookiePanel ? () => setCookiePanel(false) : undefined}
+              />
+            )}
             {undo.label && (
               <div className="undo-strip" role="status">
                 <span>{undo.label}</span>
@@ -864,8 +985,15 @@ function App() {
               />
             ) : !overview ? (
               <Spinner />
+            ) : pageModule(page) && modules[pageModule(page)] === false ? (
+              <Empty
+                title="Module désactivé"
+                text="Ce module a été désactivé dans la configuration de cette instance."
+              />
             ) : !user &&
-              accessForPage(page, overview.interface?.pageAccess) === "team" &&
+              (accessForPage(page, overview.interface?.pageAccess) === "team" ||
+                (!publicPosters &&
+                  ["posters", "groupPoster"].includes(page))) &&
               page !== "broadcasts" &&
               page !== "stats" ? (
               <Empty
@@ -927,6 +1055,29 @@ function App() {
                   text="Connectez-vous avec un compte administrateur."
                 />
               )
+            ) : page === "volunteers" ||
+              page === "writing" ||
+              page === "accountHub" ||
+              page === "modules" ? (
+              <Suspense fallback={<Spinner />}>
+                {page === "volunteers" ? (
+                  <TeamPlanning {...actions} />
+                ) : page === "writing" ? (
+                  <WritingStudio {...actions} />
+                ) : page === "accountHub" ? (
+                  <AccountHub {...actions} />
+                ) : user?.role === "admin" ? (
+                  <ModuleSettings {...actions} />
+                ) : (
+                  <Empty title="Accès réservé" />
+                )}
+              </Suspense>
+            ) : page === "legalSettings" ? (
+              user?.role === "admin" ? (
+                <LegalSettings {...actions} />
+              ) : (
+                <Empty title="Accès réservé" />
+              )
             ) : admin ? (
               user?.role === "admin" ? (
                 <Suspense fallback={<Spinner />}>
@@ -972,7 +1123,11 @@ function App() {
               <ShootSheet {...actions} />
             ) : page === "posters" ? (
               <Suspense fallback={<Spinner />}>
-                <BatchPosters {...actions} />
+                {user ? (
+                  <BatchPosters {...actions} />
+                ) : (
+                  <PublicPosters {...actions} />
+                )}
               </Suspense>
             ) : page === "register" ? (
               ["admin", "agent"].includes(user?.role) ? (
@@ -1039,6 +1194,17 @@ function App() {
               <a className="footer-android" href="/android">
                 Installer sur Android
               </a>
+              <a href="#legal" onClick={() => go("legal")}>
+                Mentions légales
+              </a>
+              <a href="#terms" onClick={() => go("terms")}>
+                Conditions
+              </a>
+              <a href="#privacy" onClick={() => go("privacy")}>
+                Confidentialité
+              </a>
+              <button onClick={() => setCookiePanel(true)}>Cookies</button>
+              <QuickTour go={go} user={user} />
               <span>
                 {session?.demo
                   ? "Démonstration · Profils fictifs / photos d’illustration"
@@ -1053,6 +1219,7 @@ function App() {
             go={go}
             more={() => (narrow ? setMobile((v) => !v) : go("tools"))}
             expanded={mobile}
+            modules={modules}
           />
         )}
         {toast && (

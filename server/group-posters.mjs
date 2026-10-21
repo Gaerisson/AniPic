@@ -182,7 +182,22 @@ export async function registerGroupPosters(app, { db, c, authorized }) {
   app.post(
     "/api/group-posters",
     {
-      preHandler: authorized(["admin", "editor", "agent"]),
+      preHandler: async (req, reply) => {
+        if (req.user)
+          return authorized([
+            "admin",
+            "editor",
+            "agent",
+            "volunteer",
+            "viewer",
+          ])(req, reply);
+        if (settings(db).publicPosters === false)
+          return reply
+            .code(403)
+            .send({ error: "Affiches publiques désactivées." });
+        if (req.headers.origin !== c.origin)
+          return reply.code(403).send({ error: "Origine refusée." });
+      },
       config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
       bodyLimit: 100_000,
     },
@@ -204,7 +219,12 @@ export async function registerGroupPosters(app, { db, c, authorized }) {
           const a = db
             .prepare("SELECT * FROM animals WHERE id=?")
             .get(entry.id);
-          if (!a)
+          if (
+            !a ||
+            db
+              .prepare("SELECT 1 FROM settings WHERE key='animalTrash:'||?")
+              .get(a.id)
+          )
             return reply
               .code(404)
               .send({ error: "Un animal sélectionné n’existe plus." });

@@ -34,9 +34,9 @@
           <span class="eyebrow"><i></i> L’APPLICATION ANDROID</span>
           <h1>Le refuge,<br /><span>dans votre poche.</span></h1>
           <p class="intro">
-            Les nouvelles adoptions. Les photos de vos compagnons. Vos émissions
-            C8. Retrouvez AniPic avec le même compte et les mêmes outils, où que
-            vous soyez.
+            Le fil du refuge, les nouveaux portraits et votre planning de
+            bénévolat. Retrouvez votre équipe et tous les outils AniPic, avec le
+            même compte.
           </p>
           <a class="download" href="__APK_URL__" download>
             <svg
@@ -48,7 +48,7 @@
             >
               <path d="M12 3v12m-5-5 5 5 5-5M4 15v5h16v-5" />
             </svg>
-            Télécharger l’APK <span aria-hidden="true">↗</span>
+            Installer AniPic sur Android <span aria-hidden="true">↗</span>
           </a>
           <p class="download-meta">
             Version __APK_VERSION__ <span>·</span> __APK_SIZE__
@@ -75,18 +75,24 @@
               <span>Votre refuge</span><span class="phone-dots">•••</span>
             </div>
             <div class="phone-welcome">
-              <img src="/anipic-icon.svg" alt="" /><span>ANIPIC, AVEC VOUS</span
-              ><strong
-                >Des nouvelles.<br />Des regards.<br /><em
-                  >De belles histoires.</em
-                ></strong
-              >
+              <img src="/anipic-icon.svg" alt="" /><span>MON REFUGE</span
+              ><strong>Une belle journée<br /><em>commence ici.</em></strong>
+            </div>
+            <div class="phone-recap">
+              <span>♡<b>Adoptions</b></span
+              ><span>＋<b>Arrivées</b></span
+              ><span>▦<b>Présences</b></span>
+            </div>
+            <div class="phone-news">
+              <i>AU FIL DU REFUGE</i
+              ><strong>Des nouvelles qui rapprochent.</strong
+              ><small>Portraits · rencontres · belles histoires</small>
             </div>
             <div class="phone-card heart">
               <span class="feature-icon">♡</span>
               <div>
-                <b>Les adoptions</b
-                ><small>Les belles nouvelles du refuge</small>
+                <b>Présences & missions</b
+                ><small>Votre équipe, au bon moment</small>
               </div>
               <span>↗</span>
             </div>
@@ -125,16 +131,42 @@
             </div>
             <div class="phone-nav">
               <b>⌂<small>Accueil</small></b
-              ><span>♡<small>Adoptions</small></span
+              ><span>≋<small>Le fil</small></span
               ><span>▧<small>Photos</small></span
-              ><span>▷<small>C8</small></span
+              ><span>▦<small>Planning</small></span
               ><span>☰<small>Plus</small></span>
             </div>
           </div>
           <div class="floating-label">
-            <span>↻</span> Le site et l’app avancent ensemble.
+            <span>↻</span> Notifications choisies. Nouveautés suivies.
           </div>
         </div>
+      </section>
+      <section class="feature-strip" aria-label="Avec AniPic sur Android">
+        <article>
+          <span>01 / LE FIL</span>
+          <h2>Ne ratez aucune belle nouvelle.</h2>
+          <p>
+            Arrivées, adoptions et nouvelles photos : un fil clair, avec les
+            portraits des animaux.
+          </p>
+        </article>
+        <article>
+          <span>02 / L’ÉQUIPE</span>
+          <h2>Votre présence compte.</h2>
+          <p>
+            Rejoignez une collecte, un nettoyage ou une promenade. Voyez qui
+            sera présent chaque jour.
+          </p>
+        </article>
+        <article>
+          <span>03 / À VOTRE RYTHME</span>
+          <h2>Les bonnes notifications.</h2>
+          <p>
+            Activez les catégories qui vous intéressent. Retrouvez les photos,
+            les affiches et les vidéos C8.
+          </p>
+        </article>
       </section>
       <section class="setup" aria-labelledby="setup-title">
         <div class="section-heading">
@@ -177,13 +209,16 @@
           <h2>Les améliorations suivent le site.</h2>
           <p>
             Les mises à jour des pages et des outils arrivent aussi dans
-            l’application après actualisation. Une nouvelle APK est nécessaire
-            lorsqu’une fonction Android ou le conteneur de l’app change.
+            l’application après actualisation. Lorsqu’une nouvelle APK est
+            nécessaire, AniPic propose « Mettre à jour » : le fichier est
+            téléchargé et sa signature vérifiée avant l’ouverture de
+            l’installateur Android.
           </p>
           <p class="muted">
             Une connexion au serveur reste nécessaire pour les photos, les
-            vidéos et les actions de l’équipe. L’application n’ajoute pas de
-            notifications en arrière-plan.
+            vidéos et les actions de l’équipe. Les notifications sont
+            facultatives : choisissez vos catégories puis autorisez-les dans
+            Compte & appareils.
           </p>
         </div>
         <div class="glass qr-panel">
@@ -215,10 +250,13 @@
             est accessible en JSON sans redirection.
           </p>
           <p>
-            Pour mettre à jour une installation, ouvrez la nouvelle APK signée
-            avec le même certificat. Le PIN et la connexion restent soumis aux
-            règles du navigateur ; effacer ses données peut nécessiter une
-            nouvelle connexion.
+            La première version avec mise à jour intégrée (3.12) s’installe
+            depuis cette page. Les suivantes pourront être proposées directement
+            dans l’app. Android vous demandera de confirmer l’installation et,
+            la première fois, d’autoriser AniPic à installer ses mises à jour.
+            Le même certificat protège la continuité de l’application. Le PIN et
+            la connexion restent soumis aux règles du navigateur ; effacer ses
+            données peut nécessiter une nouvelle connexion.
           </p>
           <dl>
             <dt>Application</dt>
@@ -241,7 +279,9 @@
       </details>
     </main>
     <footer class="wrap">
-      <span>© 2026 Gaerisson · AniPic</span
+      <a href="/?app=web#privacy">Confidentialité</a
+      ><a href="/?app=web#legal">Mentions légales</a
+      ><span>© 2026 Gaerisson · AniPic</span
       ><a href="https://github.com/Gaerisson/AniPic">Le projet sur GitHub ↗</a>
     </footer>
   </body>

@@ -25,6 +25,12 @@ docs
 examples
 *.md
 
+# Include the project licence, the Remotion permission and vendor notice.
+!LICENSE.md
+!THIRD_PARTY_NOTICES.md
+!licenses/
+!licenses/Remotion-4.0.535.md
+
 .google-oauth-secret*
 
 android

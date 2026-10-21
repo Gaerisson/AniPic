@@ -11,7 +11,7 @@
   "navigationDividerColor": "#000000",
   "navigationDividerColorDark": "#000000",
   "backgroundColor": "#18191C",
-  "enableNotifications": false,
+  "enableNotifications": true,
   "startUrl": "/?app=android#mobile",
   "iconUrl": "https://anipic.gaerisson.fr/app-icon-512.png",
   "maskableIconUrl": "https://anipic.gaerisson.fr/app-icon-maskable.png",
@@ -20,8 +20,8 @@
     "path": "../../anipic-private/anipic-release.jks",
     "alias": "anipic"
   },
-  "appVersionName": "3.11.0",
-  "appVersionCode": 31100,
+  "appVersionName": "3.12.0",
+  "appVersionCode": 31200,
   "shortcuts": [],
   "generatorApp": "unknown",
   "fallbackType": "customtabs",
@@ -43,5 +43,5 @@
   "additionalTrustedOrigins": [],
   "retainedBundles": [],
   "displayOverride": [],
-  "appVersion": "3.11.0"
+  "appVersion": "3.12.0"
 }

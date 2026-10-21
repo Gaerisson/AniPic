@@ -49,6 +49,6 @@ public class LauncherActivity
 
         
 
-        return uri;
+        return uri.buildUpon().appendQueryParameter("native", String.valueOf(BuildConfig.VERSION_CODE)).build();
     }
 }

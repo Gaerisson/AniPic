@@ -15,7 +15,7 @@ RUN npm run build && npm run video:build && VIDEO_BROWSER_INSTALL_DIR=/opt/remot
 FROM node:24-bookworm-slim
 ARG VCS_REF=unknown
 LABEL org.opencontainers.image.title="AniPic" \
-      org.opencontainers.image.version="3.11.1" \
+      org.opencontainers.image.version="3.12.0" \
       org.opencontainers.image.revision=$VCS_REF \
       org.opencontainers.image.source="https://github.com/Gaerisson/AniPic" \
       org.opencontainers.image.authors="Gaerisson"
@@ -29,6 +29,8 @@ COPY --from=build --chown=node:node /app/browser-path.txt ./browser-path.txt
 COPY --from=build --chown=node:node /opt/remotion-browser /opt/remotion-browser
 COPY --chown=node:node package.json package-lock.json ./
 COPY --chown=node:node THIRD_PARTY_NOTICES.txt ./
+COPY --chown=node:node COPYING LICENSE.md THIRD_PARTY_NOTICES.md ./
+COPY --chown=node:node licenses ./licenses
 COPY --chown=node:node server ./server
 COPY --chown=node:node shared ./shared
 COPY --chown=node:node scripts ./scripts

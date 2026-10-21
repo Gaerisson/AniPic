@@ -14,5 +14,6 @@
      limitations under the License.
 -->
 <paths>
+    <cache-path path="updates/" name="anipic_update" />
     <files-path path="twa_splash/" name="twa_splash" />
 </paths>

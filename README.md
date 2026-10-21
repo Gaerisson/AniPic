@@ -7,23 +7,32 @@ Anipic reprend le projet GPIC SPA pour organiser les photos des animaux, prépar
 
 **Projet vibecodé par [Gaerisson](https://github.com/Gaerisson/), avec Codex, assistant d’OpenAI.** L’idée, les besoins métier, les choix visuels et la direction du projet viennent de Gaerisson.
 
-[Release 3.11.1](RELEASE_v3.11.1.md) · [Installation Docker / Portainer](docs/DEPLOIEMENT.md) · [Journal des versions](CHANGELOG.md) · [API SPA / AniPic](docs/API_ANIMAUX.md) · [Google et bénévoles](GOOGLE.md) · [Agenda partagé](docs/AGENDA.md) · [Suivi des TV](docs/SUIVI_TV.md) · [Tests et validation](VALIDATION.md)
+[Release 3.12.0](RELEASE_v3.12.0.md) · [Installation Docker / Portainer](docs/DEPLOIEMENT.md) · [Journal des versions](CHANGELOG.md) · [API SPA / AniPic](docs/API_ANIMAUX.md) · [Google et bénévoles](GOOGLE.md) · [Agenda partagé](docs/AGENDA.md) · [Suivi des TV](docs/SUIVI_TV.md) · [Tests et validation](VALIDATION.md)
 
 ## Présentation
 
-**Installation Android :** la page `/android` fournit l’APK signée et son QR code. Le dépôt contient les sources Android et `public/downloads/AniPic-3.11.0.apk`, également livré par l’image Docker. Une fois ce projet déployé : **https://anipic.gaerisson.fr/android**.
+**Installation Android :** la page `/android` fournit l’APK signée et son QR code. Le dépôt contient les sources Android et `public/downloads/AniPic-3.12.0.apk`, également livré par l’image Docker. Une fois ce projet déployé : **https://anipic.gaerisson.fr/android**.
 
-**Android :** une [APK reliée au site](docs/ANDROID.md), avec accueil mobile et accès Adoptions / Photos / C8. La version web installable depuis Chrome reste disponible. Le guide explique le déploiement du fichier d’association, les mises à jour et la signature privée.
+**Android :** une [APK reliée au site](docs/ANDROID.md), avec accueil mobile, fil, planning des bénévoles, photos et C8. La version web installable depuis Chrome reste disponible. Le guide explique le déploiement du fichier d’association, les mises à jour et la signature privée.
 
 Deux montages de **24,5 secondes**, 30 images/s : portraits en relief et présentation de la photothèque, retouche, affiches, studio et écran TV. Transitions synchronisées sur un extrait de **Borderline — Tame Impala**, fourni pour cette présentation. Le morceau d’origine reste hors du dépôt.
 
-| Story Instagram | Présentation GitHub |
-| --- | --- |
+| Story Instagram                                               | Présentation GitHub                                             |
+| ------------------------------------------------------------- | --------------------------------------------------------------- |
 | [1080 × 1920 · MP4](docs/media/anipic-presentation-story.mp4) | [1920 × 1080 · MP4](docs/media/anipic-presentation-paysage.mp4) |
 
 [Composition et reproduction du montage](PRESENTATION.md).
 
-## Nouveautés 3.11
+## Nouveautés 3.12
+
+- Planning des bénévoles : créneaux, capacités, disponibilités et synthèse des présences par jour.
+- Accueil Android utile, fil en une colonne, notifications choisies et gestion des appareils connectés.
+- Mise à jour APK intégrée avec téléchargement vérifié et installateur Android ; nouvelle page de téléchargement et lien sur l’accueil.
+- Modules activables, affiches publiques avec photos SPA/locales publiques et atelier de rédaction/relecture.
+- Réglages individuels des TV, captures réelles du lecteur et récupération après coupure.
+- Mentions, conditions et confidentialité par instance ; mesure d’audience désactivée avant consentement.
+
+[Équipe et mobile](docs/EQUIPE_MOBILE.md) · [Confidentialité et préparation de l’instance](docs/CONFIDENTIALITE.md).
 
 - APK Android, accueil mobile et mode hors connexion sans cache de données privées.
 - Météo compacte à côté de l’horloge ; effectifs chiens/chats/NAC et progression des portraits locaux.
@@ -41,20 +50,20 @@ Deux montages de **24,5 secondes**, 30 images/s : portraits en relief et présen
 - Suivi des TV : connexion, actualisation, séquence en cours et historique des incidents.
 - Ententes nuancées en orange, thèmes clairs et placements mobiles corrigés.
 
-[Notes de version](RELEASE_v3.11.1.md) · [Atelier du refuge](docs/ATELIER_REFUGE.md) · [Historique complet](CHANGELOG.md).
+[Notes de version](RELEASE_v3.12.0.md) · [Atelier du refuge](docs/ATELIER_REFUGE.md) · [Historique complet](CHANGELOG.md).
 
 ## Les espaces
 
-| Espace | Fonctions |
-| --- | --- |
-| Photos | Galerie 3D réglable, carrousel, dates des dernières séries, comparaison indicative avec la photo SPA, glow récent, zoom fluide, favoris et téléchargements. |
-| Prise de vue | Dépôt Lightroom / Photoshop, tri par séries et attribution avec ID, priorités SOS / réservés, commentaires sur image et feuille imprimable avec portraits. |
-| Fiches | Faits et statuts SPA, ententes avec pictogrammes, photos et vidéos, affichettes A4 / A5 en cinq styles dont Liquid glass et placement personnalisé, QR et export en série. |
-| Création | Éditeur photo en direct, presets et réglages avancés, studio Remotion, sous-titres, voix off, Canva, visuels Facebook et fonds d’écran. |
-| TV | Lien web plein écran, renouvellement des animaux, timeline par glisser-déposer et étirement, vidéos, messages saisonniers automatiques, horaires, exclusions et export MP4. |
-| Vie du refuge | Fil illustré et historique réunis, couleurs par événement, API publique, RSS, statistiques et bilan annuel animé avec formation du logo SPA. |
-| Équipe | Rôles administrateur / photographe / agent SPA / bénévole approuvé / lecteur, albums privés, messages avec accusé de lecture, assistant et avatar configurable. |
-| Administration | Accès PIN optionnel, connexion agent par IP, widgets d’accueil, textes par défaut, accès public/équipe par page, GeoIP local, sauvegardes et exports des paramètres. |
+| Espace         | Fonctions                                                                                                                                                                   |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Photos         | Galerie 3D réglable, carrousel, dates des dernières séries, comparaison indicative avec la photo SPA, glow récent, zoom fluide, favoris et téléchargements.                 |
+| Prise de vue   | Dépôt Lightroom / Photoshop, tri par séries et attribution avec ID, priorités SOS / réservés, commentaires sur image et feuille imprimable avec portraits.                  |
+| Fiches         | Faits et statuts SPA, ententes avec pictogrammes, photos et vidéos, affichettes A4 / A5 en cinq styles dont Liquid glass et placement personnalisé, QR et export en série.  |
+| Création       | Éditeur photo en direct, presets et réglages avancés, studio Remotion, sous-titres, voix off, Canva, visuels Facebook et fonds d’écran.                                     |
+| TV             | Lien web plein écran, renouvellement des animaux, timeline par glisser-déposer et étirement, vidéos, messages saisonniers automatiques, horaires, exclusions et export MP4. |
+| Vie du refuge  | Fil illustré et historique réunis, couleurs par événement, API publique, RSS, statistiques et bilan annuel animé avec formation du logo SPA.                                |
+| Équipe         | Rôles administrateur / photographe / agent SPA / bénévole approuvé / lecteur, albums privés, messages avec accusé de lecture, assistant et avatar configurable.             |
+| Administration | Accès PIN optionnel, connexion agent par IP, widgets d’accueil, textes par défaut, accès public/équipe par page, GeoIP local, sauvegardes et exports des paramètres.        |
 
 ## Démarrer en local
 
@@ -87,9 +96,9 @@ docker compose -f compose.yml exec -it anipic npm run setup
 
 Le conteneur utilise un compte non root et une racine en lecture seule. SQLite et le cache restent dans des volumes locaux ; les originaux et les sauvegardes peuvent être sur le NAS. Une instance utilise la base. [Guide complet, Portainer, Apache et C8](docs/DEPLOIEMENT.md).
 
-Trois modes sont proposés : `compose.yml` pour compiler depuis Git, `portainer-stack.yml` pour une image locale et `portainer-ghcr.yml` pour télécharger `ghcr.io/gaerisson/anipic:3.11.1` après sa publication GitHub. Conserver la stack, les volumes et les chemins NAS existants. [Procédure de mise à jour](docs/DEPLOIEMENT.md#portainer-et-apache).
+Trois modes sont proposés : `compose.yml` pour compiler depuis Git, `portainer-stack.yml` pour une image locale et `portainer-ghcr.yml` pour télécharger `ghcr.io/gaerisson/anipic:3.12.0` après sa publication GitHub. Conserver la stack, les volumes et les chemins NAS existants. [Procédure de mise à jour](docs/DEPLOIEMENT.md#portainer-et-apache).
 
-La publication de l’image et de la release est déclenchée par un tag `v3.11.1` ou manuellement dans Actions → Validation Anipic, option **publish**. Elle attend les tests, les deux builds, la construction Docker, un rendu MP4 réel et la validation Android (compilation, signature et manifeste de l’APK distribuée). Au premier envoi, vérifier que le package GHCR est public. [Publication et dépannage](docs/CONTROLES_RELEASE.md).
+La publication de l’image et de la release est déclenchée par un tag `v3.12.0` ou manuellement dans Actions → Validation Anipic, option **publish**. Elle attend les tests, les deux builds, la construction Docker, un rendu MP4 réel et la validation Android (compilation, signature et manifeste de l’APK distribuée). Au premier envoi, vérifier que le package GHCR est public. [Publication et dépannage](docs/CONTROLES_RELEASE.md).
 
 ## Configurer les services
 
@@ -119,6 +128,12 @@ Les essais couvrent les droits, le PIN et les IP, la confidentialité, les homon
 ## Documentation
 
 [Importer les photos](IMPORT_PHOTOS.md) · [Médias et TV](API_MEDIAS_TV.md) · [Données SPA / I-CAD](DONNEES_ANIMAUX.md) · [Exemples d’affichettes](docs/examples) · [Nouveautés 3.0](docs/history/NOUVEAUTES_V30.md)
+
+## Licence
+
+Copyright © 2026 **Gaerisson**. Le code original et la documentation sont sous
+**GPLv3 avec exception de liaison limitée à Remotion**. [Conditions et exception](LICENSE.md) · [Texte GPLv3](COPYING) · [Composants tiers et médias](THIRD_PARTY_NOTICES.md).
+Les logos SPA, photos, musiques et bibliothèques conservent leurs propres droits.
 
 ## Crédits
 

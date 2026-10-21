@@ -1,22 +1,57 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Camera, Globe, LoaderCircle } from "lucide-react";
-export function SpaPhoto({
+export function SpaPhoto(props) {
+  return (
+    <SourcePhoto
+      key={
+        props.animal.id +
+        ":" +
+        (props.animal.source_metadata?.thumbnail || "") +
+        ":" +
+        !!props.large +
+        ":" +
+        !!props.compact
+      }
+      {...props}
+    />
+  );
+}
+function SourcePhoto({
   animal,
   large = false,
   loading = "lazy",
   compact = false,
   watermark = true,
 }) {
+  const img = useRef(null);
   const [failed, setFailed] = useState(false),
     [loaded, setLoaded] = useState(false),
     [attempt, setAttempt] = useState(0),
     [waiting, setWaiting] = useState(false);
   useEffect(() => {
-    setFailed(false);
-    setLoaded(false);
-    setAttempt(0);
-    setWaiting(false);
-  }, [animal.id, animal.source_metadata?.thumbnail]);
+    if (img.current?.complete && img.current.naturalWidth) setLoaded(true);
+  }, [attempt]);
+  useEffect(() => {
+    if (loaded || failed || !img.current) return;
+    let timer;
+    const start = () => {
+      timer = setTimeout(() => setFailed(true), 45000);
+    };
+    let observer;
+    if (loading === "lazy" && "IntersectionObserver" in window) {
+      observer = new IntersectionObserver((entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          observer.disconnect();
+          start();
+        }
+      });
+      observer.observe(img.current);
+    } else start();
+    return () => {
+      clearTimeout(timer);
+      observer?.disconnect();
+    };
+  }, [loaded, failed, attempt, loading]);
   useEffect(() => {
     if (!waiting) return;
     const t = setTimeout(
@@ -34,8 +69,14 @@ export function SpaPhoto({
     >
       {!failed && (animal.source_metadata?.thumbnail || animal.hasSpaPhoto) ? (
         <img
+          ref={img}
           loading={loading}
-          src={`/api/animals/${animal.id}/source-photo?w=${large ? 1280 : compact ? 320 : 640}${attempt ? `&retry=${attempt}` : ""}`}
+          src={`/api/animals/${animal.id}/source-photo?w=${large ? 1280 : compact ? 320 : 640}&v=${encodeURIComponent(
+            String(animal.source_metadata?.thumbnail || "")
+              .split("")
+              .reduce((h, c) => (Math.imul(h, 31) + c.charCodeAt(0)) | 0, 0) >>>
+              0,
+          )}${attempt ? `&retry=${attempt}` : ""}`}
           alt={`Photo du site SPA : ${animal.name}`}
           onLoad={() => setLoaded(true)}
           onError={() => {
@@ -55,9 +96,9 @@ export function SpaPhoto({
             aria-label="Chargement de la photo SPA"
           />
         )}
-      {watermark && (
+      {watermark && !compact && loaded && (
         <i className="spa-reference-mark" aria-hidden="true">
-          <Camera size={30} />
+          <Globe size={14} />
         </i>
       )}
       <span>
