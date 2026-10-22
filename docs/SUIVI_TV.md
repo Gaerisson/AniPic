@@ -59,3 +59,10 @@ Ouvrir **Réglages & aperçu réel**, choisir 2, 5, 10 ou 30 secondes puis **Ape
 La consultation est renouvelée chaque minute et expire côté serveur après trois minutes sans renouvellement. Fermer le panneau, masquer l’onglet ou arrêter le suivi le désactive. Le retrait d’un appareil reste réversible depuis le lecteur : il révoque son identité de suivi sans supprimer le programme ni les photos.
 
 Les captures restent réservées aux agents et administrateurs. Le jeton propre à l’écran et le PIN global, s’il est activé, restent nécessaires. La désactivation des captures arrête le suivi visuel. Les options de bilan annuel sont décrites dans le [guide des créations](CREATIONS_ET_APPLICATION.md).
+
+
+## Player sans PIN et diagnostic discret
+
+Depuis3.14, l’adresse `/#display` et les médias publics explicitement diffusés par son programme fonctionnent sans PIN. Le PIN du site, les comptes, les originaux privés, la configuration, les captures et les commandes d’administration restent protégés. Un portrait masqué, archivé, retiré de l’inventaire, non compatible avec les espèces/tags choisis ou privé n’est pas servi par les routes publiques du player.
+
+Dans les options du programme, **Connexion & diagnostic sur l’écran** permet d’afficher le statut de connexion et, séparément, les petites informations techniques. Le programme déjà chargé peut continuer pendant une coupure ; le suivi et la récupération du programme reprennent lorsque le serveur redevient accessible. Ces options d’affichage ne désactivent pas la reconnexion. Les préférences de mouvement réduit du navigateur sont respectées.

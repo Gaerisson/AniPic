@@ -1,3 +1,4 @@
+import { sourceWasDeleted } from "./permanent-animal.mjs";
 // Presence is distinct from adoption. Only a safe complete inventory may
 // establish an absence; partial/error responses never replace that inventory.
 export function inventoryComparison(db, snapshot) {
@@ -9,7 +10,9 @@ export function inventoryComparison(db, snapshot) {
     .all(snapshot.scope);
   return {
     localActive: rows.length,
-    sourceCount: snapshot.animals.length,
+    sourceCount: snapshot.animals.filter(
+      (a) => !sourceWasDeleted(db, snapshot.scope, a.sourceId),
+    ).length,
     missing: rows
       .filter((a) => !seen.has(a.source_id))
       .map((a) => ({
@@ -21,7 +24,11 @@ export function inventoryComparison(db, snapshot) {
         confirmations: a.missing_count,
       })),
     new: snapshot.animals
-      .filter((a) => !rows.some((r) => r.source_id === a.sourceId))
+      .filter(
+        (a) =>
+          !sourceWasDeleted(db, snapshot.scope, a.sourceId) &&
+          !rows.some((r) => r.source_id === a.sourceId),
+      )
       .map((a) => ({ name: a.name, sourceId: a.sourceId })),
   };
 }

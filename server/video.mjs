@@ -36,6 +36,13 @@ export const Film = z
     annualMessageSubtitle: z.string().max(180).default(""),
     annualSidePhotos: z.boolean().default(true),
     annualStats: z.boolean().default(true),
+    annualAdoptionsOverride: z
+      .number()
+      .int()
+      .min(0)
+      .max(1000000)
+      .nullable()
+      .default(null),
     logoAnimation: z
       .enum(["fade", "mosaic", "sweep", "bloom", "prism"])
       .default("fade"),
@@ -155,7 +162,7 @@ export const Film = z
     (value) =>
       value.template !== "year" ||
       value.annualStyle !== "mosaic" ||
-      value.clips.every((clip) => clip.kind === "photo"),
+      value.clips.every((clip) => clip.kind !== "video"),
     "La mosaïque SPA utilise uniquement des photos. Choisissez le diaporama pour des clips vidéo.",
   );
 export async function mediaMetadata(filename, kind) {
@@ -401,7 +408,9 @@ export function resolveFilm(db, c, input, assetURL) {
   const yearStats =
     film.template === "year"
       ? {
-          adopted: annualAdoptions(db, film.year || new Date().getFullYear()).count,
+          adopted:
+            film.annualAdoptionsOverride ??
+            annualAdoptions(db, film.year || new Date().getFullYear()).count,
           portraits: unique.length,
           dogs: unique.filter((c) => c.species === "dog").length,
           cats: unique.filter((c) => c.species === "cat").length,

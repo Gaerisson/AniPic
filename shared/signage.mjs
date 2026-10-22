@@ -32,6 +32,8 @@ export const showDefaults = Object.freeze({
   showQr: true,
   year: new Date().getFullYear(),
   mode: "reception",
+  connectionBadge: true,
+  debugBadge: false,
   title: "",
   scheduleEnabled: false,
   days: [1, 2, 3, 4, 5, 6, 0],

@@ -135,6 +135,7 @@ export function SignageCanvas({
     scene = sceneAt(timeline, frame),
     local = scene.frame - scene.start,
     progress = clamp(local / (scene.duration - 1)),
+    smoothProgress = 0.5 - Math.cos(progress * Math.PI) / 2,
     motion = p.motion !== "off",
     power = p.intensity / 100;
   const enter = motion
@@ -258,7 +259,7 @@ export function SignageCanvas({
                   height: "100%",
                   objectFit: "cover",
                   transform: motion
-                    ? `scale(${1.01 + progress * 0.045 * power})`
+                    ? `translate3d(${Math.sin(smoothProgress * Math.PI * 2) * 7 * u * power}px,${Math.cos(smoothProgress * Math.PI) * 5 * u * power}px,0) scale(${1.035 + smoothProgress * 0.045 * power})`
                     : undefined,
                   willChange: motion ? "transform" : undefined,
                   backfaceVisibility: "hidden",

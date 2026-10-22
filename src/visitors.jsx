@@ -1,3 +1,4 @@
+import { instant } from "../shared/instant.mjs";
 import { useState, useEffect } from "react";
 import {
   Globe,
@@ -435,7 +436,7 @@ export function Visitors() {
   );
 }
 function VisitRow({ r, expanded, expand, copied, copy }) {
-  const date = new Date(r.created_at);
+  const date = instant(r.created_at);
   return (
     <>
       <tr>
@@ -445,9 +446,12 @@ function VisitRow({ r, expanded, expand, copied, copy }) {
               hour: "2-digit",
               minute: "2-digit",
               second: "2-digit",
+              timeZone: "Europe/Paris",
             })}
           </strong>
-          <small>{date.toLocaleDateString("fr-FR")}</small>
+          <small>
+            {date.toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" })}
+          </small>
         </td>
         <td>
           <span className="visitor-ip">

@@ -88,7 +88,7 @@ export async function registerVideoManagement(app, { db, authorized }) {
       );
       const animals = db
         .prepare(
-          "SELECT a.id,a.name,a.species,a.status,a.cover_id,a.source_metadata FROM animals a WHERE substr(COALESCE(a.departed_at,a.archived_at),1,4)=? OR EXISTS(SELECT 1 FROM animal_status_events e WHERE e.animal_id=a.id AND e.status='adopted' AND substr(e.observed_at,1,4)=?) ORDER BY a.name COLLATE NOCASE,a.id",
+          "SELECT a.id,a.name,a.species,a.status,(SELECT p.id FROM photos p JOIN blobs b ON b.hash=p.hash WHERE p.animal_id=a.id AND p.deleted_at IS NULL AND p.hidden=0 AND b.mime LIKE 'image/%' ORDER BY p.id=a.cover_id DESC,p.created_at DESC LIMIT 1) cover_id,a.source_metadata FROM animals a WHERE NOT EXISTS(SELECT 1 FROM settings s WHERE s.key='animalTrash:'||a.id) AND (substr(COALESCE(a.departed_at,a.archived_at),1,4)=? OR EXISTS(SELECT 1 FROM animal_status_events e WHERE e.animal_id=a.id AND e.status='adopted' AND substr(e.observed_at,1,4)=?)) ORDER BY a.name COLLATE NOCASE,a.id",
         )
         .all(year, year);
       const adopted = db

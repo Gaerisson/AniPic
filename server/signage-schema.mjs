@@ -4,6 +4,8 @@ const time = z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/);
 export const showSchema = z
   .object({
     orientation: z.enum(["landscape", "portrait"]),
+    connectionBadge: z.boolean(),
+    debugBadge: z.boolean(),
     style: z.enum(["editorial", "glass", "cinema", "cards"]),
     motion: z.enum(["off", "gentle", "3d"]),
     intensity: z.number().int().min(0).max(100),

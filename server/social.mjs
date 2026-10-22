@@ -1,5 +1,5 @@
 import { hasAnimalInfo } from "../shared/animal-info.mjs";
-import { aiFailure, aiResponseText } from "./ai-response.mjs";
+import { requestAiText } from "./ai-response.mjs";
 import { compatibilityLabels } from "../video/facts.mjs";
 const sexes = { female: "Femelle", male: "Mâle", unknown: "" };
 export function publicFacts(animal) {
@@ -100,33 +100,16 @@ export async function aiPost(
         { role: "system", content: system },
         { role: "user", content: prompt },
       ],
-      max_tokens: 1000,
+      max_tokens: 4096,
       temperature: 0.6,
     };
   }
-  const response = await fetcher(url, {
-    method: "POST",
+  return requestAiText({
+    fetcher,
+    url,
     headers,
-    body: JSON.stringify(body),
-    redirect: "error",
-    signal: AbortSignal.timeout(45000),
+    body,
+    provider,
+    maxLength: 5000,
   });
-  if (!response.ok)
-    throw Object.assign(
-      new Error(
-        `Le service IA répond HTTP ${response.status}. Aucun texte publié.`,
-      ),
-      { statusCode: 502 },
-    );
-  const text = await response.text();
-  if (text.length > 100000) throw new Error("Réponse IA trop volumineuse.");
-  let result;
-  try {
-    result = JSON.parse(text);
-  } catch {
-    throw aiFailure(
-      "Le service IA a renvoyé une réponse illisible. Réessayez ou utilisez le brouillon local.",
-    );
-  }
-  return aiResponseText(result, provider).slice(0, 5000);
 }

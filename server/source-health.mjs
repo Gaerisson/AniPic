@@ -1,3 +1,4 @@
+import { sourceWasDeleted } from "./permanent-animal.mjs";
 import { settings } from "./db.mjs";
 import { readPresence } from "./source-presence.mjs";
 export function sourceHealth(db, cfg = settings(db), clock = Date.now()) {
@@ -28,9 +29,16 @@ export function sourceHealth(db, cfg = settings(db), clock = Date.now()) {
       ? new Set(report.sourceIds)
       : null
     : inventory?.ids;
-  const expected = useReport
+  const rawExpected = useReport
     ? (report.animalsKept ?? report.animalsFound)
     : inventory?.sourceIds.length;
+  const ignored = ids
+    ? [...ids].filter((id) => sourceWasDeleted(db, scope, id))
+    : [];
+  if (ids) for (const id of ignored) ids.delete(id);
+  const expected = Number.isInteger(rawExpected)
+    ? Math.max(0, rawExpected - ignored.length)
+    : rawExpected;
   const rows = db
     .prepare(
       "SELECT id,name,source_id FROM animals WHERE source_scope=? AND archived_at IS NULL AND NOT EXISTS(SELECT 1 FROM settings s WHERE s.key='animalTrash:'||animals.id)",
@@ -45,9 +53,10 @@ export function sourceHealth(db, cfg = settings(db), clock = Date.now()) {
     )
     .get();
   let partialSync = false;
+  let jobDetail = {};
   try {
-    partialSync =
-      latest?.state === "done" && JSON.parse(latest.detail)?.complete === false;
+    jobDetail = JSON.parse(latest?.detail || "{}");
+    partialSync = latest?.state === "done" && jobDetail?.complete === false;
   } catch {
     /* Legacy jobs may not contain JSON. */
   }
@@ -76,7 +85,20 @@ export function sourceHealth(db, cfg = settings(db), clock = Date.now()) {
               ? "ok"
               : "unverified",
     checkedAt: at || null,
+    lastAttemptAt:
+      latest?.finished_at || latest?.created_at || report?.testedAt || null,
+    lastAttemptState: latest?.state || report?.status || null,
+    referenceAt: at || null,
+    countsMatch: !mismatch && Number.isInteger(expected),
+    reason: failure
+      ? partialSync
+        ? "Le dernier passage a récupéré des fiches, mais n’a pas confirmé toutes les pages et espèces. Les départs automatiques sont suspendus pour ce passage."
+        : "Le dernier passage s’est interrompu avant de valider l’inventaire. Les effectifs ci-dessous proviennent du dernier relevé fiable, pas de cette tentative. Consultez le journal ou relancez le diagnostic."
+      : testFailed
+        ? "Le dernier diagnostic n’a pas confirmé un relevé complet. Une égalité des effectifs précédents ne suffit pas à valider ce nouveau passage."
+        : null,
     localCount: rows.length,
+    intentionallyRemoved: ignored.length,
     sourceCount: Number.isInteger(expected) ? expected : null,
     missingCount: ids ? missing.length : null,
     newCount: ids ? incoming.length : null,

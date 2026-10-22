@@ -64,11 +64,6 @@ export function TeamUtilities({ go }) {
             "Qui sera là, pour quelle tâche et quel créneau.",
           ],
           [
-            "polls",
-            "Sondages à partager",
-            "Présences, collectes et prénoms, avec lien WhatsApp.",
-          ],
-          [
             "writing",
             "Rédaction & relecture",
             "Préparer une belle présentation et comparer les corrections.",
@@ -77,16 +72,6 @@ export function TeamUtilities({ go }) {
             "posters",
             "Affiches & créations",
             "Fiches de box, grands posters et bannières.",
-          ],
-          [
-            "accountHub",
-            "Mon compte & notifications",
-            "Tester les alertes et gérer mes appareils.",
-          ],
-          [
-            "appOptions",
-            "Mon application",
-            "Organiser mon accueil et les boutons du bas.",
           ],
         ].map(([p, title, text]) => (
           <NavLink href={"#" + p} onClick={() => go(p)} key={p}>

@@ -17,6 +17,7 @@ export function AnnualPicker({
     [selected, setSelected] = useState([]),
     [style, setStyle] = useState("mosaic"),
     [onlyAdopted, setOnlyAdopted] = useState(false),
+    [annualCount, setAnnualCount] = useState(""),
     [preparing, setPreparing] = useState(false),
     [progress, setProgress] = useState(null),
     [message, setMessage] = useState(`Bonne année ${Number(year) + 1}`),
@@ -35,6 +36,7 @@ export function AnnualPicker({
     if (!open) return;
     let active = true;
     setData(null);
+    setAnnualCount("");
     api(`/video/year/${year}`)
       .then((d) => {
         if (active) {
@@ -83,6 +85,7 @@ export function AnnualPicker({
       annualMessageSubtitle: messageSubtitle,
       annualSidePhotos: true,
       annualStats: true,
+      annualAdoptionsOverride: annualCount === "" ? null : Number(annualCount),
       year,
       title: `${year} · L’année en images`,
       subtitle: "",
@@ -177,6 +180,24 @@ export function AnnualPicker({
               Uniquement les statuts adoptés
             </label>
           </div>
+          <label className="annual-inline-total">
+            <span>
+              Nombre d’adoptions à afficher dans cette vidéo
+              <small>
+                Laissez vide pour utiliser les statistiques du refuge. Ce choix
+                ne modifie pas les fiches ni les statistiques du site.
+              </small>
+            </span>
+            <input
+              type="number"
+              min="0"
+              max="1000000"
+              placeholder="Automatique"
+              value={annualCount}
+              disabled={preparing}
+              onChange={(e) => setAnnualCount(e.target.value)}
+            />
+          </label>
           {!data ? (
             <Spinner />
           ) : (
@@ -274,7 +295,15 @@ export function AnnualPicker({
                   statistiques gardent les observations de l’année complète.
                 </small>
                 <Button
-                  disabled={!selected.length || preparing}
+                  disabled={
+                    !selected.length ||
+                    preparing ||
+                    (annualCount !== "" &&
+                      (!Number.isInteger(Number(annualCount)) ||
+                        Number(annualCount) < 0 ||
+                        Number(annualCount) > 1000000))
+                  }
+                  loading={preparing}
                   onClick={createMontage}
                 >
                   {preparing ? "Préparation des photos…" : "Créer le montage"}

@@ -7,13 +7,13 @@ Anipic reprend le projet GPIC SPA pour organiser les photos des animaux, prépar
 
 **Projet vibecodé par [Gaerisson](https://github.com/Gaerisson/), avec Codex, assistant d’OpenAI.** L’idée, les besoins métier, les choix visuels et la direction du projet viennent de Gaerisson.
 
-[Release 3.13.0](RELEASE_v3.13.0.md) · [Installation Docker / Portainer](docs/DEPLOIEMENT.md) · [Journal des versions](CHANGELOG.md) · [API SPA / AniPic](docs/API_ANIMAUX.md) · [Google et bénévoles](GOOGLE.md) · [Agenda partagé](docs/AGENDA.md) · [Suivi des TV](docs/SUIVI_TV.md) · [Tests et validation](VALIDATION.md)
+[Release 3.14.0](RELEASE_v3.14.0.md) · [Installation Docker / Portainer](docs/DEPLOIEMENT.md) · [Journal des versions](CHANGELOG.md) · [API SPA / AniPic](docs/API_ANIMAUX.md) · [Google et bénévoles](GOOGLE.md) · [Agenda partagé](docs/AGENDA.md) · [Suivi des TV](docs/SUIVI_TV.md) · [Tests et validation](VALIDATION.md)
 
 ## Présentation
 
-**Nouveautés 3.13 :** [bannières avec animaux détourés et placement libre, relecture annotée, application personnalisable](docs/CREATIONS_ET_APPLICATION.md), historique SPA regroupé, plus de 1 500 prénoms, captures TV jusqu’à 2 secondes et bilan annuel ajustable. Les [sondages du refuge](docs/WHATSAPP.md) se partagent volontairement dans une communauté WhatsApp.
+**Nouveautés 3.14 :** [éditeur Canvas](docs/CANVAS.md), navigation regroupée, relecture avec corrections dans le texte, studio annuel avec portraits SPA, TV sans PIN et suppression réelle des anciennes fiches après sauvegarde.
 
-**Installation Android :** la page `/android` fournit l’APK signée et son QR code. Le dépôt contient les sources Android et `public/downloads/AniPic-3.13.0.apk`, également livré par l’image Docker. Une fois ce projet déployé : **https://anipic.gaerisson.fr/android**.
+**Installation Android :** la page `/android` fournit l’APK signée et son QR code. Le dépôt contient les sources Android et `public/downloads/AniPic-3.14.0.apk`, également livré par l’image Docker. Une fois ce projet déployé : **https://anipic.gaerisson.fr/android**.
 
 **Android :** une [APK reliée au site](docs/ANDROID.md), avec accueil mobile, fil, planning des bénévoles, photos et C8. La version web installable depuis Chrome reste disponible. Le guide explique le déploiement du fichier d’association, les mises à jour et la signature privée.
 
@@ -52,7 +52,7 @@ Deux montages de **24,5 secondes**, 30 images/s : portraits en relief et présen
 - Suivi des TV : connexion, actualisation, séquence en cours et historique des incidents.
 - Ententes nuancées en orange, thèmes clairs et placements mobiles corrigés.
 
-[Notes de version](RELEASE_v3.13.0.md) · [Atelier du refuge](docs/ATELIER_REFUGE.md) · [Historique complet](CHANGELOG.md).
+[Notes de version](RELEASE_v3.14.0.md) · [Atelier du refuge](docs/ATELIER_REFUGE.md) · [Historique complet](CHANGELOG.md).
 
 ## Les espaces
 
@@ -98,9 +98,9 @@ docker compose -f compose.yml exec -it anipic npm run setup
 
 Le conteneur utilise un compte non root et une racine en lecture seule. SQLite et le cache restent dans des volumes locaux ; les originaux et les sauvegardes peuvent être sur le NAS. Une instance utilise la base. [Guide complet, Portainer, Apache et C8](docs/DEPLOIEMENT.md).
 
-Trois modes sont proposés : `compose.yml` pour compiler depuis Git, `portainer-stack.yml` pour une image locale et `portainer-ghcr.yml` pour télécharger `ghcr.io/gaerisson/anipic:3.13.0` après sa publication GitHub. Conserver la stack, les volumes et les chemins NAS existants. [Procédure de mise à jour](docs/DEPLOIEMENT.md#portainer-et-apache).
+Trois modes sont proposés : `compose.yml` pour compiler depuis Git, `portainer-stack.yml` pour une image locale et `portainer-ghcr.yml` pour télécharger `ghcr.io/gaerisson/anipic:3.14.0` après sa publication GitHub. Conserver la stack, les volumes et les chemins NAS existants. [Procédure de mise à jour](docs/DEPLOIEMENT.md#portainer-et-apache).
 
-La publication de l’image et de la release est déclenchée par un tag `v3.13.0` ou manuellement dans Actions → Validation Anipic, option **publish**. Elle attend les tests, les deux builds, la construction Docker, un rendu MP4 réel et la validation Android (compilation, signature et manifeste de l’APK distribuée). Au premier envoi, vérifier que le package GHCR est public. [Publication et dépannage](docs/CONTROLES_RELEASE.md).
+La publication de l’image et de la release est déclenchée par un tag `v3.14.0` ou manuellement dans Actions → Validation Anipic, option **publish**. Elle attend les tests, les deux builds, la construction Docker, un rendu MP4 réel et la validation Android (compilation, signature et manifeste de l’APK distribuée). Au premier envoi, vérifier que le package GHCR est public. [Publication et dépannage](docs/CONTROLES_RELEASE.md).
 
 ## Configurer les services
 

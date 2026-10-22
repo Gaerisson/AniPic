@@ -58,8 +58,8 @@ android {
         applicationId "fr.gaerisson.anipic"
         minSdkVersion 23
         targetSdkVersion 36
-        versionCode 31300
-        versionName "3.13.0"
+        versionCode 31400
+        versionName "3.14.0"
 
         // The name for the application
         resValue "string", "appName", twaManifest.name

@@ -1,3 +1,4 @@
+import { sourceWasDeleted } from "./permanent-animal.mjs";
 import { request } from "node:https";
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
@@ -418,6 +419,7 @@ export function applySnapshot(db, snapshot) {
     snapshot.absenceSafe !== false;
   transaction(db, () => {
     for (const a of snapshot.animals) {
+      if (sourceWasDeleted(db, snapshot.scope, a.sourceId)) continue;
       const old =
         db.prepare("SELECT * FROM animals WHERE source_id=?").get(a.sourceId) ||
         (a.sourceUrl && a.sourceId.startsWith("spa:")

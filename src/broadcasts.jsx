@@ -43,9 +43,7 @@ export function Broadcasts({ user, open, ui }) {
       <div className="page-heading">
         <div>
           <div className="eyebrow">LA VIDÉOTHÈQUE</div>
-          <h1>
-            Vidéo C8<span className="heading-dot">.</span>
-          </h1>
+          <h1>Vidéo C8</h1>
           <p>Animaux à adopter · Vos émissions, depuis votre stockage.</p>
         </div>
         <Button variant="secondary" icon={RefreshCw} onClick={load}>

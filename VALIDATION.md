@@ -1,5 +1,18 @@
 # Vérifications — AniPic 3.13.0
 
+## V3.14.0 — Navigation, Canvas et relecture
+
+- Installation propre `npm ci` avec Node.js 24.18.1 réussie, manifeste et lockfile produits par npm, aucune vulnérabilité signalée.
+- Suite complète : **294 tests réussis**, aucun échec ou test ignoré, 175,3 secondes. Sept tests supplémentaires couvrent les projets Canvas privés/partagés, rôles et CSRF, conflits de révision, validation des images, formats IA et nouvelles tentatives bornées, corrections Unicode et heures UTC/Paris, portraits TV publics avec PIN, purge réelle et non-réimportation, bilan annuel avec portrait SPA et total manuel. Après les corrections trouvées dans le navigateur, ces sept tests ciblés passent à nouveau.
+- Builds frontend et vidéo réussis. Rendus réels du bilan annuel en 1280×720 et720×1280 ; images de contrôle et MP4 portrait de10secondes (échelle de rendu50%) générés. Le portrait SPA est un transport explicitement simulé avec de vrais octets image. Le total manuel153 et le message final sont visibles ; les portraits restent dans leurs zones.
+- APK3.14.0 : `assembleRelease` et `lintRelease` réussis. Signature et certificat identiques à la version précédente, SHA-256 `d922df707cb48d001302a09974a220cdf0937d327f853061f05f91d6cef23dd1`, 1314122octets. La première tentative locale a rencontré un cache de code Java insuffisant ; la relance avec une réserve512Mo a abouti, sans désactiver R8 ni le lint.
+- Les six configurations Compose (sources, image locale, GHCR, avec ou sans C8/Import) sont normalisées et vérifiées avec Docker Compose5.6.0. Aucun volume ou chemin NAS n’est modifié.
+- Vérifications dans un navigateur réel sur une démonstration isolée3038 : création, sauvegarde et reprise d’un Canvas avec photo locale, brouillon séparé par compte, export PNG réel1920×720 avec alpha, relecture avec application d’une proposition dans le texte, thème clair et disposition390px. Les essais ont révélé et corrigé les URL absolues sérialisées par Fabric, un export `fetch(data:)` incompatible avec la CSP et le dimensionnement des panneaux de l’atelier. La CSP reste restrictive.
+- Détourage précis testé avec le vrai modèle BiRefNet512 mis en cache : environ1,8Gio de pic pour le processus de mesure. Les essais U²-Net et fp16 n’offraient pas un compromis suffisant de qualité ou de mémoire ; ils ne sont pas activés. Le contrôle de marge3Gio est conservé et le message explique `ANIPIC_MEMORY_LIMIT=4g` dans Portainer.
+
+**Limites :** le transport Harbor, les pannes NAS et les réponses SPA sont simulés dans les tests. Aucun audit exhaustif du service SPA réel, aucune connexion WhatsApp ou publication de texte vers un tiers. Pas de moteur Docker local : la construction et le démarrage réels de l’image restent conditionnés au workflow GitHub. Installation, notifications et mise à jour sur téléphone Android physique, TV et NAS/Portainer de production non exécutées.
+
+
 ## V3.13.0 — Interface, créations, application et fiabilité
 
 **281 tests réussis**, 0 échec, 0 test ignoré, suite complète sous Node.js 24 en 144,7 secondes. Après les dernières corrections visuelles, **20 tests ciblés réussis**, couvrant aussi l’APK réellement distribuée. Régressions contrôlées : taille de miniature 160 px, exclusion des photos supprimées des références de doublons, réimport volontaire avec confidentialité conservée, confirmation/rejet d’adoption sans déplacer son événement, date des statistiques, ajustements annuels par rôle et année, votes et clôture des sondages, module désactivé, PIN et identité de l’écran, abonnement push réassocié sans appropriation par un autre utilisateur, test d’envoi simulé, catalogue nocturne en heure de Paris, préférences persistantes, différences de texte et pagination historique dans les deux sens.

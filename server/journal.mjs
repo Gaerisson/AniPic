@@ -1,5 +1,12 @@
 import { id, now } from "./db.mjs";
 const names = {
+  inbox_scanned: "Dossier d’import vérifié",
+  sync_failed: "Synchronisation SPA interrompue",
+  inbox_scan: "Analyse du dossier d’import",
+  annual_statistics_updated: "Statistiques annuelles ajustées",
+  writing_proposal_created: "Proposition de texte préparée",
+  canvas_saved: "Visuel Canvas enregistré",
+  canvas_removed: "Projet Canvas supprimé",
   source_adoption_pending: "Départ archivé · adoption en attente pendant 24 h",
   adoption_review_auto_confirmed: "Adoption confirmée automatiquement",
   adoption_review_rejected: "Adoption annulée ou refusée par l’équipe",
@@ -70,6 +77,27 @@ export function recordError(db, req, error, status) {
   );
 }
 export async function registerJournal(app, { db, authorized }) {
+  app.get(
+    "/api/admin/system-time",
+    { preHandler: authorized(["admin"]) },
+    async () => ({
+      utc: now(),
+      processZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      displayZone: "Europe/Paris",
+      uptime: Math.round(process.uptime()),
+    }),
+  );
+  app.get(
+    "/api/admin/volunteers/pending-count",
+    { preHandler: authorized(["admin"]) },
+    async () => ({
+      count: db
+        .prepare(
+          "SELECT COUNT(*) n FROM google_identities WHERE status='pending'",
+        )
+        .get().n,
+    }),
+  );
   app.get(
     "/api/admin/journal",
     { preHandler: authorized(["admin"]) },

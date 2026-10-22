@@ -1,3 +1,14 @@
+import {
+  NetworkBadge,
+  RequestProgress,
+  StartupScreen,
+} from "./app-feedback.jsx";
+import { WorkspaceTabs } from "./workspace-tabs.jsx";
+import { workspaceParent } from "../shared/workspaces.mjs";
+import {
+  missingInterfaceAsset,
+  reserveInterfaceRecovery,
+} from "../shared/asset-recovery.mjs";
 import { CreationNav } from "./creation-nav.jsx";
 import { browserTheme, rememberTheme } from "./theme-store.mjs";
 import {
@@ -151,7 +162,7 @@ import { PublicPosters } from "./public-posters.jsx";
 import { SiteFooter } from "./site-footer.jsx";
 import AppOptions from "./app-options.jsx";
 import "./features313.css";
-const TeamPolls = lazy(() => import("./team-polls.jsx"));
+const CanvasStudio = lazy(() => import("./canvas-studio.jsx"));
 const TeamPlanning = lazy(() => import("./team-planning.jsx"));
 const WritingStudio = lazy(() => import("./writing-studio.jsx"));
 const AccountHub = lazy(() => import("./account-hub.jsx"));
@@ -233,6 +244,7 @@ const pages = {
   editor: { name: "Éditeur photo", icon: SlidersHorizontal, group: "library" },
   motion: { name: "Fonds animés & réseaux", icon: Video, group: "library" },
   wallpaper: { name: "Visuels & bannières", icon: Images, group: "library" },
+  canvas: { name: "Atelier Canvas", icon: Palette, group: "library" },
   messages: { name: "Messages équipe", icon: Bell, group: "admin" },
   migration: { name: "Import GPIC", icon: Archive, group: "admin" },
   about: { name: "À propos", icon: Info, group: "info" },
@@ -404,6 +416,29 @@ function App() {
   }, [toast]);
   const reload = useCallback(() => setVersion((v) => v + 1), []);
   const [pendingAdoptions, setPendingAdoptions] = useState(0);
+  const [pendingVolunteers, setPendingVolunteers] = useState(0);
+  useEffect(() => {
+    if (user?.role !== "admin") {
+      setPendingVolunteers(0);
+      return;
+    }
+    let alive = true;
+    const load = () => {
+      if (document.visibilityState !== "hidden")
+        api("/admin/volunteers/pending-count")
+          .then((r) => alive && setPendingVolunteers(r.count))
+          .catch(() => {});
+    };
+    load();
+    const timer = setInterval(load, 30000);
+    window.addEventListener("focus", load);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+      window.removeEventListener("focus", load);
+    };
+  }, [user?.id, version, page === "users"]);
+
   useEffect(() => {
     if (!["admin", "agent"].includes(user?.role)) {
       setPendingAdoptions(0);
@@ -451,6 +486,7 @@ function App() {
   useEffect(() => {
     let active = true;
     (async () => {
+      if (page === "display") return;
       const s = await api("/session");
       if (!active) return;
       setSession(s);
@@ -470,7 +506,7 @@ function App() {
     return () => {
       active = false;
     };
-  }, [version]);
+  }, [version, page === "display"]);
   useEffect(() => {
     const result = new URLSearchParams(location.search).get("google");
     if (!result) return;
@@ -481,6 +517,15 @@ function App() {
       notify("Connexion Google réussie.");
     } else setModal({ type: "login" });
   }, []);
+  useEffect(() => {
+    if (!connectionError || page === "display") return;
+    const timer = setInterval(reload, 15000);
+    window.addEventListener("online", reload);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("online", reload);
+    };
+  }, [connectionError, page === "display", reload]);
   const close = useCallback(() => setModal(null), []);
   const canEdit = user && ["admin", "editor", "agent"].includes(user.role);
   const canCreate =
@@ -690,7 +735,9 @@ function App() {
         )}
       </main>
     );
-  if (gateRequired && !user)
+  if (!session && page !== "display")
+    return <StartupScreen error={connectionError} retry={reload} />;
+  if (gateRequired && !user && page !== "display")
     return (
       <>
         <SiteGate
@@ -722,6 +769,7 @@ function App() {
       value={overview?.interface?.statusAppearance}
     >
       <div className="app-shell">
+        <RequestProgress />
         <aside
           className={`sidebar ${mobile ? "open" : ""}`}
           inert={narrow && !mobile}
@@ -744,61 +792,40 @@ function App() {
           <nav aria-label="Navigation principale">
             {[
               [
-                "PHOTOTHÈQUE",
-                [
-                  ...(appRuntime.appMode ? ["mobile", "mobileAdoptions"] : []),
-                  "gallery",
-                  "animals",
-                  "favorites",
-                  "collections",
-                ],
-              ],
-              ["PHOTOS & SÉANCES", ["todo", "inbox", "print", "editor"]],
-              [
-                "CRÉATION",
-                ["studio", "posters", "groupPoster", "wallpaper", "motion"],
-              ],
-              [
                 "LE REFUGE",
                 [
+                  ...(appRuntime.appMode ? ["mobile"] : []),
+                  "gallery",
+                  "animals",
                   "feed",
-                  "stats",
-                  "adoptionReviews",
                   "archives",
-                  "displaySettings",
+                  "stats",
                   "broadcasts",
                 ],
               ],
+              ["PHOTOS", ["collections", "favorites", "todo", "inbox"]],
+              ["CRÉER", ["canvas", "studio", "posters"]],
               [
                 "L’ÉQUIPE",
                 [
-                  "volunteers",
-                  "agenda",
-                  "polls",
-                  "writing",
                   "tools",
+                  "volunteers",
+                  "writing",
+                  "adoptionReviews",
+                  "displaySettings",
                   "register",
-                  "accountHub",
-                  "appOptions",
                 ],
               ],
-              ["RESSOURCES", ["about"]],
               ...(user?.role === "admin"
+                ? [["GÉRER", ["dashboard", "settings"]]]
+                : []),
+              ...(user
                 ? [
                     [
-                      "ADMINISTRATION",
-                      ["dashboard", "users", "messages", "visitors", "journal"],
-                    ],
-                    [
-                      "RÉGLAGES",
+                      "MON ESPACE",
                       [
-                        "settings",
-                        "legalSettings",
-                        "modules",
-                        "api",
-                        "sync",
-                        "storage",
-                        "backups",
+                        "accountHub",
+                        ...(appRuntime.appMode ? ["appOptions"] : []),
                       ],
                     ],
                   ]
@@ -809,7 +836,8 @@ function App() {
                 key={label}
                 open={
                   navOpen[label] ??
-                  (keys.includes(page) || label === "PHOTOTHÈQUE")
+                  (keys.includes(workspaceParent(page)) ||
+                    label === "LE REFUGE")
                 }
                 onToggle={(e) => {
                   const isOpen = e.currentTarget.open;
@@ -847,7 +875,12 @@ function App() {
                       <a
                         key={key}
                         href={"#" + key}
-                        className={"nav-item " + (page === key ? "active" : "")}
+                        className={
+                          "nav-item " +
+                          (page === key || workspaceParent(page) === key
+                            ? "active"
+                            : "")
+                        }
                         aria-current={page === key ? "page" : undefined}
                         onClick={(e) => {
                           if (
@@ -874,6 +907,14 @@ function App() {
                             {overview.stats.archived}
                           </span>
                         )}
+                        {key === "dashboard" && pendingVolunteers > 0 && (
+                          <span
+                            className="nav-count"
+                            aria-label={`${pendingVolunteers} demandes bénévoles`}
+                          >
+                            {pendingVolunteers}
+                          </span>
+                        )}
                         {key === "adoptionReviews" && pendingAdoptions > 0 && (
                           <span
                             className="nav-count"
@@ -892,7 +933,7 @@ function App() {
             <button
               className="profile"
               onClick={() =>
-                setModal(user ? { type: "account" } : { type: "login" })
+                user ? go("accountHub") : setModal({ type: "login" })
               }
             >
               <span className="avatar">
@@ -977,7 +1018,7 @@ function App() {
                 className="avatar top-avatar"
                 aria-label="Compte"
                 onClick={() =>
-                  setModal(user ? { type: "account" } : { type: "login" })
+                  user ? go("accountHub") : setModal({ type: "login" })
                 }
               >
                 {user ? <UserPicture user={user} /> : <Users size={16} />}
@@ -1004,6 +1045,7 @@ function App() {
               </div>
             )}
             {[
+              "canvas",
               "posters",
               "groupPoster",
               "wallpaper",
@@ -1012,6 +1054,26 @@ function App() {
             ].includes(page) && (
               <CreationNav page={page} go={go} modules={modules} />
             )}
+            {user?.role === "admin" &&
+              pendingVolunteers > 0 &&
+              page !== "users" && (
+                <div className="admin-request-alert" role="status">
+                  <Bell size={21} />
+                  <p>
+                    <strong>{pendingVolunteers} demande(s) bénévole(s)</strong>{" "}
+                    attendent votre validation.
+                  </p>
+                  <Button onClick={() => go("users")}>
+                    Examiner les demandes
+                  </Button>
+                </div>
+              )}
+            <WorkspaceTabs
+              page={page}
+              go={go}
+              user={user}
+              appMode={appRuntime.appMode}
+            />
             {connectionError ? (
               <Empty
                 icon={AlertCircle}
@@ -1092,10 +1154,29 @@ function App() {
                 />
               )
             ) : page === "appOptions" ? (
-              <AppOptions {...actions} />
+              appRuntime.appMode ? (
+                <AppOptions {...actions} />
+              ) : (
+                <Empty
+                  title="Options de l’application mobile"
+                  action={
+                    <Button onClick={() => go("accountHub")}>
+                      Mon compte & appareils
+                    </Button>
+                  }
+                />
+              )
             ) : page === "polls" ? (
               <Suspense fallback={<Spinner />}>
-                <TeamPolls {...actions} />
+                <Empty
+                  title="Sondages retirés"
+                  text="Retrouvez les présences et l’agenda dans l’espace équipe."
+                  action={
+                    <Button onClick={() => go("volunteers")}>
+                      Présences & missions
+                    </Button>
+                  }
+                />
               </Suspense>
             ) : page === "volunteers" ||
               page === "writing" ||
@@ -1144,6 +1225,10 @@ function App() {
             ) : page === "motion" ? (
               <Suspense fallback={<Spinner />}>
                 <MotionStudio {...actions} />
+              </Suspense>
+            ) : page === "canvas" ? (
+              <Suspense fallback={<Spinner />}>
+                <CanvasStudio {...actions} />
               </Suspense>
             ) : page === "wallpaper" ? (
               <Suspense fallback={<Spinner />}>
@@ -1230,6 +1315,8 @@ function App() {
               </button>
             )}
             <SiteFooter
+              open={setModal}
+              close={close}
               go={go}
               user={user}
               demo={session?.demo}
@@ -1247,6 +1334,7 @@ function App() {
             modules={modules}
           />
         )}
+        <NetworkBadge />
         {toast && (
           <div role="status" className={`toast ${toast.type}`}>
             <span>
@@ -1371,7 +1459,45 @@ function App() {
     </StatusAppearanceContext.Provider>
   );
 }
-createRoot(document.getElementById("root")).render(<App />);
+class ApplicationBoundary extends Component {
+  state = { error: null };
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  componentDidCatch(error) {
+    if (missingInterfaceAsset(error) || location.hash === "#display") {
+      try {
+        if (reserveInterfaceRecovery(sessionStorage))
+          this.timer = setTimeout(() => location.reload(), 800);
+      } catch {
+        /* A manual retry remains available when storage is blocked. */
+      }
+    }
+  }
+  componentWillUnmount() {
+    clearTimeout(this.timer);
+  }
+  render() {
+    return this.state.error ? (
+      <StartupScreen
+        television={location.hash === "#display"}
+        error={
+          missingInterfaceAsset(this.state.error)
+            ? "Une mise à jour est disponible. Récupération des nouveaux fichiers de l’interface…"
+            : "Une partie de l’interface n’a pas pu se charger. Actualisez pour reprendre votre espace."
+        }
+        retry={() => location.reload()}
+      />
+    ) : (
+      this.props.children
+    );
+  }
+}
+createRoot(document.getElementById("root")).render(
+  <ApplicationBoundary>
+    <App />
+  </ApplicationBoundary>,
+);
 
 import "./update32.css";
 import "./update33.css";
@@ -1383,3 +1509,5 @@ import "./update312.css";
 import "./update314.css";
 import "./mobile-app.css";
 import "./update3110.css";
+
+import "./features314.css";

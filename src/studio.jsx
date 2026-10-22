@@ -475,11 +475,11 @@ export default function Studio({
   };
 
   return (
-    <>
+    <div className="studio314">
       <div className="page-heading">
         <div>
           <div className="eyebrow">L’ATELIER DES BELLES HISTOIRES</div>
-          <h1>Le studio vidéo.</h1>
+          <h1>Le studio vidéo</h1>
           <p>Composez, prévisualisez et exportez. Une histoire à la fois.</p>
         </div>
         <span className="tag sand">REMOTION · MP4</span>
@@ -711,6 +711,36 @@ export default function Studio({
           <h2>La présentation</h2>
           {film.template === "year" && (
             <>
+              <label className="annual-inline-total">
+                <span>
+                  Adoptions affichées
+                  <small>
+                    Personnalisé pour cette vidéo. Vide : statistiques du
+                    refuge.
+                  </small>
+                </span>
+                <input
+                  type="number"
+                  min="0"
+                  max="1000000"
+                  value={film.annualAdoptionsOverride ?? ""}
+                  placeholder="Automatique"
+                  onChange={(e) =>
+                    update(
+                      "annualAdoptionsOverride",
+                      e.target.value === ""
+                        ? null
+                        : Math.max(
+                            0,
+                            Math.min(
+                              1000000,
+                              Math.round(Number(e.target.value)),
+                            ),
+                          ),
+                    )
+                  }
+                />
+              </label>
               <label>
                 Animation du bilan
                 <select
@@ -1594,6 +1624,6 @@ export default function Studio({
         refresh={refresh}
         notify={notify}
       />
-    </>
+    </div>
   );
 }

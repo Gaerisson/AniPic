@@ -6,17 +6,22 @@ import { assertStorage } from "./config.mjs";
 import { createBackup } from "./backup.mjs";
 import { verifyArchive } from "./archive-compression.mjs";
 import { beginMaintenance } from "./media-maintenance.mjs";
+import { eraseAnimalRecord } from "./permanent-animal.mjs";
 const fail = (message, statusCode = 409) =>
   Object.assign(Error(message), { statusCode });
 const key = (id) => "animalTrash:" + id;
 export const isAnimalTrashed = (db, id) =>
   !!db.prepare("SELECT 1 FROM settings WHERE key=?").get(key(id));
-function entries(db, animalId = "") {
+function entries(db, animalId = "", includePurged = false) {
   return db
     .prepare("SELECT key,value FROM settings WHERE key LIKE 'animalTrash:%'")
     .all()
     .map((r) => ({ ...JSON.parse(r.value), key: r.key }))
-    .filter((r) => r.state === "trashed" && (!animalId || r.id === animalId));
+    .filter(
+      (r) =>
+        (r.state === "trashed" || (includePurged && r.state === "purged")) &&
+        (!animalId || r.id === animalId),
+    );
 }
 function referenced(db, photoId) {
   for (const [table, field] of [
@@ -67,7 +72,7 @@ export async function purgeTrash(
         "SELECT id,animal_id,hash FROM photos WHERE deleted_at IS NOT NULL AND (?='' OR animal_id=?)",
       )
       .all(animalId, animalId);
-    const animals = entries(db, animalId);
+    const animals = entries(db, animalId, true);
     if (!photos.length && !animals.length)
       return { deleted: 0, animals: 0, skipped: 0, freedBytes: 0 };
     const saved = await createBackup(db, c),
@@ -113,17 +118,8 @@ export async function purgeTrash(
         }
       for (const a of animals)
         if (!db.prepare("SELECT 1 FROM photos WHERE animal_id=?").get(a.id)) {
-          db.prepare("UPDATE settings SET value=? WHERE key=?").run(
-            JSON.stringify({
-              state: "purged",
-              id: a.id,
-              name: a.name,
-              at: now(),
-              backupId: saved.id,
-            }),
-            key(a.id),
-          );
-          removedAnimals++;
+          if (eraseAnimalRecord(db, a.id)) removedAnimals++;
+          db.prepare("DELETE FROM settings WHERE key=?").run(key(a.id));
         }
       audit(db, user, "trash_emptied", {
         deleted: deletable.length,
@@ -178,6 +174,9 @@ export async function registerTrash(app, { db, c, authorized, job }) {
           .get(a.id).n,
       })),
       canPurge: req.user.role === "admin",
+      retainedLegacy: entries(db, animalId, true).filter(
+        (a) => a.state === "purged",
+      ).length,
     };
   });
   app.post(

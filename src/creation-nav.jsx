@@ -1,6 +1,7 @@
 import { NavLink } from "./nav-link.jsx";
 export function CreationNav({ page, go, modules = {} }) {
   const items = [
+    ["canvas", "Atelier Canvas", "posters"],
     ["posters", "Fiches de box", "posters"],
     ["groupPoster", "Affiches collectives", "posters"],
     ["wallpaper", "Visuels & bannières", "posters"],

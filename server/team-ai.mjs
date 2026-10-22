@@ -1,4 +1,4 @@
-import { aiFailure, aiResponseText } from "./ai-response.mjs";
+import { requestAiText } from "./ai-response.mjs";
 import { assistantContext } from "./assistant-context.mjs";
 import { audioConfig } from "./audio-settings.mjs";
 import { z } from "zod";
@@ -62,37 +62,18 @@ export async function teamText(c, db, provider, system, user) {
         { role: "system", content: system },
         { role: "user", content: user },
       ],
-      max_tokens: 700,
+      max_tokens: 4096,
       temperature: 0.35,
     };
   }
-  let response;
-  try {
-    response = await (c.aiFetcher || fetch)(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(body),
-      redirect: "error",
-      signal: AbortSignal.timeout(30000),
-    });
-  } catch {
-    throw fail("Service IA indisponible.", 408);
-  }
-  if (!response.ok) {
-    await response.body?.cancel();
-    throw fail(
-      "Le service IA a refusé la requête. Vérifiez la clé, le modèle et le quota.",
-    );
-  }
-  let data;
-  try {
-    data = JSON.parse((await readBounded(response)).toString());
-  } catch {
-    throw aiFailure(
-      "Le service IA a renvoyé une réponse illisible. Réessayez ou changez de modèle.",
-    );
-  }
-  return aiResponseText(data, provider).slice(0, 6000);
+  return requestAiText({
+    fetcher: c.aiFetcher || fetch,
+    url,
+    headers,
+    body,
+    provider,
+    maxLength: 8000,
+  });
 }
 export async function registerTeamAI(app, { db, c, authorized }) {
   const all = ["admin", "editor", "agent", "volunteer", "viewer"];

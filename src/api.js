@@ -57,39 +57,86 @@ export async function copyText(value) {
     previous?.focus();
   }
 }
+let pendingRequests = 0;
+let lastNetwork = { online: true, at: null, latency: null };
+export const networkSnapshot = () => ({ ...lastNetwork });
+function feedback(name, detail) {
+  if (name === "anipic-network") lastNetwork = { ...lastNetwork, ...detail };
+  if (typeof window !== "undefined")
+    window.dispatchEvent(new CustomEvent(name, { detail }));
+}
 export async function api(url, options = {}) {
   const headers = { "X-CSRF-Token": csrf, ...options.headers };
   if (options.body && !(options.body instanceof FormData)) {
     headers["Content-Type"] = "application/json";
     options = { ...options, body: JSON.stringify(options.body) };
   }
-  const response = await fetch("/api" + url, {
-    credentials: "same-origin",
-    ...options,
-    headers,
-  });
-  const data = await response
-    .json()
-    .catch(() => ({ error: "Réponse serveur invalide." }));
-  if (!response.ok)
-    throw Object.assign(new Error(data.error || "Opération impossible."), {
-      code: data.code,
-      status: response.status,
+  const started = Date.now();
+  pendingRequests++;
+  feedback("anipic-requests", { pending: pendingRequests });
+  try {
+    let response;
+    try {
+      response = await fetch("/api" + url, {
+        credentials: "same-origin",
+        ...options,
+        headers,
+      });
+    } catch (error) {
+      if (error.name !== "AbortError")
+        feedback("anipic-network", { online: false });
+      throw error;
+    }
+    feedback("anipic-network", {
+      online: true,
+      at: Date.now(),
+      latency: Date.now() - started,
     });
-  return data;
+    const data = await response
+      .json()
+      .catch(() => ({ error: "Réponse serveur invalide." }));
+    if (!response.ok)
+      throw Object.assign(new Error(data.error || "Opération impossible."), {
+        code: data.code,
+        status: response.status,
+      });
+    return data;
+  } finally {
+    pendingRequests--;
+    feedback("anipic-requests", { pending: pendingRequests });
+  }
 }
 export async function apiBlob(url, body) {
-  const response = await fetch("/api" + url, {
-    method: "POST",
-    credentials: "same-origin",
-    headers: { "X-CSRF-Token": csrf, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data.error || "Téléchargement impossible.");
+  const started = Date.now();
+  pendingRequests++;
+  feedback("anipic-requests", { pending: pendingRequests });
+  try {
+    let response;
+    try {
+      response = await fetch("/api" + url, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "X-CSRF-Token": csrf, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    } catch (error) {
+      feedback("anipic-network", { online: false });
+      throw error;
+    }
+    feedback("anipic-network", {
+      online: true,
+      at: Date.now(),
+      latency: Date.now() - started,
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || "Téléchargement impossible.");
+    }
+    return await response.blob();
+  } finally {
+    pendingRequests--;
+    feedback("anipic-requests", { pending: pendingRequests });
   }
-  return response.blob();
 }
 export async function apiDownload(url, body, filename) {
   const objectUrl = URL.createObjectURL(await apiBlob(url, body)),

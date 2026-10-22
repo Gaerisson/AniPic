@@ -1,16 +1,10 @@
 import { useEffect, useState, useRef } from "react";
-import {
-  FilePenLine,
-  Copy,
-  Search,
-  Check,
-  Camera,
-  LoaderCircle,
-} from "lucide-react";
+import { FilePenLine, Copy, Search, Check, Camera } from "lucide-react";
 import { api, copyText, imageUrl } from "./api.js";
 import { Button, Spinner } from "./ui.jsx";
 import { SpaPhoto } from "./spa-photo.jsx";
-import { WritingReview, WritingPreview } from "./writing-review.jsx";
+import RichWriting from "./rich-writing.jsx";
+import { WritingPreview } from "./writing-review.jsx";
 export default function WritingStudio({ user, notify }) {
   const [data, setData] = useState(null),
     [tab, setTab] = useState("create"),
@@ -58,7 +52,7 @@ export default function WritingStudio({ user, notify }) {
   if (!user) return <p>Connectez-vous pour utiliser l’atelier de rédaction.</p>;
   if (!data) return error ? <p role="alert">{error}</p> : <Spinner />;
   return (
-    <div className="writing-studio writing313">
+    <div className="writing-studio writing314">
       <div className="page-heading">
         <div>
           <div className="eyebrow">DES MOTS POUR UNE RENCONTRE</div>
@@ -117,8 +111,8 @@ export default function WritingStudio({ user, notify }) {
           )}
         </div>
       ) : (
-        <div className="writing-grid">
-          <aside className="panel writing-list">
+        <div className="writing-grid writing-layout">
+          <aside className="panel writing-list writing-side">
             <h2>
               {tab === "review"
                 ? "À relire ou photographier"
@@ -257,19 +251,23 @@ export default function WritingStudio({ user, notify }) {
                   </select>
                 </label>
               </div>
-              <label>
-                {tab === "review"
-                  ? "Texte à corriger"
-                  : "Texte de départ (facultatif)"}
-                <textarea
-                  rows="7"
-                  maxLength="6000"
+              <div className="writing-source-field">
+                <span>
+                  {tab === "review"
+                    ? "Texte à corriger"
+                    : "Texte de départ (facultatif)"}
+                </span>
+                <RichWriting
                   value={form.original}
-                  onChange={(e) =>
-                    setForm({ ...form, original: e.target.value })
+                  onChange={(value) =>
+                    setForm((f) => ({ ...f, original: value }))
                   }
+                  proposed={tab === "review" && proposal ? proposal : null}
+                  label="Texte de la fiche, avec corrections soulignées"
+                  maxLength={6000}
+                  notify={notify}
                 />
-              </label>
+              </div>
               {tab === "create" && (
                 <label>
                   Faits et mots-clés vérifiés
@@ -316,17 +314,20 @@ export default function WritingStudio({ user, notify }) {
                   Ajouter quelques émojis utiles 🐾
                 </label>
               )}
-              <Button disabled={busy} type="submit">
-                {busy ? (
-                  <>
-                    <LoaderCircle className="spin" size={17} />
-                    Rédaction en cours…
-                  </>
-                ) : tab === "review" ? (
-                  "Proposer une correction"
-                ) : (
-                  "Générer une présentation"
-                )}
+              <Button
+                loading={busy}
+                disabled={
+                  busy ||
+                  form.original.length > 6000 ||
+                  form.keywords.length > 2000
+                }
+                type="submit"
+              >
+                {busy
+                  ? "Rédaction en cours…"
+                  : tab === "review"
+                    ? "Proposer une correction"
+                    : "Générer une présentation"}
               </Button>
             </form>
             {error && (
@@ -338,27 +339,33 @@ export default function WritingStudio({ user, notify }) {
               <div className="writing-proposal">
                 <span className="eyebrow">02 / VOTRE PROPOSITION</span>
                 <h2>Des mots pour sa prochaine rencontre</h2>
-                {tab === "review" && (
-                  <WritingReview original={form.original} proposal={proposal} />
-                )}
-                <WritingPreview text={proposal} />
-                <label>
-                  Affiner le texte final
-                  <textarea
-                    className="writing-final-editor"
-                    rows="9"
+                {tab === "review" ? (
+                  <>
+                    <p>
+                      Les propositions sont soulignées dans le texte d’origine.
+                      Cliquez dessus pour les appliquer ou les ignorer, puis
+                      copiez votre version retenue.
+                    </p>
+                    <Button
+                      icon={Copy}
+                      onClick={() =>
+                        copyText(form.original).then(() =>
+                          notify("Version retenue copiée."),
+                        )
+                      }
+                    >
+                      Copier ma version
+                    </Button>
+                  </>
+                ) : (
+                  <RichWriting
                     value={proposal}
-                    onChange={(e) => setProposal(e.target.value)}
+                    onChange={setProposal}
+                    label="Votre présentation finale"
+                    notify={notify}
                   />
-                </label>
-                <Button
-                  icon={Copy}
-                  onClick={() =>
-                    copyText(proposal).then(() => notify("Texte copié."))
-                  }
-                >
-                  Copier le texte
-                </Button>
+                )}
+
                 <p>
                   Relisez les faits et les ententes avant publication. Aucun
                   texte du site SPA n’a été modifié.

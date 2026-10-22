@@ -24,8 +24,9 @@ export const moduleCatalog = Object.freeze([
     id: "posters",
     name: "Affiches",
     description: "Fiches de box, affiches collectives et bannières",
-    pages: ["posters", "groupPoster", "wallpaper"],
+    pages: ["posters", "groupPoster", "wallpaper", "canvas"],
     api: [
+      "/api/canvas",
       "/api/posters",
       "/api/group-posters",
       "/api/public/posters",
@@ -51,7 +52,7 @@ export const moduleCatalog = Object.freeze([
     id: "planning",
     name: "Planning des bénévoles",
     description: "Créneaux, inscriptions et présences du jour",
-    pages: ["volunteers", "polls"],
+    pages: ["volunteers"],
     api: ["/api/volunteers", "/api/team-polls"],
   },
   {

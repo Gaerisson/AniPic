@@ -1,3 +1,4 @@
+import { upgrade314 } from "./upgrade314.mjs";
 import { DatabaseSync } from "node:sqlite";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
@@ -9,7 +10,7 @@ export function openDb(c) {
     "PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;",
   );
   const version = db.prepare("PRAGMA user_version").get().user_version;
-  if (version > 23) throw new Error("Base créée par une version plus récente.");
+  if (version > 24) throw new Error("Base créée par une version plus récente.");
   if (version === 0)
     db.exec(`
     BEGIN;
@@ -217,8 +218,9 @@ export function openDb(c) {
       CREATE INDEX IF NOT EXISTS display_screen_event_time ON display_screen_events(screen_id,occurred_at);
       PRAGMA user_version=21;`);
     });
-  if(version<22)transaction(db,()=>upgrade312(db));
-  if(version<23)transaction(db,()=>upgrade313(db));
+  if (version < 22) transaction(db, () => upgrade312(db));
+  if (version < 23) transaction(db, () => upgrade313(db));
+  if (version < 24) transaction(db, () => upgrade314(db));
   db.prepare("DELETE FROM google_oauth WHERE expires_at < ?").run(now());
   db.prepare(
     "DELETE FROM site_passes WHERE expires_at<>'' AND expires_at < ?",
@@ -326,5 +328,5 @@ export function feedEvent(db, animal, kind, origin = null, at = now()) {
       JSON.stringify(origin),
     );
 }
-import {upgrade312} from "./upgrade312.mjs";
-import {upgrade313} from "./upgrade313.mjs";
+import { upgrade312 } from "./upgrade312.mjs";
+import { upgrade313 } from "./upgrade313.mjs";

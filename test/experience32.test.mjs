@@ -55,7 +55,6 @@ test("site PIN protects data and media; credentials can bypass it and changing t
     "/api/overview",
     "/api/animals",
     "/media/" + id(),
-    "/api/public/display",
     "/feed.xml",
   ])
     assert.equal((await app.inject({ url })).statusCode, 401, url);

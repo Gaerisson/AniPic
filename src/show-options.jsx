@@ -290,6 +290,15 @@ export function ShowOptions({
           <option value="wallpaper">Fond animé · mosaïque et logo SPA</option>
         </select>
       </label>
+      <details className="show-connection-options">
+        <summary>Connexion & diagnostic sur l’écran</summary>
+        <p>
+          La reconnexion reste automatique. Ces options contrôlent les
+          indications visibles sur le player.
+        </p>
+        {check("connectionBadge", "Afficher le petit statut de connexion")}
+        {check("debugBadge", "Afficher les informations techniques en petit")}
+      </details>
       <h3>Animaux & ordre de passage</h3>
       <div className="species-order">
         {["dog", "cat", "other"].map((s) => (

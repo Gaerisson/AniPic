@@ -1,3 +1,4 @@
+import { cutoutProfile } from "./cutout-memory.mjs";
 import { Worker } from "node:worker_threads";
 import path from "node:path";
 import { Readable } from "node:stream";
@@ -203,13 +204,12 @@ export async function registerPhotoWorkshop(app, { db, c, authorized, jobs }) {
     },
     async (req, reply) => {
       const ref = photoReference.parse(req.body);
-      if (
-        !c.cutoutProcessor &&
-        (c.cutoutAvailableMemory?.() ?? process.availableMemory()) <
-          3 * 1024 ** 3
-      )
+      const profile = cutoutProfile(
+        c.cutoutAvailableMemory?.() ?? process.availableMemory(),
+      );
+      if (!c.cutoutProcessor && !profile.allowed)
         throw creativeError(
-          "Mémoire insuffisante pour le détourage. Prévoyez au moins 3 Gio disponibles et environ 4 Go de RAM alloués au conteneur. Les autres outils restent utilisables.",
+          `Mémoire insuffisante pour le détourage. Disponible : ${profile.availableMiB} Mio. Le détourage exige 3 Gio disponibles. Dans Portainer, définissez ANIPIC_MEMORY_LIMIT=4g dans les variables de la stack puis mettez la stack à jour. La VM doit aussi disposer de cette mémoire avec une marge pour ses autres services.`,
           422,
         );
       if (cutting)
@@ -229,6 +229,7 @@ export async function registerPhotoWorkshop(app, { db, c, authorized, jobs }) {
                       {
                         workerData: {
                           image: source.buffer,
+                          quality: profile.quality,
                           cacheDir: path.join(c.cacheDir, "cutout-model"),
                         },
                       },
@@ -289,6 +290,7 @@ export async function registerPhotoWorkshop(app, { db, c, authorized, jobs }) {
                 width: meta.width,
                 height: meta.height,
                 ref,
+                quality: profile.quality,
               };
               audit(db, req.user, "animal_cutout", {
                 kind: ref.kind,

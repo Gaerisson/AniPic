@@ -66,3 +66,10 @@ Administration, photographe, agent SPA et bénévole approuvé peuvent composer 
 Les sessions, le PIN et la protection CSRF restent appliqués. Le schéma SQLite passe de **19 à 20** par ajout d’une table d’agenda et de son index. Les nouveaux champs de gazette restent dans les brouillons JSON existants. Les anciens brouillons gardent leurs sélections manuelles ; les options automatiques peuvent être activées depuis le résumé. Les sauvegardes habituelles conservent ces données. Aucun montage ou volume Docker n’est modifié.
 
 L’ancien assistant de tri et le détourage ne sont plus proposés dans le menu. Les copies et décisions déjà enregistrées sont conservées ; l’éditeur photo existant reste accessible à son emplacement habituel.
+
+
+## Sondages et bot WhatsApp
+
+Le module de sondages AniPic est retiré du menu depuis3.14 ; ses anciennes données ne sont pas supprimées automatiquement. Le partage de la gazette dans l’application WhatsApp reste disponible.
+
+Un bot pour un compte ordinaire peut être développé avec un client d’appareil lié comme [whatsapp-web.js](https://wwebjs.dev/), qui expose des fonctions de messages, groupes et sondages. Cette piste utilise WhatsApp Web et dépend de ses évolutions : ce n’est pas une intégration officielle garantie pour les communautés. Elle demanderait une association du compte, des destinations et des droits clairement choisis. AniPic ne connecte pas un compte et n’envoie aucun message automatiquement dans cette version.

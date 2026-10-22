@@ -20,8 +20,8 @@
     "path": "../../anipic-private/anipic-release.jks",
     "alias": "anipic"
   },
-  "appVersionName": "3.13.0",
-  "appVersionCode": 31300,
+  "appVersionName": "3.14.0",
+  "appVersionCode": 31400,
   "shortcuts": [],
   "generatorApp": "unknown",
   "fallbackType": "customtabs",
@@ -43,5 +43,5 @@
   "additionalTrustedOrigins": [],
   "retainedBundles": [],
   "displayOverride": [],
-  "appVersion": "3.13.0"
+  "appVersion": "3.14.0"
 }

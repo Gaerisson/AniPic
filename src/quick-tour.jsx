@@ -7,54 +7,98 @@ import {
   PawPrint,
   Search,
   Rss,
-  Printer,
+  Images,
+  CalendarDays,
   Settings,
 } from "lucide-react";
+import { api } from "./api.js";
 import { Button } from "./ui.jsx";
-const key = "anipic-tour-313";
-export function QuickTour({ go, user, appMode }) {
+const key = "anipic-tour-314";
+export function QuickTour({ go, user, appMode, open, close }) {
   const steps = [
     {
-      title: "Bienvenue au refuge",
-      text: "En quelques étapes, découvrez où retrouver les animaux, suivre leurs nouvelles et créer vos premiers visuels.",
+      title: "Vos repères au refuge",
+      text: "Retrouvez un animal, comprenez sa fiche et suivez les nouvelles de l’équipe. Vous pouvez essayer les fonctions pendant cette visite, ou la quitter à tout moment.",
       Icon: PawPrint,
     },
     {
-      title: "Un animal, toutes ses photos",
-      text: "Cherchez son nom dans cette liste. Ouvrez sa fiche pour voir ses portraits, ses ententes et créer une affiche ou une vidéo.",
+      title: "Retrouver le bon animal",
+      text: "Cherchez un prénom. Les filtres permettent de choisir chiens, chats, NAC, SOS et ententes. Les photos du site SPA restent disponibles lorsqu’aucun portrait de l’équipe n’a encore été ajouté.",
       page: "animals",
+      selector: ".library-toolbar,.search-input,.page-heading",
       Icon: Search,
     },
     {
-      title: "Les nouvelles, dans un seul fil",
-      text: "Arrivées, adoptions et nouveaux portraits se suivent ici. Une confirmation d’adoption met à jour son événement sans changer sa date.",
+      title: "La fiche : son point de repère",
+      text: "Ouvrez un exemple ci-dessous. La fiche réunit description, âge, statut et ententes : vert pour Oui, rouge pour Non, orange lorsqu’une condition ou une précision demande une lecture. Le texte complet reste disponible.",
+      page: "animals",
+      selector: ".animal-detail .detail-info",
+      action: "animal",
+      Icon: PawPrint,
+    },
+    {
+      title: "Ses portraits, en détail",
+      text: "Dans la fiche, sélectionnez une photo, zoomez puis glissez pour vous déplacer. Les flèches changent de portrait. L’origine SPA est indiquée ; les photos privées restent réservées aux comptes autorisés.",
+      selector: ".animal-detail .detail-gallery",
+      action: "animal",
+      Icon: Images,
+    },
+    {
+      title: "Au fil du refuge",
+      text: "Les arrivées, départs et nouveaux portraits apparaissent dans l’ordre des événements. Les agents peuvent confirmer ou corriger une adoption sans remonter une ancienne nouvelle en tête du fil.",
       page: "feed",
       Icon: Rss,
     },
-    {
-      title: "Votre première affiche",
-      text: "Choisissez les animaux, puis une photo locale ou une photo du site SPA. Prévisualisez votre création avant de la télécharger.",
-      page: "posters",
-      Icon: Printer,
-    },
+    ...(user
+      ? [
+          {
+            title: "Une place pour chacun",
+            text: "Consultez les missions et les bénévoles présents chaque jour. Inscrivez-vous sur un créneau ou indiquez vos disponibilités. L’agenda rassemble les dates importantes.",
+            page: "volunteers",
+            Icon: CalendarDays,
+          },
+        ]
+      : []),
     {
       title: appMode
-        ? "Une application à votre image"
-        : "Vos repères, toujours accessibles",
+        ? "Votre refuge, dans votre poche"
+        : "Les outils utiles, au même endroit",
       text: appMode
-        ? "Personnalisez ici les boutons du bas et les widgets de votre accueil. Dans Compte & appareils, choisissez vos notifications."
-        : "La barre latérale regroupe les photos, les créations et l’équipe. Ses sections restent dans l’état où vous les laissez. Vous pouvez aussi personnaliser l’accueil Android.",
-      page: "appOptions",
+        ? "Personnalisez les boutons du bas et votre accueil. Dans Mon compte & appareils, choisissez vos notifications et gérez vos connexions."
+        : "L’atelier de l’équipe regroupe notamment les prénoms, la météo et les priorités photo. Les réglages et l’administration disposent de leurs propres onglets.",
+      page: appMode ? "appOptions" : "tools",
       Icon: Settings,
     },
   ];
   const [step, setStep] = useState(null),
     card = useRef(null),
-    [target, setTarget] = useState(null);
+    [target, setTarget] = useState(null),
+    [trying, setTrying] = useState(false),
+    [exampleError, setExampleError] = useState("");
+  const openedExample = useRef(false);
+  const tryAnimal = async () => {
+    setTrying(true);
+    setExampleError("");
+    try {
+      const result = await api("/animals?limit=1&sort=name");
+      if (!result.items.length)
+        throw Error("Aucun animal disponible pour cet exemple.");
+      open?.({ type: "animal", id: result.items[0].id });
+      openedExample.current = true;
+    } catch (e) {
+      setExampleError(e.message);
+    } finally {
+      setTrying(false);
+    }
+  };
   const finish = () => {
     try {
       localStorage.setItem(key, "done");
     } catch {}
+    if (openedExample.current) {
+      close?.();
+      openedExample.current = false;
+    }
     setStep(null);
   };
   const start = () => {
@@ -100,13 +144,19 @@ export function QuickTour({ go, user, appMode }) {
       return;
     }
     const item = steps[step];
+    if (item.page && !item.action && openedExample.current) {
+      close?.();
+      openedExample.current = false;
+    }
     if (item.page) go(item.page);
     const timer = setTimeout(() => {
       card.current?.focus({ preventScroll: true });
       const el =
+        (item.selector && document.querySelector(item.selector)) ||
         document.querySelector(
           `.sidebar a[href="#${item.page}"],.app-bottom-nav a[href="#${item.page}"]`,
-        ) || document.querySelector(".page-heading");
+        ) ||
+        document.querySelector(".page-heading");
       if (el) {
         el.classList.add("tour-highlight");
         setTarget(el);
@@ -154,6 +204,12 @@ export function QuickTour({ go, user, appMode }) {
             </div>
             <h2>{item.title}</h2>
             <p>{item.text}</p>
+            {item.action && (
+              <Button loading={trying} variant="secondary" onClick={tryAnimal}>
+                Ouvrir une fiche pour essayer
+              </Button>
+            )}
+            {exampleError && <p role="status">{exampleError}</p>}
             <div className="tour-progress">
               {steps.map((s, i) => (
                 <i key={i} className={i <= step ? "active" : ""} />

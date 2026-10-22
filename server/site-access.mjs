@@ -74,6 +74,21 @@ export function siteAccessHook(db, c) {
             entryPath,
           )) ||
         (req.method === "POST" && entryPath === "/api/auth/google/start");
+    const publicTV =
+      (req.method === "GET" &&
+        (entryPath === "/api/public/display" ||
+          /^\/api\/public\/display\/(?:photos|source-photos|videos)\/[a-f\d-]{36}$/.test(
+            entryPath,
+          ) ||
+          /^\/api\/public\/animal-videos\/[a-f\d-]{36}\/file$/.test(
+            entryPath,
+          ))) ||
+      (req.method === "POST" &&
+        [
+          "/api/public/display/heartbeat",
+          "/api/public/display/poll",
+          "/api/public/display/command-result",
+        ].includes(entryPath));
     // Keep valid pre-existing passes without asking for the PIN again. Upgrade
     // only unexpired legacy passes; revoked and expired tokens never revive.
     if (
@@ -136,6 +151,7 @@ export function siteAccessHook(db, c) {
       siteGateRequired(db, req) &&
       !["/api/privacy", "/api/privacy/consent"].includes(entryPath) &&
       !googleEntry &&
+      !publicTV &&
       /^(?:\/api\/|\/media\/|\/feed\.xml)/.test(req.url) &&
       !/^\/api\/(?:health|session|gate(?:\/|$)|login(?:\?|$)|demo-session(?:\?|$))/.test(
         req.url,

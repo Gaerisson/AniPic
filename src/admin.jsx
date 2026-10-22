@@ -1,3 +1,5 @@
+import { ServerClock } from "./journal-view.jsx";
+import { ConnectionPreferences } from "./app-feedback.jsx";
 import { GoogleAuthSettings, VolunteerRequests } from "./google-auth.jsx";
 import { UserPicture } from "./user-avatar.jsx";
 import { ArchiveCompression } from "./archive-storage.jsx";
@@ -201,6 +203,8 @@ export function Admin({
         </>
       ) : page === "settings" ? (
         <>
+          <ConnectionPreferences />
+          <ServerClock />
           <InterfaceSettings
             current={data.settings}
             avatarUrl={overview?.assistantAvatarUrl}

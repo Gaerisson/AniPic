@@ -48,7 +48,7 @@ export function ShootSheet({ user, notify, go }) {
     <>
       <div className="page-heading no-print">
         <div>
-          <h1>Votre feuille de séance.</h1>
+          <h1>Votre feuille de séance</h1>
           <p>
             Choisissez les animaux puis imprimez, ou enregistrez en PDF depuis
             la fenêtre d’impression.

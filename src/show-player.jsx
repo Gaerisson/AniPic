@@ -76,6 +76,20 @@ function ReadyShowPlayer({
     [paused, setPaused] = useState(false),
     [controls, setControls] = useState(true),
     [mediaIssue, setMediaIssue] = useState(null);
+  const [reduceMotion, setReduceMotion] = useState(
+    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)"),
+      changed = () => setReduceMotion(query.matches);
+    if (query.addEventListener) query.addEventListener("change", changed);
+    else query.addListener?.(changed);
+    return () => {
+      if (query.removeEventListener)
+        query.removeEventListener("change", changed);
+      else query.removeListener?.(changed);
+    };
+  }, []);
   const waiting = useRef(null),
     lastReport = useRef({ at: 0, key: "", state: "", issue: null });
   const clock = useRef({ frame: 0, time: 0 }),
@@ -268,7 +282,11 @@ function ReadyShowPlayer({
           }}
         >
           <SignageCanvas
-            show={show}
+            show={
+              reduceMotion
+                ? { ...show, program: { ...show.program, motion: "off" } }
+                : show
+            }
             frame={frame}
             paused={paused}
             onPlaybackIssue={onStatus ? mediaStatus : undefined}

@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 3.14.0 — Atelier Canvas, navigation et fiabilité
+
+Voir [les notes complètes](RELEASE_v3.14.0.md). Éditeur visuel avec calques et sauvegarde, relecture interactive, formats de réponse IA, bilan annuel SPA, player TV sans PIN, journal et horloge, suppression définitive des fiches après sauvegarde.
+
 ## 3.13.0 — 22 octobre 2026
 
 Interface et pied de page harmonisés, bannières avec détourage et placement libre, relecture annotée, historique SPA regroupé, prénoms enrichis avec catalogue nocturne, application personnalisable, notifications réparables et testables, aperçus TV rapprochés, statistiques annuelles ajustables et sondages à partager sur WhatsApp. Miniatures 160 px, photos supprimées et date des adoptions corrigées. [Notes détaillées](RELEASE_v3.13.0.md).

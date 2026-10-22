@@ -92,6 +92,13 @@ export function PhotoTrash({ animalId, notify, reload, user }) {
         crée et vérifie d’abord une sauvegarde protégée. Les originaux encore
         utilisés ailleurs restent conservés.
       </p>
+      {data?.retainedLegacy > 0 && (
+        <p className="small-note">
+          {data.retainedLegacy} ancienne(s) fiche(s) déjà purgée(s) contiennent
+          encore des métadonnées. Vider la corbeille les retire définitivement
+          de la base après sauvegarde vérifiée.
+        </p>
+      )}
       {error && <p role="alert">{error}</p>}
       {busy && (
         <p role="status">
@@ -101,21 +108,25 @@ export function PhotoTrash({ animalId, notify, reload, user }) {
             : "Traitement…"}
         </p>
       )}
-      {data && canPurge && (photos.length > 0 || animals.length > 0) && (
-        <div className="trash-actions">
-          <Button
-            variant="danger"
-            icon={Trash2}
-            disabled={busy}
-            onClick={() => {
-              setConfirming((v) => !v);
-              setConfirm("");
-            }}
-          >
-            Vider la corbeille{animalId ? " de cet animal" : ""}
-          </Button>
-        </div>
-      )}
+      {data &&
+        canPurge &&
+        (photos.length > 0 ||
+          animals.length > 0 ||
+          data.retainedLegacy > 0) && (
+          <div className="trash-actions">
+            <Button
+              variant="danger"
+              icon={Trash2}
+              disabled={busy}
+              onClick={() => {
+                setConfirming((v) => !v);
+                setConfirm("");
+              }}
+            >
+              Vider la corbeille{animalId ? " de cet animal" : ""}
+            </Button>
+          </div>
+        )}
       {confirming && (
         <div className="trash-confirm">
           <p>

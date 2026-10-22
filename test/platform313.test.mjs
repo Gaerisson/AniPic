@@ -322,7 +322,7 @@ test("team polls enforce roles, scheduling, single versus multiple choices, owne
     503,
   );
 });
-test("fast TV capture polling requires the screen identity and PIN, expires safely, respects disabled capture and never exposes snapshots to visitors", async (t) => {
+test("fast TV capture polling requires the screen identity without a site PIN, expires safely, respects disabled capture and never exposes snapshots to visitors", async (t) => {
   const { app, db } = await fixture(t),
     a = await login(app, "agent"),
     key = id(),
@@ -388,7 +388,7 @@ test("fast TV capture polling requires the screen identity and PIN, expires safe
     accessPinEnabled: true,
     accessPinHash: await hashPassword("582104"),
   });
-  assert.equal((await poll()).statusCode, 401);
+  assert.equal((await poll()).statusCode, 200);
   saveSettings(db, { accessPinEnabled: false });
   await call(app, a.headers, "DELETE", "/api/admin/display/screens/" + key, {
     revision: 1,

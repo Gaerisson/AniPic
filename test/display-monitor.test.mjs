@@ -46,15 +46,15 @@ const screens = async (app, headers) => {
   assert.equal(r.statusCode, 200, r.body);
   return r.json().screens;
 };
-test("TV heartbeat records only a write-only identity and keeps the global PIN and private manager access intact", async (t) => {
+test("TV heartbeat uses its device identity without a site PIN while keeping private manager access intact", async (t) => {
   const { app, db } = await fixture(t),
     payload = report(db);
   saveSettings(db, {
     accessPinEnabled: true,
     accessPinHash: await hashPassword("582104"),
   });
-  assert.equal((await send(app, payload)).statusCode, 401);
-  assert.equal(db.prepare("SELECT COUNT(*) n FROM display_screens").get().n, 0);
+  assert.equal((await send(app, payload)).statusCode, 200);
+  assert.equal(db.prepare("SELECT COUNT(*) n FROM display_screens").get().n, 1);
   const unlocked = await app.inject({
     method: "POST",
     url: "/api/gate/unlock",
@@ -306,7 +306,7 @@ test("schema 20 migration preserves data and sessions, and screen identities sur
     "DROP TABLE display_screen_events;DROP TABLE display_screens;PRAGMA user_version=20;",
   );
   const migrated = openDb(c);
-  assert.equal(migrated.prepare("PRAGMA user_version").get().user_version, 23);
+  assert.equal(migrated.prepare("PRAGMA user_version").get().user_version, 24);
   assert.equal(migrated.prepare("SELECT COUNT(*) n FROM sessions").get().n, 1);
   assert.equal(
     migrated.prepare("SELECT id FROM animals WHERE id=?").get(aid).id,

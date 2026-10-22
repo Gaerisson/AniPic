@@ -360,7 +360,7 @@ test("migration from schema 19 adds only the agenda and preserves drafts, animal
   );
   db.exec("DROP TABLE agenda_events;PRAGMA user_version=19;");
   const reopened = openDb(c);
-  assert.equal(reopened.prepare("PRAGMA user_version").get().user_version, 23);
+  assert.equal(reopened.prepare("PRAGMA user_version").get().user_version, 24);
   assert.equal(
     reopened.prepare("SELECT id FROM animals WHERE id=?").get(aid).id,
     aid,

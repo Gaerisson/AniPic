@@ -1,4 +1,4 @@
-# Déploiement AniPic 3.13.0
+# Déploiement AniPic 3.14.0
 
 ## Installer sur Debian avec Docker
 
@@ -33,10 +33,10 @@ sudo node scripts/prepare-storage.mjs --mount /mnt/nas --root /mnt/nas/anipic --
 Node.js 24 est nécessaire pour ce script. Sans Node sur l’hôte, construire d’abord l’image puis utiliser son runtime, en montant le parent NAS existant :
 
 ```sh
-docker build -t anipic:3.13.0 .
+docker build -t anipic:3.14.0 .
 docker run --rm --read-only --user 1000:1000 \
   --mount type=bind,src=/mnt/nas,dst=/mnt/nas \
-  --entrypoint node anipic:3.13.0 scripts/prepare-storage.mjs \
+  --entrypoint node anipic:3.14.0 scripts/prepare-storage.mjs \
   --mount /mnt/nas --root /mnt/nas/anipic --uid 1000 --gid 1000 --with-c8 --with-import
 ```
 
@@ -54,7 +54,7 @@ Choisir le mode adapté à la stack existante. `compose.yml` compile le dépôt 
 
 ### Image GitHub prête à télécharger
 
-Après la réussite du workflow de publication, utiliser `portainer-ghcr.yml` dans la **même stack**. Ce fichier référence `ghcr.io/gaerisson/anipic:3.13.0` avec `pull_policy: always` ; ici, **Re-pull image peut être activé**. Conserver toutes les variables NAS, UID/GID, port, origine et overrides C8/Import.
+Après la réussite du workflow de publication, utiliser `portainer-ghcr.yml` dans la **même stack**. Ce fichier référence `ghcr.io/gaerisson/anipic:3.14.0` avec `pull_policy: always` ; ici, **Re-pull image peut être activé**. Conserver toutes les variables NAS, UID/GID, port, origine et overrides C8/Import.
 
 ```sh
 docker compose -f portainer-ghcr.yml pull
@@ -80,8 +80,8 @@ Ne pas utiliser `portainer-stack.yml` pour une compilation automatique depuis Gi
 Après avoir récupéré les nouveaux fichiers du projet, construire l’image sur **le moteur Docker utilisé par Portainer**, depuis le répertoire contenant le Dockerfile :
 
 ```sh
-docker build -t anipic:3.13.0 .
-docker image inspect anipic:3.13.0 --format '{{.Id}}'
+docker build -t anipic:3.14.0 .
+docker image inspect anipic:3.14.0 --format '{{.Id}}'
 ```
 
 Redéployer ensuite la stack existante avec `portainer-stack.yml`, en conservant **Re-pull image désactivé**. Ce fichier garde `pull_policy: never` et exige que l’image existe déjà sur ce moteur. Si Portainer ne construit pas depuis Git, cette procédure permet de préparer l’image sur l’hôte puis de la déployer. Swarm nécessite aussi une image déjà construite, accessible à chacun des nœuds concernés ; un build Compose n’est pas un mécanisme de déploiement Swarm.
@@ -165,3 +165,17 @@ Créer une sauvegarde vérifiée, conserver l’ancienne image, puis reconstruir
 Configurer une URL de callback exacte, généralement `https://votre-domaine/api/canva/callback`, dans Canva et dans AniPic. La connexion exige une session utilisateur autorisée. Au départ OAuth, AniPic pose un cookie de retour HttpOnly, temporaire (10 minutes), SameSite=Lax et limité à `/api/canva/callback` ; les cookies de session/PIN habituels restent Strict. Au retour, seule cette route GET peut retrouver la session correspondante. Le rôle, l’utilisateur, la session exacte, l’IP si liée au réseau, le `state` à usage unique, PKCE et l’expiration sont toujours contrôlés. Une session expirée doit se reconnecter puis relancer Canva.
 
 En HTTPS, définir `COOKIE_SECURE=true` avec `APP_ORIGIN` et le frontal correctement configurés. Ne pas élargir les routes publiques ni désactiver le PIN pour contourner un échec OAuth. Les journaux excluent les codes et paramètres de callback.
+
+
+## RAM du détourage dans Portainer
+
+Les fichiers Compose limitent le conteneur à **2 Gio par défaut**, même si la VM a davantage de RAM. Le détourage précis vérifie qu’au moins 3 Gio sont disponibles avant de charger le modèle.
+
+1. Dans Portainer, ouvrir **Stacks → AniPic → variables d’environnement de la stack**.
+2. Définir `ANIPIC_MEMORY_LIMIT=4g`. Il s’agit d’une variable substituée par Compose, pas seulement d’une variable ajoutée dans le conteneur.
+3. Mettre à jour la stack existante, sans supprimer/recréer les volumes. Si le YAML est personnalisé, la limite équivalente est `mem_limit: 4g`.
+4. Vérifier que la VM dispose de cette RAM avec une marge pour son système et ses autres services. Si elle n’a que 4 Gio au total, augmenter d’abord la RAM de la VM ou ajuster les ressources des autres services.
+
+Avec le nom de conteneur réellement affiché dans Portainer, `docker inspect NOM_CONTENEUR --format '{{.HostConfig.Memory}}'` doit indiquer `4294967296` pour 4 Gio. `docker stats --no-stream NOM_CONTENEUR` affiche la consommation et le plafond en cours.
+
+AniPic n’augmente pas la mémoire du NAS ou de la VM et ne désactive pas son contrôle pour lancer le modèle sans marge suffisante. Un modèle plus petit peut consommer moins tout en conservant une partie du fond : il n’est pas activé automatiquement au détriment de la qualité.

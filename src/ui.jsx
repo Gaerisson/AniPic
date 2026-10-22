@@ -39,12 +39,15 @@ export function Button({
   className = "",
   onClick,
   onDoubleClick,
+  loading = false,
   ...props
 }) {
   return (
     <button
       className={`button ${variant} ${className}`}
       {...props}
+      disabled={props.disabled || loading}
+      aria-busy={loading || undefined}
       onClick={(e) => {
         e.stopPropagation();
         onClick?.(e);
@@ -54,7 +57,11 @@ export function Button({
         onDoubleClick?.(e);
       }}
     >
-      {Icon && <Icon size={17} />}
+      {loading ? (
+        <LoaderCircle size={17} className="button-spinner" aria-hidden="true" />
+      ) : (
+        Icon && <Icon size={17} />
+      )}
       <span>{children}</span>
     </button>
   );

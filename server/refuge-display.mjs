@@ -11,6 +11,9 @@ import { settings, saveSettings, audit } from "./db.mjs";
 import { publicAnimalMetadata, publicCompatibility } from "./animal-facts.mjs";
 import { sourceLink } from "./communication.mjs";
 import { parseShow } from "./signage-schema.mjs";
+import { derivative } from "./storage.mjs";
+import { sourcePhotoBuffer } from "./source-photo.mjs";
+import { readFile } from "node:fs/promises";
 import { matchingTag } from "./animal-media.mjs";
 import { showTimeline, scheduleOpen } from "../shared/signage.mjs";
 import { agendaItems } from "./agenda.mjs";
@@ -106,7 +109,9 @@ export async function buildDisplay(
       id: p.id,
       src: assetURL
         ? assetURL("photo", p.id, p.hash, p.mime)
-        : `/media/${p.id}?w=1280`,
+        : force
+          ? `/media/${p.id}?w=1280`
+          : `/api/public/display/photos/${p.id}`,
     }));
     if (
       !media.length &&
@@ -117,7 +122,9 @@ export async function buildDisplay(
       media.push({
         kind: "photo",
         source: true,
-        src: `/api/animals/${a.id}/source-photo?w=1280`,
+        src: force
+          ? `/api/animals/${a.id}/source-photo?w=1280`
+          : `/api/public/display/source-photos/${a.id}`,
       });
     if (program.includeVideos && program.mode !== "wallpaper")
       for (const v of db
@@ -308,6 +315,80 @@ export async function registerDisplay(app, { db, c, authorized }) {
     reply.header("Cache-Control", "no-store");
     return buildDisplay(db);
   });
+  function publicAnimal(animal) {
+    const cfg = settings(db),
+      program = parseShow(cfg.displayProgram || {});
+    return (
+      animal &&
+      cfg.displayEnabled &&
+      animal.archived_at === null &&
+      !["adopted", "source_missing"].includes(animal.status) &&
+      (cfg.displayReserved || animal.status !== "reserved") &&
+      !cfg.displayHiddenIds.includes(animal.id) &&
+      program.species.includes(animal.species) &&
+      !db
+        .prepare("SELECT 1 FROM settings WHERE key=?")
+        .get("animalTrash:" + animal.id) &&
+      !missingAnimalIds(db).includes(animal.id)
+    );
+  }
+  app.get(
+    "/api/public/display/photos/:id",
+    { config: { rateLimit: { max: 300, timeWindow: "1 minute" } } },
+    async (req, reply) => {
+      const key = z.string().uuid().parse(req.params.id);
+      const photo = db
+        .prepare(
+          "SELECT p.hash FROM photos p JOIN blobs b ON b.hash=p.hash WHERE p.id=? AND p.hidden=0 AND p.deleted_at IS NULL AND p.archived_at IS NULL AND b.mime LIKE 'image/%'",
+        )
+        .get(key);
+      const animal = db
+        .prepare(
+          "SELECT a.* FROM animals a JOIN photos p ON p.animal_id=a.id WHERE p.id=?",
+        )
+        .get(key);
+      if (
+        !photo ||
+        !publicAnimal(animal) ||
+        !matchingTag(
+          db,
+          "photo",
+          key,
+          parseShow(settings(db).displayProgram || {}).tags,
+        )
+      )
+        return reply.code(404).send({ error: "Photo non diffusée." });
+      const file = await derivative(
+        c,
+        photo,
+        1280,
+        80,
+        settings(db).cacheMB * 1024 ** 2,
+      );
+      return reply
+        .type("image/webp")
+        .header("Cache-Control", "private, max-age=300")
+        .send(await readFile(file));
+    },
+  );
+  app.get(
+    "/api/public/display/source-photos/:id",
+    { config: { rateLimit: { max: 180, timeWindow: "1 minute" } } },
+    async (req, reply) => {
+      const key = z.string().uuid().parse(req.params.id),
+        animal = db.prepare("SELECT * FROM animals WHERE id=?").get(key);
+      if (
+        !settings(db).displaySpaPhotos ||
+        !publicAnimal(animal) ||
+        parseShow(settings(db).displayProgram || {}).tags.length
+      )
+        return reply.code(404).send({ error: "Portrait SPA non diffusé." });
+      return reply
+        .type("image/webp")
+        .header("Cache-Control", "private, max-age=300")
+        .send(await sourcePhotoBuffer(db, c, key));
+    },
+  );
   app.get("/api/public/display/videos/:id", async (req, reply) => {
     const cfg = settings(db),
       assetId = z.string().uuid().parse(req.params.id),

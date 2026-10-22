@@ -1,3 +1,4 @@
+import { NetworkBadge, StartupScreen } from "./app-feedback.jsx";
 import { AnnualStatistics } from "./annual-statistics.jsx";
 import { Component, useEffect, useState } from "react";
 import { Monitor, ExternalLink, Save, Film, Settings2 } from "lucide-react";
@@ -100,13 +101,11 @@ export function RefugeScreen() {
   }, [monitor.config?.autoReconnect]);
   if (!show)
     return (
-      <main className="show-loading">
-        {error ? (
-          <Empty icon={Monitor} title="Écran indisponible" text={error} />
-        ) : (
-          <Spinner />
-        )}
-      </main>
+      <StartupScreen
+        television
+        error={error}
+        retry={() => window.dispatchEvent(new Event("anipic-tv-refresh"))}
+      />
     );
   if (!show.enabled)
     return (
@@ -162,11 +161,19 @@ export function RefugeScreen() {
           monitorControl={<DisplayMonitorControl monitor={monitor} />}
         />
       </TVPlaybackBoundary>
-      {error && (
-        <div className="screen-error" role="status">
-          Connexion interrompue · programme conservé
-        </div>
-      )}
+      <NetworkBadge
+        television
+        visible={show.program?.connectionBadge !== false}
+        debug={!!show.program?.debugBadge}
+        offline={!!error || monitor.connection?.state === "unavailable"}
+        detail={[
+          monitor.connection?.name,
+          show.items.length + " animaux",
+          monitor.connection?.state,
+        ]
+          .filter(Boolean)
+          .join(" · ")}
+      />
     </>
   );
 }

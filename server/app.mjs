@@ -1,3 +1,4 @@
+import { registerCanvas } from "./canvas.mjs";
 import {
   compatibilityState,
   normalizeCompatibility,
@@ -213,8 +214,14 @@ export async function createApp(overrides = {}) {
   app.addHook("onResponse", async (req, reply) => {
     if (!req.url.startsWith("/api/") || req.url.startsWith("/api/health"))
       return;
-    if(['/api/visit','/api/privacy','/api/privacy/consent'].includes(req.url.split('?')[0])&&reply.statusCode<400)return;
-    if(req.method==='GET'&&!req.user&&reply.statusCode<400)return;
+    if (
+      ["/api/visit", "/api/privacy", "/api/privacy/consent"].includes(
+        req.url.split("?")[0],
+      ) &&
+      reply.statusCode < 400
+    )
+      return;
+    if (req.method === "GET" && !req.user && reply.statusCode < 400) return;
     db.prepare("INSERT INTO access_log VALUES (?,?,?,?,?,?,?,?)").run(
       id(),
       req.user?.id || null,
@@ -280,6 +287,7 @@ export async function createApp(overrides = {}) {
   await registerGoogleAuth(app, { db, c, authorized });
   await registerArchiveFolders(app, { db });
   await registerJournal(app, { db, authorized });
+  await registerCanvas(app, { db, authorized });
   await registerArchiveCompression(app, { db, c, authorized, job });
   await registerTrash(app, { db, c, authorized, job });
   await registerUserAvatars(app, { db, authorized });

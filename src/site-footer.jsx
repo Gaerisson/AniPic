@@ -1,6 +1,14 @@
 import { QuickTour } from "./quick-tour.jsx";
 import { NavLink } from "./nav-link.jsx";
-export function SiteFooter({ go, user, demo, appMode, onCookies }) {
+export function SiteFooter({
+  go,
+  user,
+  demo,
+  appMode,
+  onCookies,
+  open,
+  close,
+}) {
   return (
     <footer className="footer footer313">
       <div className="footer-main">
@@ -13,7 +21,13 @@ export function SiteFooter({ go, user, demo, appMode, onCookies }) {
         </button>
         <div className="footer-help">
           <a href="/android">Installer sur Android ↗</a>
-          <QuickTour go={go} user={user} appMode={appMode} />
+          <QuickTour
+            go={go}
+            user={user}
+            appMode={appMode}
+            open={open}
+            close={close}
+          />
         </div>
       </div>
       <nav

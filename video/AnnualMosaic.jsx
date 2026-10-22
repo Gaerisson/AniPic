@@ -16,7 +16,7 @@ export function AnnualMosaic({ film }) {
     { width: w, height: h } = useVideoConfig(),
     u = Math.min(w, h) / 1080,
     portrait = h > w;
-  const entries = film.clips.filter((c) => c.kind === "photo"),
+  const entries = film.clips.filter((c) => c.kind !== "video"),
     total = filmDuration(film),
     finishStart = Math.max(1, Math.floor(total * 0.68)),
     finishFrames = total - finishStart;

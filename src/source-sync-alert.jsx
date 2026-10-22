@@ -37,7 +37,9 @@ export function SourceSyncAlert({ user, initial, onReview }) {
           {mismatch
             ? "Écart de synchronisation SPA"
             : health.state === "error"
-              ? "Synchronisation SPA en échec"
+              ? health.countsMatch
+                ? "Effectifs concordants · dernier contrôle interrompu"
+                : "Synchronisation SPA en échec"
               : health.state === "stale"
                 ? "Synchronisation SPA à actualiser"
                 : "Source SPA non vérifiée"}
@@ -46,7 +48,8 @@ export function SourceSyncAlert({ user, initial, onReview }) {
           {mismatch
             ? "Le nombre ou la liste d’animaux diffère du dernier inventaire SPA fiable."
             : health.state === "error"
-              ? "Le dernier contrôle n’a pas confirmé un inventaire complet et fiable. Les fiches et les photos ont été conservées."
+              ? health.reason ||
+                "Le dernier contrôle n’a pas confirmé un inventaire complet et fiable. Les fiches et les photos ont été conservées."
               : health.state === "stale"
                 ? "Le dernier inventaire fiable est ancien : vérifiez la synchronisation avant de vous fier aux effectifs."
                 : "Aucun inventaire complet n’a encore été comparé aux fiches locales."}
@@ -60,13 +63,22 @@ export function SourceSyncAlert({ user, initial, onReview }) {
         )}
         {health.checkedAt && (
           <small>
-            Contrôle du{" "}
+            Dernier relevé fiable :{" "}
             {new Date(health.checkedAt).toLocaleString("fr-FR", {
               timeZone: "Europe/Paris",
             })}
             {health.basedOn === "diagnostic"
               ? " · test sans mise à jour des fiches"
               : ""}
+          </small>
+        )}
+        {health.state === "error" && health.lastAttemptAt && (
+          <small>
+            Dernière tentative :{" "}
+            {new Date(health.lastAttemptAt).toLocaleString("fr-FR", {
+              timeZone: "Europe/Paris",
+            })}{" "}
+            · les fiches et les photos sont conservées.
           </small>
         )}
         <details className="source-sync-detail">

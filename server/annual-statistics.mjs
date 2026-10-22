@@ -1,11 +1,15 @@
 import { z } from "zod";
 import { settings, audit, now } from "./db.mjs";
 export function annualAdoptions(db, year) {
-  const observed = db
-    .prepare(
-      "SELECT COUNT(DISTINCT animal_id) n FROM animal_status_events WHERE status='adopted' AND observed_at>=? AND observed_at<?",
-    )
-    .get(`${year}-01-01`, `${year + 1}-01-01`).n;
+  const observed =
+    db
+      .prepare(
+        "SELECT COUNT(DISTINCT animal_id) n FROM animal_status_events WHERE status='adopted' AND observed_at>=? AND observed_at<?",
+      )
+      .get(`${year}-01-01`, `${year + 1}-01-01`).n +
+    (db
+      .prepare("SELECT adoptions FROM erased_animal_statistics WHERE year=?")
+      .get(year)?.adoptions || 0);
   const saved = settings(db)[`annualAdoptions:${year}`];
   const mode = saved?.mode || "auto",
     value = Number.isInteger(saved?.value) ? saved.value : 0;

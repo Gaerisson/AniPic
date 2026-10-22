@@ -120,7 +120,7 @@ export default function GroupPoster({ user, overview, notify }) {
       <div className="page-heading">
         <div>
           <div className="eyebrow">LES VISAGES DU REFUGE</div>
-          <h1>Une affiche, tous ces regards.</h1>
+          <h1>Une affiche, tous ces regards</h1>
           <p>
             Composez une grande affiche avec les photos locales ou celles du
             site SPA.

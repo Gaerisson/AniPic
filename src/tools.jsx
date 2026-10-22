@@ -484,16 +484,29 @@ export function AgentTools({ notify, open, go, user, ui = {} }) {
           <p>Un prénom, un créneau de lumière, une prochaine histoire.</p>
         </div>
       </div>
-      <TeamUtilities go={go} modules={ui.enabledModules} />
-      <Suspense fallback={<Spinner />}>
-        <CreativeWorkshop
-          user={user}
-          notify={notify}
-          open={open}
-          go={go}
-          ui={ui}
-        />
-      </Suspense>
+      <div className="tool-links priority-tools">
+        <Button icon={Camera} onClick={() => go("todo")}>
+          À photographier
+        </Button>
+        {user?.role === "admin" && (
+          <Button variant="secondary" onClick={() => go("storage")}>
+            Rechercher les doublons
+          </Button>
+        )}
+        <Button
+          variant="secondary"
+          onClick={() =>
+            document
+              .querySelector(".weather-full")
+              ?.scrollIntoView({ behavior: "smooth", block: "center" })
+          }
+        >
+          Météo du refuge
+        </Button>
+        <Button variant="secondary" onClick={() => go("canvas")}>
+          Atelier Canvas
+        </Button>
+      </div>
       <div className="tool-links">
         {["admin", "agent"].includes(user?.role) && (
           <Button
@@ -591,20 +604,25 @@ export function AgentTools({ notify, open, go, user, ui = {} }) {
               {!national.ready && !national.running && (
                 <p>
                   Le premier catalogue est en préparation. Les prochaines
-                  propositions seront immédiates, y compris pendant une actualisation.
+                  propositions seront immédiates, y compris pendant une
+                  actualisation.
                 </p>
               )}
               <small>
-                Actualisation automatique chaque nuit à 03 h 15 (heure de Paris).
-                Les propositions utilisent le dernier relevé national complet,
-                sans attendre son renouvellement. Les animaux partis du refuge
-                ne bloquent pas leur prénom.
+                Actualisation automatique chaque nuit à 03 h 15 (heure de
+                Paris). Les propositions utilisent le dernier relevé national
+                complet, sans attendre son renouvellement. Les animaux partis du
+                refuge ne bloquent pas leur prénom.
               </small>
             </div>
           )}
           <div className="name-catalogue-actions">
             <Button
-              icon={busy || (!national?.ready && national?.running) ? LoaderCircle : RefreshCw}
+              icon={
+                busy || (!national?.ready && national?.running)
+                  ? LoaderCircle
+                  : RefreshCw
+              }
               disabled={
                 busy ||
                 (!national?.ready &&
@@ -612,7 +630,11 @@ export function AgentTools({ notify, open, go, user, ui = {} }) {
               }
               onClick={() => generate(!national?.ready)}
             >
-              {national?.ready ? "Trouver des prénoms" : national?.running ? "Préparation du catalogue…" : "Vérifier les noms SPA"}
+              {national?.ready
+                ? "Trouver des prénoms"
+                : national?.running
+                  ? "Préparation du catalogue…"
+                  : "Vérifier les noms SPA"}
             </Button>
             {national?.ready &&
               ["admin", "editor", "agent"].includes(user?.role) && (
@@ -651,6 +673,16 @@ export function AgentTools({ notify, open, go, user, ui = {} }) {
           <Weather />
         </section>
       </div>
+      <TeamUtilities go={go} modules={ui.enabledModules} />
+      <Suspense fallback={<Spinner />}>
+        <CreativeWorkshop
+          user={user}
+          notify={notify}
+          open={open}
+          go={go}
+          ui={ui}
+        />
+      </Suspense>
     </>
   );
 }

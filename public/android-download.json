@@ -1,10 +1,10 @@
 {
-  "version": "3.13.0",
-  "versionCode": 31300,
+  "version": "3.14.0",
+  "versionCode": 31400,
   "packageId": "fr.gaerisson.anipic",
   "siteUrl": "https://anipic.gaerisson.fr",
-  "filename": "AniPic-3.13.0.apk",
+  "filename": "AniPic-3.14.0.apk",
   "bytes": 1314122,
-  "sha256": "9682b752fd2c5376bd25ad1012bf5b7d5a2619b5e994d0f670d2fdb065c77747",
+  "sha256": "d922df707cb48d001302a09974a220cdf0937d327f853061f05f91d6cef23dd1",
   "certificateSha256": "57:8F:15:C8:85:0A:53:26:4A:D5:E1:15:86:AE:35:49:33:86:4A:5A:A0:CB:65:B2:7F:EA:BC:DE:BE:C9:17:80"
 }
