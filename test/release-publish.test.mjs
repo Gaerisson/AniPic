@@ -20,7 +20,14 @@ test("publication keeps a draft after a failed push, rejects conflicting tags an
     path.join(root, `RELEASE_${tag}.md`),
     "# AniPic test\n\nRelease fixture.",
   );
-  for (const scenario of ["push-failure", "conflicting-tag", "success"]) {
+  for (const scenario of [
+    "push-failure",
+    "conflicting-tag",
+    "success",
+    "resume-draft",
+    "conflicting-draft",
+    "upload-failure",
+  ]) {
     const code = `
       import childProcess from 'node:child_process';
       import { syncBuiltinESMExports } from 'node:module';
@@ -29,6 +36,7 @@ test("publication keeps a draft after a failed push, rejects conflicting tags an
       childProcess.execFileSync = (command, args) => {
         events.push([command, ...args]);
         if (command === 'docker' && args[0] === 'push' && scenario === 'push-failure') throw Error('registry unavailable');
+        if (command === 'gh' && scenario === 'upload-failure') throw Error('upload unavailable');
         if (command === 'docker' && args.includes('{{json .Config.Labels}}')) return JSON.stringify({
           'org.opencontainers.image.version': ${JSON.stringify(version)},
           'org.opencontainers.image.revision': 'a'.repeat(40)
@@ -42,6 +50,11 @@ test("publication keeps a draft after a failed push, rejects conflicting tags an
         const route = new URL(url).pathname.split('/AniPic/')[1], method = options.method;
         events.push(['api', method, route]);
         if (route.startsWith('git/ref/') && scenario === 'conflicting-tag') return Response.json({object:{type:'commit',sha:'c'.repeat(40)}});
+        if (method === 'GET' && route === 'releases') return Response.json(
+          scenario === 'resume-draft' || scenario === 'conflicting-draft'
+            ? [{id:42, tag_name:${JSON.stringify(tag)}, draft:true, target_commitish:(scenario === 'conflicting-draft' ? 'c' : 'a').repeat(40)}]
+            : []
+        );
         if (method === 'GET') return new Response('', {status:404});
         if (method === 'POST') return Response.json({id:42, draft:true, html_url:'https://github.com/Gaerisson/AniPic/releases/test'});
         if (method === 'PATCH') {
@@ -79,7 +92,7 @@ test("publication keeps a draft after a failed push, rejects conflicting tags an
     );
     const publish = events.findIndex((event) => event[0] === "published");
     const upload = events.findIndex((event) => event[0] === "gh");
-    if (scenario === "success") {
+    if (scenario === "success" || scenario === "resume-draft") {
       assert.equal(error, "");
       assert.ok(publish > upload && upload > 0);
       assert.equal(
@@ -88,14 +101,19 @@ test("publication keeps a draft after a failed push, rejects conflicting tags an
         3,
       );
       assert.deepEqual(events[publish], ["published", false]);
-    } else {
-      assert.ok(error);
-      assert.equal(publish, -1);
-      assert.equal(upload, -1);
       assert.equal(
         events.filter((event) => event[0] === "api" && event[1] === "POST")
           .length,
-        scenario === "push-failure" ? 1 : 0,
+        scenario === "resume-draft" ? 0 : 1,
+      );
+    } else {
+      assert.ok(error);
+      assert.equal(publish, -1);
+      assert.equal(upload >= 0, scenario === "upload-failure");
+      assert.equal(
+        events.filter((event) => event[0] === "api" && event[1] === "POST")
+          .length,
+        scenario === "push-failure" || scenario === "upload-failure" ? 1 : 0,
       );
     }
   }

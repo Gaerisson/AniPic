@@ -9,6 +9,7 @@ import {
 } from "node:fs";
 import { createHash } from "node:crypto";
 import { readReleaseMetadata } from "./release-metadata.mjs";
+import { createReleaseApi, findRelease } from "./github-release-api.mjs";
 
 const info = readReleaseMetadata();
 assert.equal(
@@ -23,26 +24,10 @@ const run = (command, args, capture = false) =>
     encoding: "utf8",
     windowsHide: true,
   });
-async function api(route, { method = "GET", body, absent = false } = {}) {
-  const response = await fetch(
-    `https://api.github.com/repos/${info.repository}/${route}`,
-    {
-      method,
-      headers: {
-        Authorization: `Bearer ${process.env.GH_TOKEN}`,
-        Accept: "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-        "Content-Type": "application/json",
-      },
-      ...(body ? { body: JSON.stringify(body) } : {}),
-      signal: AbortSignal.timeout(30000),
-    },
-  );
-  if (absent && response.status === 404) return null;
-  if (!response.ok)
-    throw Error(`GitHub ${method} ${route} : HTTP ${response.status}.`);
-  return response.json();
-}
+const api = createReleaseApi({
+  repository: info.repository,
+  token: process.env.GH_TOKEN,
+});
 const tagged = await api(`git/ref/tags/${info.tag}`, { absent: true });
 if (tagged) {
   let object = tagged.object;
@@ -55,7 +40,7 @@ if (tagged) {
     "Le tag existe sur un autre commit : aucun remplacement autorisé.",
   );
 }
-let release = await api(`releases/tags/${info.tag}`, { absent: true });
+let release = await findRelease(api, info.tag);
 if (release && !release.draft) {
   assert.ok(tagged, "Release existante sans tag vérifiable.");
   console.log(`Release déjà publiée pour ce commit : ${release.html_url}`);

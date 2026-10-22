@@ -39,6 +39,12 @@ La CI `.github/workflows/ci.yml` contrôle chaque PR, push vers main et tag `v*`
 
 Le ZIP GitHub contient les sources ; ses builds sont réalisés par Docker ou npm à l’installation. Il ne contient aucune base, photo NAS, clé `.env` ou donnée de démo. Les images sont actuellement **linux/amd64**. Une image de contrôle intermédiaire est conservée un jour dans les artefacts Actions, puis expire.
 
+### Reprendre une publication interrompue
+
+Si les contrôles application, Android et Docker sont verts mais que `publish` échoue sur une coupure réseau, utiliser **Re-run failed jobs** sur cette même exécution. Le script retrouve le brouillon et ses fichiers, vérifie toujours le commit du tag et reprend la publication de la même image contrôlée. Il ne recrée pas un brouillon à chaque tentative. Une release déjà publique pour ce commit reste intacte.
+
+Les appels de lecture et de finalisation tolèrent jusqu’à trois tentatives sur les coupures réseau et erreurs temporaires, avec attente progressive. Les connexions API sont fermées après chaque appel pour éviter leur expiration pendant un long envoi Docker. Les refus d’accès ne sont pas contournés ; une création de release n’est jamais répétée aveuglément. Plusieurs brouillons pour un même tag bloquent la reprise et demandent une vérification. Ces scénarios sont couverts par les tests de publication avec réseau, Docker et GitHub CLI simulés.
+
 La protection du NAS est vérifiée dans le YAML source et dans la configuration Compose normalisée : certaines versions de Compose omettent `false` dans leur sortie JSON. Cette omission ne vaut pas autorisation de créer des dossiers. Une valeur `true`, un chemin inattendu ou l’absence de `create_host_path: false` dans la source font échouer le contrôle.
 
 ## Modifier des dépendances
