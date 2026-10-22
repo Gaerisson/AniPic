@@ -53,9 +53,9 @@
 .sidebar .brand {
   margin-bottom: 12px;
 }
-.page-heading h1::after {
+.page-heading h1:not(:has(.heading-dot))::after {
   content: ".";
-  color: var(--accent, #f6ad70);
+  color: var(--accent-custom, #f6ad70);
   margin-left: 1px;
 }
 .page-heading {
@@ -65,6 +65,9 @@
 .page-heading h1 {
   line-height: 1.1;
   letter-spacing: -0.045em;
+}
+.page-heading h1:last-child {
+  margin-bottom: 0;
 }
 .page-heading p {
   max-width: 70ch;
@@ -625,9 +628,14 @@
   color: var(--muted);
 }
 
-.page-heading > div {
+.page-heading > div:not(.heading-actions) {
   min-width: 0;
   flex: 1;
+}
+html[data-theme] .page-heading > .heading-actions {
+  flex: 0 1 auto;
+  justify-content: flex-end;
+  margin: 0 0 0 auto;
 }
 .page-heading > svg {
   flex-shrink: 0;

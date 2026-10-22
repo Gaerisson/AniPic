@@ -1,5 +1,11 @@
 # Vérifications — AniPic
 
+## V3.15.1 — Titres et alignement des en-têtes
+
+Correctif CSS contrôlé dans le navigateur réel à 1440, 1092, 1024, 768, 390 et 320 px : un seul point orange dans la photothèque, bouton d'options au bord droit du contenu, aucune largeur horizontale excédentaire. Le menu reste dans le viewport à 320 px et son bord droit rejoint celui du bouton sur ordinateur. Le titre du fil du refuge utilise également un seul point orange. Les données locales ne sont pas réinitialisées.
+
+Build frontend et contrôle Prettier réussis. Onze tests ciblés de métadonnées de release, publication et installation Android réussissent sous Node.js 24.22.1. La nouvelle publication est conditionnée aux contrôles complets GitHub Actions du commit exact : application, Android, image Docker et rendu MP4 isolé. Ces contrôles ne remplacent pas une vérification du NAS, de Portainer, d'une TV ou d'un téléphone physiques. L'APK native reste en 3.14.0, avec son fichier et son certificat existants.
+
 ## V3.15.0 — Créations, sauvegardes et reprises DNS
 
 Suite complète sous Node.js 24 : **306 tests réussis**, aucun échec ni test ignoré, en 155,9 secondes. Après les ajustements visuels, 43 tests ciblés réussissent aussi. Les nouveaux contrôles portent sur les frontières de mots françaises, le placement des émojis, les neuf modèles dans les cinq formats, la reprise DNS et son épuisement sans dépassement des budgets, la rétention des sauvegardes avec protection des originaux, les rôles et le CSRF, les chemins dangereux et le stockage absent. Le retrait d’une TV en ligne est refusé ; un appareil hors ligne est masqué puis réapparaît avec son identité vérifiée et son nom conservé.

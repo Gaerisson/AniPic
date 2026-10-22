@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 3.15.1 — Titres et en-têtes alignés
+
+Un seul point orange dans les titres, boutons d'action alignés à droite et meilleur alignement vertical des en-têtes sans sous-titre. La photothèque et les autres pages partagent la correction, avec menus utilisables sur petit écran. [Notes complètes](RELEASE_v3.15.1.md). L'APK native reste en 3.14.0.
+
 ## 3.15.0 — Ateliers, bannières et outils du refuge
 
 Proportions liées par défaut dans Canvas, neuf modèles et atelier partagé avec les bannières ; outils organisés par rubrique, galerie Liquid glass, corrections françaises et émojis d’entente. Retour automatique des écrans retirés hors ligne, sauvegardes avec durée et suppression manuelle, nouvelles tentatives DNS bornées. [Notes complètes](RELEASE_v3.15.0.md).
