@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { Readable } from "node:stream";
 import sharp from "sharp";
+import { Rect, Shadow, Gradient } from "fabric";
 import { fixture, login, animal } from "./helpers.mjs";
 import { id, now, saveSettings, openDb } from "../server/db.mjs";
 import { hashPassword } from "../server/auth.mjs";
@@ -216,6 +217,30 @@ test("Canvas validation rejects remote URLs, executable types, excessive sizes a
   for (let i = 0; i < 70; i++) h = canvasHistoryPush(h, String(i));
   assert.equal(h.length, 30);
   assert.equal(h.at(-1), "69");
+});
+test("Canvas accepts real Fabric shadows and gradients as properties while rejecting them as drawable layers", () => {
+  const rectangle = new Rect({
+    width: 300,
+    height: 200,
+    shadow: new Shadow({ blur: 20, color: "#0004" }),
+    fill: new Gradient({
+      type: "linear",
+      coords: { x1: 0, y1: 0, x2: 300, y2: 200 },
+      colorStops: [
+        { offset: 0, color: "#fff" },
+        { offset: 1, color: "#f47721" },
+      ],
+    }),
+  }).toObject();
+  assert.doesNotThrow(() =>
+    validateCanvasDocument({ ...document(), scene: { objects: [rectangle] } }),
+  );
+  for (const type of ["shadow", "linear", "radial", "blur"]) {
+    for (const objects of [[{ type }], [{ type: "Group", objects: [{ type }] }]])
+      assert.throws(() =>
+        validateCanvasDocument({ ...document(), scene: { objects } }),
+      );
+  }
 });
 test("AI adapters return only public text and retry empty or truncated output once with a bounded larger budget", async () => {
   assert.equal(

@@ -1,4 +1,4 @@
-const objectTypes = new Set([
+const drawableTypes = new Set([
   "rect",
   "circle",
   "textbox",
@@ -11,6 +11,10 @@ const objectTypes = new Set([
   "path",
   "polygon",
   "polyline",
+]);
+const objectTypes = new Set([
+  ...drawableTypes,
+  "shadow",
   "linear",
   "radial",
   "brightness",
@@ -91,6 +95,14 @@ export function validateCanvasDocument(doc) {
         fail("Propriété de projet interdite.");
       if (key === "type" && !objectTypes.has(String(entry).toLowerCase()))
         fail("Élément de visuel non pris en charge.");
+      if (
+        key === "objects" &&
+        (!Array.isArray(entry) ||
+          entry.some(
+            (object) => !drawableTypes.has(String(object?.type).toLowerCase()),
+          ))
+      )
+        fail("Calque de visuel non pris en charge.");
       if (key === "src" && !allowedCanvasImage(entry))
         fail(
           "Les images doivent provenir d’AniPic ou d’un import PNG, JPEG ou WebP.",

@@ -1,4 +1,10 @@
-# Vérifications — AniPic 3.13.0
+# Vérifications — AniPic
+
+## V3.14.2 — Modèles Glass et saisonniers
+
+Suite complète : **296 tests réussis**, aucun échec ni test ignoré, sous Node24 en151,2secondes. Les neuf tests ciblés passent également, dont un nouveau test utilisant la sérialisation réelle de `Rect`, `Shadow` et `Gradient` de Fabric. Les ombres et dégradés restent autorisés comme propriétés ; ils sont refusés comme calques autonomes, y compris dans un groupe. Builds frontend et vidéo réussis, six configurations Compose vérifiées.
+
+Essais dans le navigateur sur le serveur de démonstration isolé : ajout d’une photo au modèle Glass, export JSON, rechargement et restauration des six éléments avec ombre ; modèle saisonnier Noël avec fond dégradé, vingt éléments exportés puis restaurés. Les deux documents téléchargés ont passé le validateur du serveur. Le SVG Glass contient ses deux images intégrées et aucun lien image externe ; il a été rendu hors serveur en PNG1920×720 avec Sharp. Les autres essais de la version3.14 et leurs limites restent détaillés ci-dessous. La validation GitHub complète de cette révision doit réussir avant publication.
 
 ## V3.14.1 — Exports et duplication Canvas
 

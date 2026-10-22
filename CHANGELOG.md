@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 3.14.2 — Modèles Glass et saisons
+
+Sauvegarde et restauration des ombres du modèle Glass corrigées, sans autoriser les objets auxiliaires comme calques. Modèles Glass et saisonniers essayés dans le navigateur, exports téléchargés et relus hors serveur. [Notes complètes](RELEASE_v3.14.2.md). L’APK native reste en3.14.0.
+
 ## 3.14.1 — Finitions du Canvas
 
 Duplication fiable des sélections multiples, exports SVG avec images intégrées et contrôle des limites avant ajout. [Notes complètes](RELEASE_v3.14.1.md). L’APK native reste en3.14.0 : la mise à jour du site fournit ces correctifs à l’application.
