@@ -319,12 +319,90 @@ test("Mistral voice generation is protected, caches the audio and resolves separ
   assert.equal(resolved.voiceover.duration, 2);
   assert.equal(resolved.voiceover.volume, 0.8);
   assert.match(resolved.voiceover.src, /private/);
+  assert.equal(filmDuration(resolved), 3 * FPS);
+  assert.equal(resolved.clips[0].seconds, 4);
+  const forgedDuration = resolveFilm(
+    db,
+    c,
+    { ...film, voiceover: { ...film.voiceover, duration: 999 } },
+    () => "/private/audio",
+  );
+  assert.equal(
+    filmDuration(forgedDuration),
+    3 * FPS,
+    "Only measured asset duration controls the montage",
+  );
   assert.throws(
     () =>
       resolveFilm(
         db,
         c,
-        { ...film, voiceover: { ...film.voiceover, start: 100 } },
+        { ...film, voiceover: { ...film.voiceover, start: 599 } },
+        () => "",
+      ),
+    /10 minutes/,
+  );
+  assert.throws(
+    () =>
+      resolveFilm(
+        db,
+        c,
+        {
+          ...film,
+          subtitles: {
+            enabled: true,
+            cues: [{ start: 2, end: 4, text: "Trop long" }],
+          },
+        },
+        () => "",
+      ),
+    (error) => error.statusCode === 400 && /montage/.test(error.message),
+  );
+  assert.throws(
+    () =>
+      resolveFilm(
+        db,
+        c,
+        {
+          ...film,
+          narrationMode: "manual",
+          introSeconds: 0,
+          outroSeconds: 0,
+          clips: [{ ...film.clips[0], seconds: 1 }],
+        },
+        () => "",
+      ),
+    /après|dépasse/,
+  );
+  const saved = await app.inject({
+    method: "POST",
+    url: "/api/video/projects",
+    headers,
+    payload: film,
+  });
+  assert.equal(saved.statusCode, 201, saved.body);
+  const reopened = await app.inject({
+    url: `/api/video/projects/${saved.json().id}`,
+    headers,
+  });
+  const preview = await app.inject({
+    method: "POST",
+    url: "/api/video/preview",
+    headers,
+    payload: reopened.json().config,
+  });
+  assert.equal(preview.statusCode, 200, preview.body);
+  assert.equal(filmDuration(preview.json()), 3 * FPS);
+  assert.throws(
+    () =>
+      resolveFilm(
+        db,
+        c,
+        {
+          ...film,
+          narrationMode: "manual",
+          voiceover: { ...film.voiceover, start: 100 },
+        },
         () => "",
       ),
     /après/,

@@ -21,6 +21,7 @@ import {
   CROSSFADE,
   introFrames,
   outroFrames,
+  filmTimeline,
 } from "./timing.mjs";
 const ease = (f, a, b) =>
   interpolate(f, [a, b], [0, 1], {
@@ -29,15 +30,14 @@ const ease = (f, a, b) =>
   });
 const amber = "#f4ab70",
   paper = "#f7f1e9";
-function Scene({ clip, index, film, last }) {
+function Scene({ clip, index, film, overlap = CROSSFADE }) {
   const frame = useCurrentFrame(),
     { width: w, height: h, fps } = useVideoConfig();
   const portrait = h > w,
     unit = Math.min(w, h) / 720,
     duration = Math.round(clip.seconds * fps),
-    still = film.motion === "off";
-  const reveal = ease(frame, 0, CROSSFADE),
-    exit = last ? 1 - ease(frame, duration - 12, duration) : 1;
+    still = film.motion === "off" || duration < FPS;
+  const reveal = duration < FPS ? 1 : ease(frame, 0, Math.max(1, overlap));
   const lively = film.motion === "lively",
     enter = still
       ? 1
@@ -46,12 +46,21 @@ function Scene({ clip, index, film, last }) {
           fps,
           config: { damping: lively ? 14 : 26, stiffness: 100 },
         });
-  const label = still ? 1 : ease(frame, 12, 26),
+  const label = still
+      ? 1
+      : ease(frame, Math.min(8, duration * 0.1), Math.min(24, duration * 0.4)),
     zoom = still
       ? 1
-      : interpolate(frame, [0, duration], [1.015, lively ? 1.1 : 1.045], {
-          extrapolateRight: "clamp",
-        });
+      : interpolate(
+          frame,
+          [0, duration],
+          index % 2
+            ? [lively ? 1.12 : 1.065, 1.025]
+            : [1.025, lively ? 1.12 : 1.065],
+          {
+            extrapolateRight: "clamp",
+          },
+        );
   const editorial = film.look === "editorial";
   const amber = film.accentColor || "#f4ab70";
   const mediaStyle = editorial
@@ -62,14 +71,21 @@ function Scene({ clip, index, film, last }) {
   const facts = film.showFacts !== false;
   const incoming =
     film.transition === "slide" && index > 0
-      ? `translateX(${(1 - reveal) * w}px)`
+      ? `translateX(${Math.pow(1 - reveal, 3) * w * (index % 2 ? 1 : -1)}px)`
       : "none";
   const wipe =
     film.transition === "wipe" && index > 0
-      ? `inset(0 ${(1 - reveal) * 100}% 0 0)`
+      ? index % 2
+        ? `inset(0 ${(1 - reveal) * 100}% 0 0)`
+        : `inset(0 0 0 ${(1 - reveal) * 100}%)`
       : undefined;
-  const opacity =
-    (film.transition === "fade" || index === 0 ? reveal : 1) * exit;
+  const opacity = film.transition === "fade" || index === 0 ? reveal : 1;
+  const pan =
+    still || clip.kind === "video" || clip.fit === "contain"
+      ? 0
+      : interpolate(frame, [0, duration], [-1, 1]) *
+        (index % 4 < 2 ? -1 : 1) *
+        (lively ? 1.4 : 0.65);
   return (
     <AbsoluteFill
       style={{
@@ -90,11 +106,32 @@ function Scene({ clip, index, film, last }) {
           background: "#101113",
         }}
       >
+        {clip.kind !== "video" && clip.fit === "contain" && (
+          <Img
+            src={clip.src}
+            style={{
+              position: "absolute",
+              inset: "-5%",
+              width: "110%",
+              height: "110%",
+              objectFit: "cover",
+              filter: "blur(28px) brightness(0.35)",
+              transform: `scale(${zoom})`,
+            }}
+          />
+        )}
         <div
           style={{
             width: "100%",
             height: "100%",
-            transform: clip.fit === "contain" ? "none" : `scale(${zoom})`,
+            position: "relative",
+            transform:
+              clip.kind === "video" || still
+                ? "none"
+                : clip.fit === "contain"
+                  ? `scale(${0.97 + label * 0.03})`
+                  : `translate(${pan}%,${pan * 0.35}%) scale(${zoom})`,
+            transformOrigin: `${clip.focusX ?? 50}% ${clip.focusY ?? 50}%`,
           }}
         >
           {clip.kind === "video" ? (
@@ -253,7 +290,7 @@ function Scene({ clip, index, film, last }) {
           padding: film.look === "minimal" ? 24 * unit : 0,
           background: film.look === "minimal" ? "#11151bde" : undefined,
           borderRadius: film.look === "minimal" ? 18 * unit : undefined,
-          transform: `translateY(${(1 - enter) * 30 * unit}px)`,
+          transform: `translateY(${(1 - enter) * (lively ? 46 : 24) * unit}px)`,
         }}
       >
         <div
@@ -289,6 +326,9 @@ function Scene({ clip, index, film, last }) {
             lineHeight: 1.05,
             overflowWrap: "anywhere",
             marginBottom: 18 * unit,
+            opacity: still
+              ? 1
+              : ease(frame, 0, Math.max(1, Math.min(20, duration * 0.4))),
           }}
         >
           {clip.title}
@@ -300,7 +340,13 @@ function Scene({ clip, index, film, last }) {
               lineHeight: 1.5,
               color: "#c9c5bf",
               marginBottom: 18 * unit,
-              opacity: label,
+              opacity: still
+                ? 1
+                : ease(
+                    frame,
+                    Math.min(14, duration * 0.15),
+                    Math.min(30, duration * 0.5),
+                  ),
             }}
           >
             {clip.facts}
@@ -383,6 +429,14 @@ function Title({ film, end = false }) {
   const words = (
     end ? film.outro || "Chaque regard compte." : film.title
   ).split(" ");
+  const titleDuration = Math.max(
+    1,
+    end ? outroFrames(film) : introFrames(film),
+  );
+  const stagger = Math.min(
+    2,
+    (titleDuration * 0.2) / Math.max(1, words.length),
+  );
   return (
     <AbsoluteFill
       style={{
@@ -447,7 +501,13 @@ function Title({ film, end = false }) {
         }}
       >
         {words.map((word, i) => {
-          const p = animate ? ease(frame, i * 2, 16 + i * 2) : 1;
+          const p = animate
+            ? ease(
+                frame,
+                i * stagger,
+                Math.max(1, Math.min(16, titleDuration * 0.55)) + i * stagger,
+              )
+            : 1;
           return (
             <span
               key={i}
@@ -501,24 +561,22 @@ function Title({ film, end = false }) {
   );
 }
 export function AnimalFilm({ film }) {
-  const intro = introFrames(film),
-    outro = outroFrames(film);
-  let start = intro;
-  const scenes = film.clips.map((clip, index) => {
-    const from = start,
-      duration = Math.round(clip.seconds * FPS);
-    start += duration - (index < film.clips.length - 1 ? CROSSFADE : 0);
-    return (
-      <Sequence key={clip.id || index} from={from} durationInFrames={duration}>
-        <Scene
-          clip={clip}
-          index={index}
-          film={film}
-          last={index === film.clips.length - 1}
-        />
-      </Sequence>
-    );
-  });
+  const timeline = filmTimeline(film),
+    { intro, outro } = timeline,
+    start = timeline.duration - outro;
+  const scenes = timeline.scenes.map(
+    ({ clip, from, duration, overlap }, index) => {
+      return (
+        <Sequence
+          key={clip.id || index}
+          from={from}
+          durationInFrames={duration}
+        >
+          <Scene clip={clip} index={index} film={film} overlap={overlap} />
+        </Sequence>
+      );
+    },
+  );
   return (
     <AbsoluteFill style={{ background: "#141517" }}>
       {film.template === "year" && film.annualStyle === "mosaic" ? (
@@ -526,7 +584,11 @@ export function AnimalFilm({ film }) {
       ) : (
         <>
           {intro > 0 && (
-            <Sequence durationInFrames={intro}>
+            <Sequence
+              durationInFrames={
+                intro + Math.min(CROSSFADE, timeline.scenes[0]?.duration || 0)
+              }
+            >
               <Title film={film} />
             </Sequence>
           )}
@@ -549,10 +611,23 @@ export function AnimalFilm({ film }) {
               1 - ease(f, Math.max(0, start + outro - FPS), start + outro),
             ) *
             film.music.volume *
-            (film.voiceover &&
-            f >= film.voiceover.start * FPS &&
-            f < (film.voiceover.start + film.voiceover.duration) * FPS
-              ? 0.45
+            (film.voiceover
+              ? 1 -
+                0.65 *
+                  Math.min(
+                    ease(
+                      f,
+                      Math.max(0, film.voiceover.start * FPS - 8),
+                      film.voiceover.start * FPS + 1,
+                    ),
+                    1 -
+                      ease(
+                        f,
+                        (film.voiceover.start + film.voiceover.duration) * FPS,
+                        (film.voiceover.start + film.voiceover.duration) * FPS +
+                          12,
+                      ),
+                  )
               : 1)
           }
         />

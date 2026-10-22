@@ -277,8 +277,12 @@ export function VoicePanel({
             <div className="voice-result">
               <audio controls src={`/api/video/assets/${audio.id}/file`} />
               <Button type="button" icon={Plus} onClick={() => onAdd(audio)}>
-                Ajouter au montage
+                Ajouter et caler la vidéo
               </Button>
+              <p className="fineprint">
+                La vidéo s’adaptera automatiquement aux{" "}
+                {audio.duration.toFixed(1)} secondes de cette voix.
+              </p>
               <a
                 className="text-link"
                 href={`/api/video/assets/${audio.id}/file`}

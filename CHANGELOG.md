@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 3.16.0 — Studio vidéo et narration synchronisée
+
+Timeline avec pistes image, voix, musique et sous-titres, réglages regroupés et ajout d’un album complet. Calage automatique sur la durée réelle de la voix, reprises de visuels signalées, animations variées et mixage progressif. Aperçu et MP4 utilisent le même timing sans écraser les clips source. [Notes complètes](RELEASE_v3.16.0.md). L’APK native reste en 3.14.0.
+
 ## 3.15.1 — Titres et en-têtes alignés
 
 Un seul point orange dans les titres, boutons d'action alignés à droite et meilleur alignement vertical des en-têtes sans sous-titre. La photothèque et les autres pages partagent la correction, avec menus utilisables sur petit écran. [Notes complètes](RELEASE_v3.15.1.md). L'APK native reste en 3.14.0.
@@ -31,7 +35,6 @@ Interface et pied de page harmonisés, bannières avec détourage et placement l
 ## 3.12.0 — 21 octobre 2026
 
 Planning des bénévoles, accueil mobile et fil simplifiés, notifications et appareils révocables, mises à jour APK, page Android et lien d’accueil, modules activables, rédaction/relecture, affiches publiques, capture et configuration des TV, confidentialité et consentement avant statistiques. [Notes détaillées](RELEASE_v3.12.0.md).
-
 
 ## 3.11.1 — Installation Android dans le même projet
 

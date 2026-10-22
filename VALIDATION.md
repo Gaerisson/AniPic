@@ -1,5 +1,18 @@
 # Vérifications — AniPic
 
+## V3.16.0 — Studio vidéo, contrôles locaux du 23 octobre 2026
+
+57 tests ciblés réussis sous Node.js 24, sans échec ni test ignoré : timing, médias, studio, sous-titres et contrats de narration Mistral. Sept nouveaux tests vérifient les chevauchements, les durées courtes et longues, les décalages, les reprises de vidéos sans dépasser l’extrait source, les mosaïques annuelles, les déplacements et l’absence de modification des clips source. Les tests serveur vérifient la durée mesurée plutôt qu’une durée envoyée par le navigateur, les limites, les sous-titres et le cycle enregistrement/réouverture/aperçu. Les appels Mistral de ces tests sont simulés ; aucun appel payant n’est nécessaire à cette validation.
+
+Builds frontend et Remotion, Prettier et contrôle des espaces Git réussis. Navigateur réel : affichage sans débordement horizontal à 1440, 1024, 768, 390 et 320 px ; la timeline en mode « Tout voir » tient dans sa zone. Sélection d’un plan, recherche dans le film, lecture, zoom, réorganisation au clavier, annulation, duplication avec sélection de la copie, suppression et réouverture exercés sur les données de démonstration. Une piste existante de 410,1 s produit un montage de même durée et signale 71 reprises pour les trois plans disponibles. Le glisser-déposer dispose du même déplacement partagé, couvert par les tests ; le geste de souris n’est pas automatisé par ces contrôles.
+
+Deux MP4 réels en portrait 720×1280, H.264 + AAC, sont validés avec une voix française synthétisée localement par Microsoft Hortense :
+
+- Fixture isolée : voix mesurée 15,117324 s, décalage 0,75 s, piste vidéo exactement **381 images / 15,875 s**. Durée conteneur 15,893 s, incluant le remplissage AAC. Photos plein cadre et photo entière avec arrière-plan flouté, reprise automatique et animation dynamique ; images extraites contrôlées visuellement.
+- Export lancé depuis le navigateur après enregistrement du projet, avec voix et musique : rendu terminé, lien MP4 disponible, piste vidéo exactement **387 images / 16,125 s** pour un décalage de 1 s ; piste AAC et conteneur 16,128 s. Le fichier audio de musique de 410 s n’allonge pas le film.
+
+Les sources, leurs durées et les points d’entrée restent conservés ; le calage est calculé à la lecture et au rendu. En mode libre, une voix trop longue bloque la validation avec une explication. Les sous-titres sont revérifiés après résolution de la durée audio réelle. Les sources de démonstration ne sont pas réinitialisées. Cette évolution succède au tag v3.15.1. La publication v3.16.0 est conditionnée à la suite complète, aux builds web et vidéo, à la validation Android et à la construction Docker avec rendu MP4 isolé dans GitHub Actions pour le commit exact de la release. Les 57 tests locaux ci-dessus ciblent les chemins modifiés et leurs régressions ; ils ne remplacent pas les contrôles CI ou un essai sur le NAS et les appareils physiques de production.
+
 ## V3.15.1 — Titres et alignement des en-têtes
 
 Correctif CSS contrôlé dans le navigateur réel à 1440, 1092, 1024, 768, 390 et 320 px : un seul point orange dans la photothèque, bouton d'options au bord droit du contenu, aucune largeur horizontale excédentaire. Le menu reste dans le viewport à 320 px et son bord droit rejoint celui du bouton sur ordinateur. Le titre du fil du refuge utilise également un seul point orange. Les données locales ne sont pas réinitialisées.
@@ -38,7 +51,6 @@ La version3.14.0 de base a aussi passé les **295tests dans GitHub Actions**, le
 
 L’APK native demeure3.14.0, avec les mêmes octets et certificat. Les corrections3.14.1 sont fournies par le serveur web. Les limites relatives au téléphone, au NAS/Portainer et à une TV physiques, ainsi qu’aux transports SPA/Harbor simulés, restent celles détaillées ci-dessous.
 
-
 ## V3.14.0 — Navigation, Canvas et relecture
 
 - Installation propre `npm ci` avec Node.js 24.18.1 réussie, manifeste et lockfile produits par npm, aucune vulnérabilité signalée.
@@ -50,7 +62,6 @@ L’APK native demeure3.14.0, avec les mêmes octets et certificat. Les correcti
 - Détourage précis testé avec le vrai modèle BiRefNet512 mis en cache : environ1,8Gio de pic pour le processus de mesure. Les essais U²-Net et fp16 n’offraient pas un compromis suffisant de qualité ou de mémoire ; ils ne sont pas activés. Le contrôle de marge3Gio est conservé et le message explique `ANIPIC_MEMORY_LIMIT=4g` dans Portainer.
 
 **Limites :** le transport Harbor, les pannes NAS et les réponses SPA sont simulés dans les tests. Aucun audit exhaustif du service SPA réel, aucune connexion WhatsApp ou publication de texte vers un tiers. Pas de moteur Docker local : la construction et le démarrage réels de l’image restent conditionnés au workflow GitHub. Installation, notifications et mise à jour sur téléphone Android physique, TV et NAS/Portainer de production non exécutées.
-
 
 ## V3.13.0 — Interface, créations, application et fiabilité
 
@@ -85,8 +96,6 @@ L’APK native demeure3.14.0, avec les mêmes octets et certificat. Les correcti
 **Préservation :** sauvegarde cohérente avant migration additive vers le schéma 22, intégrité SQLite et clés étrangères valides après les vérifications. Anciennes tables métier conservées : 79 animaux, 14 photos, 17 blobs, 3 albums et 4 projets vidéo. Seules les sessions, dernières connexions et requêtes HTTP évoluent normalement. Aucun volume NAS, photo, sauvegarde, configuration d’adoption ni donnée métier réelle de la démo supprimé ou réinitialisé. Les pages légales restent à compléter par chaque exploitant et ne constituent pas une certification juridique.
 
 **Non exécutés :** installation/mise à jour et notifications sur Android réel ou émulateur, autorisations de notifications Android 13+, livraison push réelle par FCM, authentification Google/C8 sur téléphone, association du domaine en production, build/démarrage Docker complet, Portainer/NAS physique et workflows/publications GitHub/GHCR distants. Aucun moteur Docker disponible ici. Les essais push utilisent un transport simulé et la rédaction IA un fetcher simulé ; aucun message ou texte de test envoyé à un prestataire. La CI continue d’exiger les jobs application, Docker et Android avant publication. Aucune image ni release distante publiée dans cette intervention.
-
-
 
 ## V3.11.1 — Installation Android intégrée au site
 
@@ -367,7 +376,6 @@ Navigateur : sélection SPA et loader d’affiche visibles ; aperçu chargé et 
 Démo principale sauvegardée avant migration **15 → 16**, intégrité SQLite `ok`. Comptes contrôlés après redémarrage : **79 animaux, 14 photos, 2 photos à trier, 4 projets vidéo**, identiques à l’état initial. Serveur local actif sur `http://localhost:3036`. Aucun reset, compression réelle des données de l’utilisateur ni changement des volumes NAS. Le serveur UI avec IA simulée a utilisé une copie isolée, sans appel au service externe.
 
 Limites : les appels Canva/IA sont simulés dans les tests, sans requête payante ni connexion réelle à un compte Canva. La fluidité sur la TV physique n’est pas mesurée. Aucun moteur Docker disponible ici : construction complète d’image, exécution de la CI sur GitHub et déploiement Portainer/NAS réels non exécutés. Les contrôles existants de CI restent en place.
-
 
 14–16 octobre 2026, Windows, Node.js 24.18.1. Données de test isolées, aucun changement dans les ZIP d’origine, l’ancienne API ou votre NAS.
 

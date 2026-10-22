@@ -7,6 +7,9 @@ import {
 import { DropArea, UploadPreviews } from "./upload-feedback.jsx";
 import { uploadWithProgress } from "./api.js";
 import { useState, useEffect, useRef } from "react";
+import { StudioTimeline, filmTime } from "./studio-timeline.jsx";
+import { StudioClipInspector } from "./studio-clip-inspector.jsx";
+import "./studio-workspace.css";
 import { Player } from "@remotion/player";
 import { AnimalFilm } from "../video/AnimalFilm.jsx";
 import { ImageReady } from "./asset-readiness.jsx";
@@ -14,10 +17,8 @@ import {
   dimensions,
   filmDuration,
   FPS,
-  INTRO,
-  CROSSFADE,
-  introFrames,
-  extendForNarration,
+  narrationFrames,
+  moveFilmClip,
 } from "../video/timing.mjs";
 import {
   Video,
@@ -27,9 +28,6 @@ import {
   Upload,
   Save,
   Film,
-  ArrowUp,
-  ArrowDown,
-  X,
   Download,
   Play,
   Archive,
@@ -66,6 +64,7 @@ const emptyFilm = {
   introSeconds: 2,
   outroSeconds: 2,
   outroSubtitle: "",
+  narrationMode: "auto",
 };
 export default function Studio({
   initial,
@@ -106,11 +105,25 @@ export default function Studio({
     [query, setQuery] = useState(""),
     [page, setPage] = useState(1),
     [pages, setPages] = useState(1),
-    [year, setYear] = useState(new Date().getFullYear());
+    [year, setYear] = useState(new Date().getFullYear()),
+    [selected, setSelected] = useState(null),
+    [settingsTab, setSettingsTab] = useState(
+      initial?.voice ? "audio" : "style",
+    ),
+    [player, setPlayer] = useState(null),
+    [previewPending, setPreviewPending] = useState(false);
   const narrationAsset = assets.find(
     (asset) => asset.id === film.voiceover?.assetId,
   );
+  const timedFilm = {
+    ...film,
+    voiceover: narrationAsset
+      ? { ...film.voiceover, duration: narrationAsset.duration }
+      : film.voiceover,
+  };
+  const autoTiming = !!narrationFrames(timedFilm);
   const narrationOverrun =
+    film.narrationMode === "manual" &&
     narrationAsset &&
     film.voiceover.start + narrationAsset.duration > filmDuration(film) / FPS;
   const undo = useRef([]),
@@ -199,8 +212,14 @@ export default function Studio({
     }));
   const [mediaFiles, setMediaFiles] = useState([]),
     [mediaProgress, setMediaProgress] = useState(0);
-  const uploadRef = useRef(),
-    playerRef = useRef();
+  const uploadRef = useRef();
+  useEffect(() => {
+    setSelected((previous) =>
+      film.clips.some((clip, i) => (clip.id || i) === previous)
+        ? previous
+        : film.clips[0]?.id || (film.clips.length ? 0 : null),
+    );
+  }, [film.clips]);
   const refresh = () =>
     Promise.all([
       api("/video/projects"),
@@ -333,9 +352,12 @@ export default function Studio({
   useEffect(() => {
     if (!user || !film.clips.length) {
       setPreview(null);
+      setPreviewPending(false);
+      setError("");
       return;
     }
     let cancelled = false;
+    setPreviewPending(true);
     const timer = setTimeout(
       () =>
         api("/video/preview", { method: "POST", body: film })
@@ -343,10 +365,14 @@ export default function Studio({
             if (!cancelled) {
               setPreview(data);
               setError("");
+              setPreviewPending(false);
             }
           })
           .catch((e) => {
-            if (!cancelled) setError(e.message);
+            if (!cancelled) {
+              setError(e.message);
+              setPreviewPending(false);
+            }
           }),
       350,
     );
@@ -454,15 +480,26 @@ export default function Studio({
       ...f,
       clips: f.clips.map((c, i) => (i === index ? { ...c, ...body } : c)),
     }));
-  const move = (index, offset) =>
-    setFilm((f) => {
-      const clips = [...f.clips];
-      [clips[index], clips[index + offset]] = [
-        clips[index + offset],
-        clips[index],
-      ];
-      return { ...f, clips };
-    });
+  const move = (index, to) =>
+    canEdit &&
+    setFilm((f) => ({ ...f, clips: moveFilmClip(f.clips, index, to) }));
+  const duplicate = (index) => {
+    if (!canEdit || film.clips.length >= 100) return;
+    const copyId = uid();
+    update(
+      "clips",
+      film.clips.flatMap((clip, i) =>
+        i === index ? [clip, { ...clip, id: copyId }] : [clip],
+      ),
+    );
+    setSelected(copyId);
+  };
+  const remove = (index) =>
+    canEdit &&
+    update(
+      "clips",
+      film.clips.filter((_, i) => i !== index),
+    );
   const save = async () => {
     if (!canEdit) return;
     const result = await api(
@@ -480,9 +517,9 @@ export default function Studio({
         <div>
           <div className="eyebrow">L’ATELIER DES BELLES HISTOIRES</div>
           <h1>Le studio vidéo</h1>
-          <p>Composez, prévisualisez et exportez. Une histoire à la fois.</p>
+          <p>Des images, une voix, une belle rencontre. À vous de jouer.</p>
         </div>
-        <span className="tag sand">REMOTION · MP4</span>
+        <span className="cut-header-tag">VOTRE ATELIER CRÉATIF</span>
       </div>
       <div className="studio-projectbar">
         <select
@@ -551,27 +588,25 @@ export default function Studio({
           </a>
         )}
       </div>
-      <label className="checkbox-label">
-        <input
-          type="checkbox"
-          checked={film.showQr !== false}
-          onChange={(e) => setFilm({ ...film, showQr: e.target.checked })}
-        />
-        Afficher le QR SPA dans les portraits
-      </label>
-      <div className="studio-preset-grid">
-        {presets.map((p) => (
-          <button
-            key={p.id}
-            className={film.look === p.look ? "selected" : ""}
-            aria-pressed={film.look === p.look}
-            disabled={!canEdit}
-            onClick={() => applyPreset(p)}
-          >
-            <strong>{p.name}</strong>
-            <small>{p.description}</small>
-          </button>
-        ))}
+      <div className="cut-workflow">
+        <a
+          href="#studio-media"
+          onClick={(e) => {
+            e.preventDefault();
+            document
+              .getElementById("studio-media")
+              ?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
+        >
+          <span>1</span> Choisir les images
+        </a>
+        <button onClick={() => setSettingsTab("style")}>
+          <span>2</span> Donner le ton
+        </button>
+        <button onClick={() => setSettingsTab("audio")}>
+          <span>3</span> Ajouter une voix
+        </button>
+        <span className="cut-workflow-end">4 · Exporter votre histoire</span>
       </div>
       <div className="studio-history">
         <Button
@@ -592,14 +627,14 @@ export default function Studio({
       <div className="studio-layout">
         <section className="studio-screen">
           <div className="player-surface">
-            {preview && !error ? (
+            {preview ? (
               <ImageReady
                 urls={preview.clips
                   .filter((c) => c.kind === "photo" || c.kind === "spa")
                   .map((c) => c.src)}
               >
                 <Player
-                  ref={playerRef}
+                  ref={setPlayer}
                   key={film.aspect + "-" + film.resolution}
                   component={AnimalFilm}
                   inputProps={{ film: preview }}
@@ -631,14 +666,24 @@ export default function Studio({
               </div>
             )}
           </div>
+          {error && (
+            <p className="error-text cut-preview-notice" role="alert">
+              {error}
+            </p>
+          )}
+          {previewPending && film.clips.length > 0 && (
+            <p className="cut-preview-notice" role="status">
+              Mise à jour de l’aperçu…
+            </p>
+          )}
           <div className="studio-measures">
             <span>
-              {film.clips.length} plans · {filmDuration(film) / FPS}s
+              {film.clips.length} plans · {filmTime(filmDuration(timedFilm))}
             </span>
             <span>
               ≈{" "}
               {bytes(
-                ((filmDuration(film) / FPS) *
+                ((filmDuration(timedFilm) / FPS) *
                   (4_000_000 + (film.music ? 128000 : 0))) /
                   8,
               )}{" "}
@@ -649,7 +694,9 @@ export default function Studio({
             <Button
               icon={Save}
               variant="secondary"
-              disabled={!canEdit || !!busy || !preview || !!error}
+              disabled={
+                !canEdit || !!busy || !preview || !!error || previewPending
+              }
               onClick={async () => {
                 setBusy("save");
                 try {
@@ -670,6 +717,7 @@ export default function Studio({
                 !canEdit ||
                 !!busy ||
                 !preview ||
+                previewPending ||
                 !!error ||
                 !status?.enabled ||
                 !status?.browser ||
@@ -706,702 +754,643 @@ export default function Studio({
               {!status.bundle && <code>npm run video:build</code>}
             </div>
           )}
+          <StudioTimeline
+            film={timedFilm}
+            player={player}
+            selected={selected}
+            canEdit={canEdit}
+            onSelect={(index) => {
+              setSelected(film.clips[index].id || index);
+              setSettingsTab("plan");
+            }}
+            onMove={move}
+            onAudio={() => setSettingsTab("audio")}
+          />
         </section>
-        <section className="panel studio-settings form-stack">
-          <h2>La présentation</h2>
-          {film.template === "year" && (
-            <>
-              <label className="annual-inline-total">
-                <span>
-                  Adoptions affichées
-                  <small>
-                    Personnalisé pour cette vidéo. Vide : statistiques du
-                    refuge.
-                  </small>
-                </span>
-                <input
-                  type="number"
-                  min="0"
-                  max="1000000"
-                  value={film.annualAdoptionsOverride ?? ""}
-                  placeholder="Automatique"
-                  onChange={(e) =>
-                    update(
-                      "annualAdoptionsOverride",
-                      e.target.value === ""
-                        ? null
-                        : Math.max(
-                            0,
-                            Math.min(
-                              1000000,
-                              Math.round(Number(e.target.value)),
-                            ),
-                          ),
-                    )
+        <section className="panel studio-settings">
+          <div
+            className="cut-settings-tabs"
+            role="tablist"
+            aria-label="Réglages du montage"
+          >
+            {[
+              ["plan", "Le plan"],
+              ["style", "Ambiance"],
+              ["audio", "Voix & son"],
+            ].map(([key, label], i) => (
+              <button
+                key={key}
+                id={`studio-tab-${key}`}
+                role="tab"
+                aria-selected={settingsTab === key}
+                aria-controls={`studio-panel-${key}`}
+                tabIndex={settingsTab === key ? 0 : -1}
+                onClick={() => setSettingsTab(key)}
+                onKeyDown={(e) => {
+                  if (
+                    ["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)
+                  ) {
+                    e.preventDefault();
+                    const keys = ["plan", "style", "audio"];
+                    const next =
+                      e.key === "Home"
+                        ? 0
+                        : e.key === "End"
+                          ? 2
+                          : (i + (e.key === "ArrowLeft" ? 2 : 1)) % 3;
+                    setSettingsTab(keys[next]);
+                    e.currentTarget.parentElement.children[next].focus();
                   }
-                />
-              </label>
-              <label>
-                Animation du bilan
-                <select
-                  value={film.annualStyle || "slideshow"}
-                  onChange={(e) => update("annualStyle", e.target.value)}
-                >
-                  <option value="mosaic">Portraits → logo SPA</option>
-                  <option value="slideshow">Diaporama classique</option>
-                </select>
-              </label>
-              <label>
-                Message de fin
-                <input
-                  value={film.annualMessage || ""}
-                  maxLength={120}
-                  disabled={!canEdit}
-                  placeholder={`Bonne année ${Number(film.year || year) + 1}`}
-                  onChange={(e) =>
-                    setFilm((f) => ({
-                      ...f,
-                      annualMessage: e.target.value,
-                      outro:
-                        e.target.value ||
-                        "Merci à toute l’équipe et aux familles.",
-                    }))
-                  }
-                />
-              </label>
-              <label>
-                Sous-texte du message
-                <input
-                  value={film.annualMessageSubtitle || ""}
-                  maxLength={180}
-                  disabled={!canEdit}
-                  placeholder="Merci aux familles, bénévoles et agents du refuge"
-                  onChange={(e) =>
-                    update("annualMessageSubtitle", e.target.value)
-                  }
-                />
-              </label>
-              <div className="annual-message-presets">
-                {[
-                  `Bonne année ${Number(film.year || year) + 1}`,
-                  "Merci pour toutes ces belles rencontres",
-                  "Une nouvelle année, de nouvelles histoires",
-                ].map((text) => (
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="cut-settings-body">
+            <div
+              role="tabpanel"
+              id="studio-panel-plan"
+              aria-labelledby="studio-tab-plan"
+              hidden={settingsTab !== "plan"}
+            >
+              <StudioClipInspector
+                film={film}
+                selected={selected}
+                assets={assets}
+                canEdit={canEdit}
+                patch={patchClip}
+                move={move}
+                duplicate={duplicate}
+                remove={remove}
+                auto={autoTiming}
+              />
+            </div>
+            <div
+              className="form-stack"
+              role="tabpanel"
+              id="studio-panel-style"
+              aria-labelledby="studio-tab-style"
+              hidden={settingsTab !== "style"}
+            >
+              <h2>Donnez le ton</h2>{" "}
+              <div className="studio-preset-grid">
+                {presets.map((p) => (
                   <button
-                    type="button"
-                    key={text}
+                    key={p.id}
+                    className={film.look === p.look ? "selected" : ""}
+                    aria-pressed={film.look === p.look}
                     disabled={!canEdit}
-                    onClick={() =>
-                      setFilm((f) => ({
-                        ...f,
-                        annualMessage: text,
-                        outro: text,
-                      }))
-                    }
+                    onClick={() => applyPreset(p)}
                   >
-                    {text}
+                    <strong>{p.name}</strong>
+                    <small>{p.description}</small>
                   </button>
                 ))}
               </div>
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={film.annualSidePhotos !== false}
-                  disabled={!canEdit}
-                  onChange={(e) => update("annualSidePhotos", e.target.checked)}
-                />
-                Bandes de photos animées
-              </label>
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={film.annualStats !== false}
-                  disabled={!canEdit}
-                  onChange={(e) => update("annualStats", e.target.checked)}
-                />
-                Statistiques à la fin
-              </label>
-              <AnnualStatistics
-                year={Number(film.year) || new Date().getFullYear()}
-                user={user}
-                notify={notify}
-                onSaved={() => setFilm((f) => ({ ...f }))}
-              />
-              <label>
-                Animation finale du logo
-                <select
-                  disabled={!canEdit}
-                  value={film.logoAnimation || "fade"}
-                  onChange={(e) => update("logoAnimation", e.target.value)}
-                >
-                  {Object.entries(logoAnimations).map(([id, n]) => (
-                    <option key={id} value={id}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Ambiance du fond
-                <select
-                  disabled={!canEdit}
-                  value={film.backgroundTheme || "classic"}
-                  onChange={(e) => update("backgroundTheme", e.target.value)}
-                >
-                  <option value="auto">Selon la saison</option>
-                  {Object.entries(visualThemes).map(([id, t]) => (
-                    <option key={id} value={id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Particules
-                <select
-                  disabled={!canEdit}
-                  value={film.particleStyle || "auto"}
-                  onChange={(e) => update("particleStyle", e.target.value)}
-                >
-                  {Object.entries(particleStyles).map(([id, n]) => (
-                    <option key={id} value={id}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Densité · {film.particleDensity ?? 35}%
-                <input
-                  disabled={!canEdit}
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={film.particleDensity ?? 35}
-                  onChange={(e) => update("particleDensity", +e.target.value)}
-                />
-              </label>
-            </>
-          )}
-          <div className="form-row">
-            <label>
-              Transition
-              <select
-                value={film.transition || "fade"}
-                disabled={!canEdit}
-                onChange={(e) => update("transition", e.target.value)}
-              >
-                <option value="fade">Fondu croisé</option>
-                <option value="slide">Glissement</option>
-                <option value="wipe">Révélation</option>
-              </select>
-            </label>
-            <label>
-              Animation
-              <select
-                value={film.motion || "gentle"}
-                disabled={!canEdit}
-                onChange={(e) => update("motion", e.target.value)}
-              >
-                <option value="gentle">Douce</option>
-                <option value="lively">Dynamique</option>
-                <option value="off">Sans mouvement</option>
-              </select>
-            </label>
-          </div>
-          <label className="video-facts-toggle">
-            <input
-              type="checkbox"
-              checked={film.showFacts !== false}
-              disabled={!canEdit}
-              onChange={(e) => update("showFacts", e.target.checked)}
-            />
-            Afficher les informations SPA
-          </label>
-          <label>
-            Titre du film
-            <input
-              value={film.title}
-              maxLength={120}
-              disabled={!canEdit}
-              onChange={(e) => update("title", e.target.value)}
-            />
-          </label>
-          <label>
-            Sous-titre
-            <input
-              value={film.subtitle}
-              maxLength={160}
-              disabled={!canEdit}
-              onChange={(e) => update("subtitle", e.target.value)}
-            />
-          </label>
-          <div className="form-row">
-            <label>
-              Format
-              <select
-                value={film.aspect}
-                disabled={!canEdit}
-                onChange={(e) => update("aspect", e.target.value)}
-              >
-                <option value="landscape">Paysage · 16:9</option>
-                <option value="portrait">Portrait · 9:16</option>
-                <option value="square">Carré · 1:1</option>
-              </select>
-            </label>
-            <label>
-              Résolution
-              <select
-                value={film.resolution}
-                disabled={!canEdit}
-                onChange={(e) => update("resolution", e.target.value)}
-              >
-                <option value="720">720p</option>
-                <option value="1080">1080p</option>
-              </select>
-            </label>
-          </div>
-          <label>
-            Conclusion
-            <input
-              value={film.outro}
-              maxLength={120}
-              disabled={!canEdit}
-              onChange={(e) => update("outro", e.target.value)}
-            />
-          </label>
-          <VoicePanel
-            initialOpen={!!initial?.voice}
-            film={film}
-            canEdit={canEdit}
-            notify={notify}
-            onTextChange={(text) => update("narrationText", text)}
-            onAdd={async (asset) => {
-              update("voiceover", { assetId: asset.id, volume: 1, start: 0 });
-              await refresh();
-            }}
-          />
-          <SubtitlePanel
-            film={film}
-            assets={assets}
-            canEdit={canEdit}
-            notify={notify}
-            update={update}
-            duration={filmDuration(film) / FPS}
-          />
-          {film.voiceover && (
-            <div className="voice-mix">
-              {narrationAsset && (
-                <p className="fineprint">
-                  Voix : {narrationAsset.duration.toFixed(1)} s · montage :{" "}
-                  {(filmDuration(film) / FPS).toFixed(1)} s
-                </p>
+              {film.template === "year" && (
+                <>
+                  <label className="annual-inline-total">
+                    <span>
+                      Adoptions affichées
+                      <small>
+                        Personnalisé pour cette vidéo. Vide : statistiques du
+                        refuge.
+                      </small>
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="1000000"
+                      value={film.annualAdoptionsOverride ?? ""}
+                      placeholder="Automatique"
+                      onChange={(e) =>
+                        update(
+                          "annualAdoptionsOverride",
+                          e.target.value === ""
+                            ? null
+                            : Math.max(
+                                0,
+                                Math.min(
+                                  1000000,
+                                  Math.round(Number(e.target.value)),
+                                ),
+                              ),
+                        )
+                      }
+                    />
+                  </label>
+                  <label>
+                    Animation du bilan
+                    <select
+                      value={film.annualStyle || "slideshow"}
+                      onChange={(e) => update("annualStyle", e.target.value)}
+                    >
+                      <option value="mosaic">Portraits → logo SPA</option>
+                      <option value="slideshow">Diaporama classique</option>
+                    </select>
+                  </label>
+                  <label>
+                    Message de fin
+                    <input
+                      value={film.annualMessage || ""}
+                      maxLength={120}
+                      disabled={!canEdit}
+                      placeholder={`Bonne année ${Number(film.year || year) + 1}`}
+                      onChange={(e) =>
+                        setFilm((f) => ({
+                          ...f,
+                          annualMessage: e.target.value,
+                          outro:
+                            e.target.value ||
+                            "Merci à toute l’équipe et aux familles.",
+                        }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    Sous-texte du message
+                    <input
+                      value={film.annualMessageSubtitle || ""}
+                      maxLength={180}
+                      disabled={!canEdit}
+                      placeholder="Merci aux familles, bénévoles et agents du refuge"
+                      onChange={(e) =>
+                        update("annualMessageSubtitle", e.target.value)
+                      }
+                    />
+                  </label>
+                  <div className="annual-message-presets">
+                    {[
+                      `Bonne année ${Number(film.year || year) + 1}`,
+                      "Merci pour toutes ces belles rencontres",
+                      "Une nouvelle année, de nouvelles histoires",
+                    ].map((text) => (
+                      <button
+                        type="button"
+                        key={text}
+                        disabled={!canEdit}
+                        onClick={() =>
+                          setFilm((f) => ({
+                            ...f,
+                            annualMessage: text,
+                            outro: text,
+                          }))
+                        }
+                      >
+                        {text}
+                      </button>
+                    ))}
+                  </div>
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={film.annualSidePhotos !== false}
+                      disabled={!canEdit}
+                      onChange={(e) =>
+                        update("annualSidePhotos", e.target.checked)
+                      }
+                    />
+                    Bandes de photos animées
+                  </label>
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={film.annualStats !== false}
+                      disabled={!canEdit}
+                      onChange={(e) => update("annualStats", e.target.checked)}
+                    />
+                    Statistiques à la fin
+                  </label>
+                  <AnnualStatistics
+                    year={Number(film.year) || new Date().getFullYear()}
+                    user={user}
+                    notify={notify}
+                    onSaved={() => setFilm((f) => ({ ...f }))}
+                  />
+                  <label>
+                    Animation finale du logo
+                    <select
+                      disabled={!canEdit}
+                      value={film.logoAnimation || "fade"}
+                      onChange={(e) => update("logoAnimation", e.target.value)}
+                    >
+                      {Object.entries(logoAnimations).map(([id, n]) => (
+                        <option key={id} value={id}>
+                          {n}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Ambiance du fond
+                    <select
+                      disabled={!canEdit}
+                      value={film.backgroundTheme || "classic"}
+                      onChange={(e) =>
+                        update("backgroundTheme", e.target.value)
+                      }
+                    >
+                      <option value="auto">Selon la saison</option>
+                      {Object.entries(visualThemes).map(([id, t]) => (
+                        <option key={id} value={id}>
+                          {t.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Particules
+                    <select
+                      disabled={!canEdit}
+                      value={film.particleStyle || "auto"}
+                      onChange={(e) => update("particleStyle", e.target.value)}
+                    >
+                      {Object.entries(particleStyles).map(([id, n]) => (
+                        <option key={id} value={id}>
+                          {n}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Densité · {film.particleDensity ?? 35}%
+                    <input
+                      disabled={!canEdit}
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={film.particleDensity ?? 35}
+                      onChange={(e) =>
+                        update("particleDensity", +e.target.value)
+                      }
+                    />
+                  </label>
+                </>
               )}
-              {narrationOverrun && (
-                <div role="status">
-                  <p className="error-text">
-                    La voix dépasse le montage. Allongez les plans ou
-                    raccourcissez le texte pour éviter une coupure.
+              <div className="form-row">
+                <label>
+                  Transition
+                  <select
+                    value={film.transition || "fade"}
+                    disabled={!canEdit}
+                    onChange={(e) => update("transition", e.target.value)}
+                  >
+                    <option value="fade">Fondu croisé</option>
+                    <option value="slide">Glissement</option>
+                    <option value="wipe">Révélation</option>
+                  </select>
+                </label>
+                <label>
+                  Animation
+                  <select
+                    value={film.motion || "gentle"}
+                    disabled={!canEdit}
+                    onChange={(e) => update("motion", e.target.value)}
+                  >
+                    <option value="gentle">Douce</option>
+                    <option value="lively">Dynamique</option>
+                    <option value="off">Sans mouvement</option>
+                  </select>
+                </label>
+              </div>
+              <label className="video-facts-toggle">
+                <input
+                  type="checkbox"
+                  checked={film.showFacts !== false}
+                  disabled={!canEdit}
+                  onChange={(e) => update("showFacts", e.target.checked)}
+                />
+                Afficher les informations SPA
+              </label>
+              <label>
+                Titre du film
+                <input
+                  value={film.title}
+                  maxLength={120}
+                  disabled={!canEdit}
+                  onChange={(e) => update("title", e.target.value)}
+                />
+              </label>
+              <label>
+                Sous-titre
+                <input
+                  value={film.subtitle}
+                  maxLength={160}
+                  disabled={!canEdit}
+                  onChange={(e) => update("subtitle", e.target.value)}
+                />
+              </label>
+              <div className="form-row">
+                <label>
+                  Format
+                  <select
+                    value={film.aspect}
+                    disabled={!canEdit}
+                    onChange={(e) => update("aspect", e.target.value)}
+                  >
+                    <option value="landscape">Paysage · 16:9</option>
+                    <option value="portrait">Portrait · 9:16</option>
+                    <option value="square">Carré · 1:1</option>
+                  </select>
+                </label>
+                <label>
+                  Résolution
+                  <select
+                    value={film.resolution}
+                    disabled={!canEdit}
+                    onChange={(e) => update("resolution", e.target.value)}
+                  >
+                    <option value="720">720p</option>
+                    <option value="1080">1080p</option>
+                  </select>
+                </label>
+              </div>
+              <label>
+                Conclusion
+                <input
+                  value={film.outro}
+                  maxLength={120}
+                  disabled={!canEdit}
+                  onChange={(e) => update("outro", e.target.value)}
+                />
+              </label>
+              <details className="video-advanced">
+                <summary>Identité, cadrage et séquences</summary>
+                <label>
+                  Signature du refuge
+                  <input
+                    maxLength="100"
+                    value={film.brandLabel || ""}
+                    disabled={!canEdit}
+                    onChange={(e) => update("brandLabel", e.target.value)}
+                  />
+                </label>
+                <label>
+                  Invitation finale
+                  <input
+                    maxLength="100"
+                    value={film.ctaText || ""}
+                    disabled={!canEdit}
+                    onChange={(e) => update("ctaText", e.target.value)}
+                  />
+                </label>
+                <label>
+                  Couleur
+                  <input
+                    type="color"
+                    value={film.accentColor || "#f4ab70"}
+                    disabled={!canEdit}
+                    onChange={(e) => update("accentColor", e.target.value)}
+                  />
+                </label>
+                <div className="form-row">
+                  {[
+                    ["introSeconds", "Introduction"],
+                    ["outroSeconds", "Conclusion"],
+                  ].map(([k, label]) => (
+                    <label key={k}>
+                      {label} (s)
+                      <input
+                        type="number"
+                        min="0"
+                        max="8"
+                        step=".5"
+                        value={film[k] ?? 2}
+                        disabled={!canEdit}
+                        onChange={(e) => update(k, Number(e.target.value))}
+                      />
+                    </label>
+                  ))}
+                </div>
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={film.showLogo !== false}
+                    disabled={!canEdit}
+                    onChange={(e) => update("showLogo", e.target.checked)}
+                  />
+                  Logo SPA
+                </label>
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={film.showProgress !== false}
+                    disabled={!canEdit}
+                    onChange={(e) => update("showProgress", e.target.checked)}
+                  />
+                  Progression dans le plan
+                </label>
+              </details>{" "}
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={film.showQr !== false}
+                  disabled={!canEdit}
+                  onChange={(e) =>
+                    setFilm({ ...film, showQr: e.target.checked })
+                  }
+                />
+                Afficher le QR SPA dans les portraits
+              </label>
+            </div>
+            <div
+              className="form-stack"
+              role="tabpanel"
+              id="studio-panel-audio"
+              aria-labelledby="studio-tab-audio"
+              hidden={settingsTab !== "audio"}
+            >
+              <h2>Le son de votre histoire</h2>
+              <label>
+                Piste voix existante
+                <select
+                  value={film.voiceover?.assetId || ""}
+                  disabled={!canEdit}
+                  onChange={(e) =>
+                    setFilm((current) => ({
+                      ...current,
+                      narrationMode: "auto",
+                      voiceover: e.target.value
+                        ? { assetId: e.target.value, volume: 1, start: 0 }
+                        : null,
+                    }))
+                  }
+                >
+                  <option value="">Choisir un fichier audio importé…</option>
+                  {assets
+                    .filter((asset) => asset.kind === "audio")
+                    .map((asset) => (
+                      <option key={asset.id} value={asset.id}>
+                        {asset.filename} · {asset.duration.toFixed(1)} s
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <VoicePanel
+                initialOpen={settingsTab === "audio" || !!initial?.voice}
+                film={film}
+                canEdit={canEdit}
+                notify={notify}
+                onTextChange={(text) => update("narrationText", text)}
+                onAdd={async (asset) => {
+                  setFilm((current) => ({
+                    ...current,
+                    narrationMode: "auto",
+                    voiceover: { assetId: asset.id, volume: 1, start: 0 },
+                  }));
+                  setAssets((current) => [
+                    ...current.filter((a) => a.id !== asset.id),
+                    asset,
+                  ]);
+                  await refresh();
+                }}
+              />
+              <SubtitlePanel
+                film={film}
+                assets={assets}
+                canEdit={canEdit}
+                notify={notify}
+                update={update}
+                duration={filmDuration(timedFilm) / FPS}
+              />
+              {film.voiceover && (
+                <div className="voice-mix">
+                  {narrationAsset && (
+                    <p className="fineprint">
+                      Voix : {narrationAsset.duration.toFixed(1)} s · montage :{" "}
+                      {(filmDuration(timedFilm) / FPS).toFixed(1)} s
+                    </p>
+                  )}
+                  <label className="cut-auto-toggle checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={film.narrationMode !== "manual"}
+                      disabled={!canEdit}
+                      onChange={(e) =>
+                        update(
+                          "narrationMode",
+                          e.target.checked ? "auto" : "manual",
+                        )
+                      }
+                    />
+                    Caler la vidéo sur la durée de la voix
+                  </label>
+                  <p className="fineprint">
+                    {autoTiming
+                      ? "Photos, reprises, introduction et conclusion s’adaptent automatiquement. La voix reste entière."
+                      : "Durée libre : vous choisissez la durée de chaque plan."}
                   </p>
+                  {narrationOverrun && (
+                    <p className="error-text" role="status">
+                      La voix dépasse la vidéo. Activez le calage automatique
+                      pour l’exporter en entier.
+                    </p>
+                  )}
+                  <label>
+                    Volume voix · {Math.round(film.voiceover.volume * 100)}%
+                    <input
+                      aria-label="Volume de la voix off"
+                      disabled={!canEdit}
+                      type="range"
+                      min="0"
+                      max="1"
+                      step=".05"
+                      value={film.voiceover.volume}
+                      onChange={(e) =>
+                        update("voiceover", {
+                          ...film.voiceover,
+                          volume: +e.target.value,
+                        })
+                      }
+                    />
+                  </label>
+                  <label>
+                    Début de la voix (s)
+                    <input
+                      disabled={!canEdit}
+                      type="number"
+                      min="0"
+                      max={Math.max(0, 600 - (narrationAsset?.duration || 1))}
+                      step=".5"
+                      value={film.voiceover.start}
+                      onChange={(e) =>
+                        update("voiceover", {
+                          ...film.voiceover,
+                          start: +e.target.value,
+                        })
+                      }
+                    />
+                  </label>
                   <Button
                     type="button"
-                    variant="secondary"
-                    disabled={
-                      !canEdit ||
-                      !film.clips.some(
-                        (clip) => clip.kind !== "video" && clip.seconds < 12,
-                      )
-                    }
-                    onClick={() =>
-                      setFilm((current) =>
-                        extendForNarration(current, narrationAsset.duration),
-                      )
-                    }
+                    variant="quiet"
+                    disabled={!canEdit}
+                    onClick={() => update("voiceover", null)}
                   >
-                    Adapter la durée des photos
+                    Retirer la voix
                   </Button>
                 </div>
               )}
               <label>
-                Volume voix · {Math.round(film.voiceover.volume * 100)}%
-                <input
-                  aria-label="Volume de la voix off"
-                  type="range"
-                  min="0"
-                  max="1"
-                  step=".05"
-                  value={film.voiceover.volume}
+                Musique
+                <select
+                  value={film.music?.assetId || ""}
+                  disabled={!canEdit}
                   onChange={(e) =>
-                    update("voiceover", {
-                      ...film.voiceover,
-                      volume: +e.target.value,
-                    })
+                    update(
+                      "music",
+                      e.target.value
+                        ? { assetId: e.target.value, volume: 0.25 }
+                        : null,
+                    )
                   }
-                />
+                >
+                  <option value="">Sans musique</option>
+                  {assets
+                    .filter((a) => a.kind === "audio")
+                    .map((a) => (
+                      <option value={a.id} key={a.id}>
+                        {a.filename}
+                      </option>
+                    ))}
+                </select>
               </label>
-              <label>
-                Début de la voix (s)
-                <input
-                  type="number"
-                  min="0"
-                  max={Math.max(0, filmDuration(film) / FPS - 1)}
-                  step=".5"
-                  value={film.voiceover.start}
-                  onChange={(e) =>
-                    update("voiceover", {
-                      ...film.voiceover,
-                      start: +e.target.value,
-                    })
-                  }
-                />
-              </label>
-              <Button
-                type="button"
-                variant="quiet"
-                onClick={() => update("voiceover", null)}
-              >
-                Retirer la voix
-              </Button>
-            </div>
-          )}
-          <label>
-            Musique
-            <select
-              value={film.music?.assetId || ""}
-              disabled={!canEdit}
-              onChange={(e) =>
-                update(
-                  "music",
-                  e.target.value
-                    ? { assetId: e.target.value, volume: 0.25 }
-                    : null,
-                )
-              }
-            >
-              <option value="">Sans musique</option>
-              {assets
-                .filter((a) => a.kind === "audio")
-                .map((a) => (
-                  <option value={a.id} key={a.id}>
-                    {a.filename}
-                  </option>
-                ))}
-            </select>
-          </label>
-          {film.music && (
-            <label>
-              Volume : {Math.round(film.music.volume * 100)}%
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={film.music.volume}
-                disabled={!canEdit}
-                onChange={(e) =>
-                  update("music", {
-                    ...film.music,
-                    volume: Number(e.target.value),
-                  })
-                }
-              />
-            </label>
-          )}
-          <details className="video-advanced">
-            <summary>Identité, cadrage et séquences</summary>
-            <label>
-              Signature du refuge
-              <input
-                maxLength="100"
-                value={film.brandLabel || ""}
-                disabled={!canEdit}
-                onChange={(e) => update("brandLabel", e.target.value)}
-              />
-            </label>
-            <label>
-              Invitation finale
-              <input
-                maxLength="100"
-                value={film.ctaText || ""}
-                disabled={!canEdit}
-                onChange={(e) => update("ctaText", e.target.value)}
-              />
-            </label>
-            <label>
-              Couleur
-              <input
-                type="color"
-                value={film.accentColor || "#f4ab70"}
-                disabled={!canEdit}
-                onChange={(e) => update("accentColor", e.target.value)}
-              />
-            </label>
-            <div className="form-row">
-              {[
-                ["introSeconds", "Introduction"],
-                ["outroSeconds", "Conclusion"],
-              ].map(([k, label]) => (
-                <label key={k}>
-                  {label} (s)
+              {film.music && (
+                <label>
+                  Volume : {Math.round(film.music.volume * 100)}%
                   <input
-                    type="number"
-                    min="0"
-                    max="8"
-                    step=".5"
-                    value={film[k] ?? 2}
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    value={film.music.volume}
                     disabled={!canEdit}
-                    onChange={(e) => update(k, Number(e.target.value))}
+                    onChange={(e) =>
+                      update("music", {
+                        ...film.music,
+                        volume: Number(e.target.value),
+                      })
+                    }
                   />
                 </label>
-              ))}
+              )}
+
+              <small>
+                La musique boucle avec un fondu. Utilisez des contenus dont vous
+                disposez des droits.
+              </small>
             </div>
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={film.showLogo !== false}
-                disabled={!canEdit}
-                onChange={(e) => update("showLogo", e.target.checked)}
-              />
-              Logo SPA
-            </label>
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={film.showProgress !== false}
-                disabled={!canEdit}
-                onChange={(e) => update("showProgress", e.target.checked)}
-              />
-              Progression dans le plan
-            </label>
-          </details>
-          <small>
-            La musique boucle avec un fondu. Utilisez des contenus dont vous
-            disposez des droits.
-          </small>
+          </div>
         </section>
       </div>
-      <section className="panel section-gap studio-clip-timeline">
-        <div className="panel-heading">
-          <h2>La timeline</h2>
-          <span>{film.clips.length}/100 plans · 10 min maximum</span>
+      <div className="cut-media-heading" id="studio-media">
+        <div>
+          <span className="eyebrow">VOTRE MÉDIATHÈQUE</span>
+          <h2>Les images qui racontent</h2>
         </div>
-        {canEdit && film.clips.length > 0 && (
-          <div className="timeline-rhythm">
-            <span>Rythme des photos</span>
-            {[3, 5, 7].map((seconds) => (
-              <button
-                key={seconds}
-                onClick={() =>
-                  setFilm((f) => ({
-                    ...f,
-                    clips: f.clips.map((c) =>
-                      c.kind === "photo" || c.kind === "spa"
-                        ? { ...c, seconds }
-                        : c,
-                    ),
-                  }))
-                }
-              >
-                {seconds} s par photo
-              </button>
-            ))}
-          </div>
-        )}
-        <div className="timeline">
-          {film.clips.map((clip, index) => (
-            <article key={clip.id || index} className="timeline-clip">
-              <div className="clip-number">
-                <button
-                  aria-label={"Prévisualiser le plan " + (index + 1)}
-                  onClick={() =>
-                    playerRef.current?.seekTo(
-                      introFrames(film) +
-                        film.clips
-                          .slice(0, index)
-                          .reduce(
-                            (sum, c) =>
-                              sum + Math.round(c.seconds * FPS) - CROSSFADE,
-                            0,
-                          ) +
-                        12,
-                    )
-                  }
-                >
-                  {String(index + 1).padStart(2, "0")} <Play size={12} />
-                </button>
-              </div>
-              <div className="timeline-media-preview">
-                {clip.kind !== "video" ? (
-                  <img
-                    src={
-                      clip.kind === "spa"
-                        ? `/api/animals/${clip.ref}/source-photo?w=320`
-                        : imageUrl(clip.ref, 320)
-                    }
-                    alt="Plan photo"
-                  />
-                ) : (
-                  <Video size={27} aria-label="Plan vidéo" />
-                )}
-              </div>
-              <div className="clip-fields">
-                <label>
-                  Titre
-                  <input
-                    value={clip.title}
-                    disabled={!canEdit || clip.kind !== "video"}
-                    maxLength={100}
-                    onChange={(e) =>
-                      patchClip(index, { title: e.target.value })
-                    }
-                  />
-                </label>
-                <label>
-                  Légende
-                  <textarea
-                    value={clip.caption}
-                    disabled={!canEdit}
-                    maxLength={220}
-                    rows={2}
-                    onChange={(e) =>
-                      patchClip(index, { caption: e.target.value })
-                    }
-                  />
-                </label>
-                <div className="form-row">
-                  <label>
-                    Durée (s)
-                    <input
-                      type="number"
-                      min={1}
-                      max={12}
-                      step={0.5}
-                      value={clip.seconds}
-                      disabled={!canEdit}
-                      onChange={(e) =>
-                        patchClip(index, { seconds: Number(e.target.value) })
-                      }
-                    />
-                  </label>
-                  {clip.kind === "video" ? (
-                    <label>
-                      Début (s)
-                      <input
-                        type="number"
-                        min={0}
-                        max={300}
-                        step={0.5}
-                        value={clip.trim}
-                        disabled={!canEdit}
-                        onChange={(e) =>
-                          patchClip(index, { trim: Number(e.target.value) })
-                        }
-                      />
-                    </label>
-                  ) : (
-                    <label>
-                      Cadrage
-                      <select
-                        value={clip.fit}
-                        disabled={!canEdit}
-                        onChange={(e) =>
-                          patchClip(index, { fit: e.target.value })
-                        }
-                      >
-                        <option value="cover">Remplir</option>
-                        <option value="contain">Photo entière</option>
-                      </select>
-                    </label>
-                  )}
-                </div>
-                {clip.fit === "cover" && (
-                  <details className="video-advanced">
-                    <summary>Point de cadrage</summary>
-                    {[
-                      ["focusX", "Horizontal"],
-                      ["focusY", "Vertical"],
-                    ].map(([k, label]) => (
-                      <label key={k}>
-                        {label}
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={clip[k] ?? 50}
-                          disabled={!canEdit}
-                          onChange={(e) =>
-                            patchClip(index, { [k]: Number(e.target.value) })
-                          }
-                        />
-                      </label>
-                    ))}
-                  </details>
-                )}
-                {clip.kind === "video" && (
-                  <label className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={!clip.muted}
-                      disabled={!canEdit}
-                      onChange={(e) =>
-                        patchClip(index, { muted: !e.target.checked })
-                      }
-                    />
-                    Conserver le son du clip
-                  </label>
-                )}
-              </div>
-              <div className="clip-controls">
-                <button
-                  aria-label={"Dupliquer le plan " + (index + 1)}
-                  disabled={!canEdit || film.clips.length >= 100}
-                  onClick={() =>
-                    update(
-                      "clips",
-                      film.clips.flatMap((c, i) =>
-                        i === index ? [c, { ...c, id: uid() }] : [c],
-                      ),
-                    )
-                  }
-                >
-                  <Plus size={18} />
-                </button>
-                <button
-                  aria-label={"Monter le plan " + (index + 1)}
-                  disabled={!canEdit || index === 0}
-                  onClick={() => move(index, -1)}
-                >
-                  <ArrowUp size={18} />
-                </button>
-                <button
-                  aria-label={"Descendre le plan " + (index + 1)}
-                  disabled={!canEdit || index === film.clips.length - 1}
-                  onClick={() => move(index, 1)}
-                >
-                  <ArrowDown size={18} />
-                </button>
-                <button
-                  aria-label={"Retirer le plan " + (index + 1)}
-                  disabled={!canEdit}
-                  onClick={() =>
-                    update(
-                      "clips",
-                      film.clips.filter((_, i) => i !== index),
-                    )
-                  }
-                >
-                  <X size={18} />
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
-        {!film.clips.length && (
-          <p className="muted">
-            Choisissez un album ci-dessous puis ajoutez ses photos.
-          </p>
-        )}
-      </section>
+        <span>Choisissez un album, puis les photos à ajouter.</span>
+      </div>
       <div className="studio-bank">
         <section className="panel">
           <div className="panel-heading">
@@ -1440,6 +1429,35 @@ export default function Studio({
                 Suivant
               </button>
             </div>
+          )}
+          {photos.length > 0 && (
+            <Button
+              variant="secondary"
+              icon={Plus}
+              disabled={!canEdit || film.clips.length + photos.length > 100}
+              onClick={() =>
+                setFilm((current) => ({
+                  ...current,
+                  clips: [
+                    ...current.clips,
+                    ...photos.map((photo) => ({
+                      id: uid(),
+                      kind: photo.spa ? "spa" : "photo",
+                      ref: photo.id,
+                      seconds: 4,
+                      trim: 0,
+                      title: photo.animal_name || "",
+                      subtitle: "",
+                      caption: "",
+                      fit: "cover",
+                      muted: true,
+                    })),
+                  ],
+                }))
+              }
+            >
+              Ajouter tout l’album · {photos.length} photos
+            </Button>
           )}
           <div className="media-bank">
             {photos.map((p) => (

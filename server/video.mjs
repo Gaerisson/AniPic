@@ -83,6 +83,7 @@ export const Film = z
       .default("Contactez le refuge pour une rencontre"),
     outroSubtitle: z.string().max(180).default(""),
     narrationText: z.string().max(2000).default(""),
+    narrationMode: z.enum(["auto", "manual"]).default("auto"),
     subtitles: z
       .object({
         enabled: z.boolean().default(false),
@@ -148,14 +149,21 @@ export const Film = z
   })
   .refine((value) => {
     try {
-      validateCues(value.subtitles.cues, filmDuration(value) / FPS);
+      validateCues(
+        value.subtitles.cues,
+        value.voiceover && value.narrationMode === "auto"
+          ? 600
+          : filmDuration(value) / FPS,
+      );
       return true;
     } catch {
       return false;
     }
   }, "Vérifiez les sous-titres : durées, chevauchements et durée du montage.")
   .refine(
-    (value) => filmDuration(value) <= FPS * 600,
+    (value) =>
+      (value.voiceover && value.narrationMode === "auto") ||
+      filmDuration(value) <= FPS * 600,
     "Film limité à 10 minutes.",
   )
   .refine(
@@ -392,13 +400,34 @@ export function resolveFilm(db, c, input, assetURL) {
       )
       .get(film.voiceover.assetId);
     if (!asset) throw fail("La voix off est introuvable.");
-    if (film.voiceover.start >= filmDuration(film) / FPS)
+    if (
+      film.narrationMode === "manual" &&
+      film.voiceover.start >= filmDuration(film) / FPS
+    )
       throw fail("La voix off commence après la fin du montage.");
     voiceover = {
       ...film.voiceover,
       duration: asset.duration,
       src: assetURL("asset", asset.id, asset.hash, asset.mime),
     };
+    if (
+      film.narrationMode === "manual" &&
+      Math.ceil((voiceover.start + voiceover.duration) * FPS) >
+        filmDuration(film)
+    )
+      throw fail(
+        "La voix dépasse le montage. Activez le calage automatique ou allongez les plans.",
+      );
+  }
+  const resolvedDuration = filmDuration({ ...film, voiceover }) / FPS;
+  if (resolvedDuration > 600)
+    throw fail(
+      "Voix et décalage limités à 10 minutes. Raccourcissez la narration.",
+    );
+  try {
+    validateCues(film.subtitles.cues, resolvedDuration);
+  } catch (error) {
+    throw fail(error.message);
   }
   const unique = [
     ...new Map(
