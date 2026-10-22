@@ -209,7 +209,9 @@ const Animal = z.object({
     .nullable(),
   tags: z.array(z.string().max(40)).max(20).default([]),
   breed: z.string().max(150).default(""),
-  compatibility: z.record(z.string().max(40), z.string().max(100)).default({}),
+  // Guidance is prose, not a short yes/no label. The source transport already
+  // bounds the complete response; a long valid answer must not reject a sync.
+  compatibility: z.record(z.string().max(40), z.string()).default({}),
   metadata: z.record(z.string(), z.unknown()).default({}),
   status: z.enum(["available", "reserved", "adopted"]).default("available"),
 });

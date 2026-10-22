@@ -74,7 +74,7 @@ export function publicAnimalMetadata(record = {}) {
     descriptionEntente: first(
       record,
       ["descriptionEntente", "description_entente"],
-      2500,
+      Infinity,
     ),
     descriptionBase: first(
       record,
@@ -141,7 +141,7 @@ export function publicCompatibility(record = {}, description = "") {
             ? value
               ? "Oui"
               : "Non"
-            : text(value, 500),
+            : text(value, Infinity),
         ])
         .filter(([k, v]) => k && v),
     ),
@@ -156,5 +156,5 @@ export function publicCompatibility(record = {}, description = "") {
   return result;
 }
 export function compatibilityFromText(value) {
-  return labelledCompatibility(text(value, 15000));
+  return labelledCompatibility(text(value, Infinity));
 }

@@ -16,8 +16,7 @@ export function labelledCompatibility(value = "") {
           /(?<=[.!])\s+(?=[A-ZÀ-Ý][\p{L}'’\-]*\s+(?:est\s+en\s+SOS|est\s+arriv[ée]|a\s+[ée]t[ée]\s+recueilli)\b)/u,
         )[0]
         .replace(/[\s;|·\-–—]+$/, "")
-        .trim()
-        .slice(0, 240);
+        .trim();
     if (raw && !/^[.\s…·_\-–—]+$/.test(raw))
       result[key] = raw.replace(/^a tester$/i, "À tester");
   }

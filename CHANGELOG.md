@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 3.14.3 — Ententes longues et synchronisation SPA
+
+Suppression de la limite de 100 caractères qui bloquait tout l’inventaire et des coupures silencieuses dans les ententes. Les conseils enfant/chat/chien sont conservés ; les protections d’archivage et les photos restent inchangées. [Notes complètes](RELEASE_v3.14.3.md).
+
 ## 3.14.2 — Modèles Glass et saisons
 
 Sauvegarde et restauration des ombres du modèle Glass corrigées, sans autoriser les objets auxiliaires comme calques. Modèles Glass et saisonniers essayés dans le navigateur, exports téléchargés et relus hors serveur. [Notes complètes](RELEASE_v3.14.2.md). L’APK native reste en3.14.0.

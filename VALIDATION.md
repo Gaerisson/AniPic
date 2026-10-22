@@ -1,5 +1,13 @@
 # Vérifications — AniPic
 
+## V3.14.3 — Synchronisation et ententes longues
+
+Suite complète sous Node.js 24.18.1 : **298 tests réussis**, aucun échec ni test ignoré, en 157,9 secondes. Builds frontend et vidéo réussis ; six variantes Compose vérifiées.
+
+Régression reproduite avant correction avec exactement `animals[32].compatibility.enfant`, limite de 100 caractères. Après correction, deux nouveaux tests réussissent : textes de plus de 15 000 caractères conservés via les contrats structurés, historiques, textes à libellés et API publique ; collecteur SPA exécuté avec un transport explicitement simulé sur 75 animaux, trois passages et neuf requêtes. L’inventaire complet est accepté, l’état de santé redevient fiable, le fichier photo et sa ligne en base restent identiques. Un passage simulé incomplet ne déclenche aucune absence ni aucun archivage. Les garde-fous existants sur les réponses globales, le périmètre et la pagination sont conservés.
+
+Le service SPA de production et votre stack NAS ne sont pas interrogés ou modifiés par ces essais. L’APK reste en 3.14.0 ; la correction est fournie par le serveur web. La publication est conditionnée à la suite complète, aux builds frontend/vidéo/Android et au build/démarrage Docker dans GitHub Actions.
+
 ## V3.14.2 — Modèles Glass et saisonniers
 
 Suite complète : **296 tests réussis**, aucun échec ni test ignoré, sous Node24 en151,2secondes. Les neuf tests ciblés passent également, dont un nouveau test utilisant la sérialisation réelle de `Rect`, `Shadow` et `Gradient` de Fabric. Les ombres et dégradés restent autorisés comme propriétés ; ils sont refusés comme calques autonomes, y compris dans un groupe. Builds frontend et vidéo réussis, six configurations Compose vérifiées.
