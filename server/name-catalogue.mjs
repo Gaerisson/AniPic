@@ -5,6 +5,33 @@ import { now } from "./db.mjs";
 const endpoint = "https://www.la-spa.fr/app/wp-json/spa/v1/animals/search/";
 const key = "spaNameCatalogueV1";
 const freshMs = 24 * 3600_000;
+const parisParts = (clock) =>
+  Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Paris",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    })
+      .formatToParts(new Date(clock))
+      .filter((p) => p.type !== "literal")
+      .map((p) => [p.type, p.value]),
+  );
+export function nightlyNamesDue(lastAttempt, clock = Date.now()) {
+  const p = parisParts(clock),
+    today = `${p.year}-${p.month}-${p.day}`;
+  if (Number(p.hour) * 60 + Number(p.minute) < 195) return false;
+  if (!lastAttempt || !Number.isFinite(Date.parse(lastAttempt))) return true;
+  const last = parisParts(Date.parse(lastAttempt)),
+    day = `${last.year}-${last.month}-${last.day}`;
+  return (
+    day < today ||
+    (day === today && Number(last.hour) * 60 + Number(last.minute) < 195)
+  );
+}
 export function nameKey(value) {
   return String(value ?? "")
     .normalize("NFKD")
@@ -177,9 +204,23 @@ export async function nameCatalogueService(app, db, c) {
     }
   }
   if (!validCatalogue(catalogue)) catalogue = null;
+  let lastAttempt;
+  try {
+    lastAttempt = JSON.parse(
+      db
+        .prepare(
+          "SELECT value FROM settings WHERE key='nameCatalogueAttempt313'",
+        )
+        .get()?.value || "null",
+    );
+  } catch {}
+  nextAttempt = lastAttempt ? Date.parse(lastAttempt) + 3600000 : 0;
+  if (!lastAttempt) lastAttempt = catalogue?.checkedAt;
   const status = () => ({
-    ready:
+    ready: !!catalogue,
+    fresh:
       !!catalogue && Date.now() - Date.parse(catalogue.checkedAt) < freshMs,
+    schedule: "03:15 · Europe/Paris",
     checkedAt: catalogue?.checkedAt ?? null,
     names: catalogue?.names.length ?? 0,
     animals: catalogue?.animals ?? 0,
@@ -193,7 +234,11 @@ export async function nameCatalogueService(app, db, c) {
     if (pending || Date.now() < nextAttempt) return status();
     error = "";
     progress = null;
-    nextAttempt = Date.now() + 60_000;
+    nextAttempt = Date.now() + 3600_000;
+    lastAttempt = now();
+    db.prepare(
+      "INSERT INTO settings VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+    ).run("nameCatalogueAttempt313", JSON.stringify(lastAttempt));
     pending = collectNameCatalogue({
       fetchText: c.nameCatalogueFetcher,
       delay: c.nameCatalogueDelay,
@@ -222,8 +267,24 @@ export async function nameCatalogueService(app, db, c) {
       });
     return status();
   };
+  let timer;
+  if (c.scheduler !== false && !c.nameCatalogueSnapshot)
+    app.addHook("onReady", async () => {
+      const tick = () => {
+        if (
+          !pending &&
+          Date.now() >= nextAttempt &&
+          (!catalogue || nightlyNamesDue(lastAttempt))
+        )
+          start();
+      };
+      tick();
+      timer = setInterval(tick, 60000);
+      timer.unref();
+    });
   app.addHook("onClose", async () => {
     closed = true;
+    clearInterval(timer);
     await pending;
   });
   return { status, start, names: () => catalogue?.names ?? [] };

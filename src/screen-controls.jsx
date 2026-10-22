@@ -8,26 +8,40 @@ export function ScreenControls({ screen, notify }) {
     [snapshot, setSnapshot] = useState(null),
     [stamp, setStamp] = useState(""),
     [waiting, setWaiting] = useState(false),
-    [live, setLive] = useState(false);
+    [live, setLive] = useState(false),
+    [interval, setIntervalSeconds] = useState(5);
   useEffect(() => {
     if (!open || !live || !cfg?.captureEnabled) return;
     let active = true;
     const request = () => {
-      if (document.visibilityState !== "hidden")
-        api("/admin/display/screens/" + screen.id + "/command", {
-          method: "POST",
-          body: { kind: "snapshot" },
-        })
-          .then(() => active && setWaiting(true))
-          .catch(() => {});
+      if (document.visibilityState === "hidden") return;
+      api("/admin/display/screens/" + screen.id + "/live", {
+        method: "POST",
+        body: { seconds: interval },
+      }).catch((e) => {
+        if (active) {
+          setLive(false);
+          notify(e.message, "error");
+        }
+      });
     };
     request();
-    const timer = setInterval(request, 45000);
+    const timer = setInterval(request, 60000);
+    const visibility = () => {
+      if (document.visibilityState === "hidden") setLive(false);
+    };
+    document.addEventListener("visibilitychange", visibility);
     return () => {
       active = false;
       clearInterval(timer);
+      document.removeEventListener("visibilitychange", visibility);
+      api("/admin/display/screens/" + screen.id + "/live", {
+        method: "POST",
+        body: { seconds: 0 },
+      }).catch(() => {});
     };
-  }, [open, live, cfg?.captureEnabled, screen.id]);
+  }, [open, live, interval, cfg?.captureEnabled, screen.id]);
+
   useEffect(() => {
     if (open)
       api("/admin/display/screens/" + screen.id + "/config")
@@ -57,7 +71,8 @@ export function ScreenControls({ screen, notify }) {
           }
         }
       } catch {}
-      if (active && waiting && tries++ < 8) timer = setTimeout(load, 5000);
+      if (active && (live || (waiting && tries++ < 20)))
+        timer = setTimeout(load, live ? 1000 : 1500);
       else if (active) setWaiting(false);
     };
     if (open) load();
@@ -65,7 +80,7 @@ export function ScreenControls({ screen, notify }) {
       active = false;
       clearTimeout(timer);
     };
-  }, [open, waiting, screen.id]);
+  }, [open, waiting, live, screen.id]);
   useEffect(
     () => () => {
       if (snapshot) URL.revokeObjectURL(snapshot);
@@ -99,12 +114,25 @@ export function ScreenControls({ screen, notify }) {
       {open && (
         <>
           <div className="screen-commands">
+            <label>
+              Fréquence des captures
+              <select
+                value={interval}
+                onChange={(e) => setIntervalSeconds(Number(e.target.value))}
+              >
+                {[2, 5, 10, 30].map((n) => (
+                  <option key={n} value={n}>
+                    Toutes les {n} s
+                  </option>
+                ))}
+              </select>
+            </label>
             <Button
               variant={live ? "" : "secondary"}
               disabled={!cfg?.captureEnabled}
               onClick={() => setLive((v) => !v)}
             >
-              {live ? "Arrêter le suivi visuel" : "Suivi visuel · 45 s"}
+              {live ? "Arrêter le suivi visuel" : "Aperçu en direct"}
             </Button>
             <Button
               disabled={busy || waiting}
@@ -130,7 +158,10 @@ export function ScreenControls({ screen, notify }) {
               />
               <p className="tv-capture-note">
                 Capture reçue le {new Date(stamp).toLocaleString("fr-FR")} ·
-                aperçu ponctuel, sans capture du bureau.
+                {live
+                  ? `aperçu actualisé environ toutes les ${interval} s`
+                  : "capture ponctuelle"}
+                .
               </p>
             </>
           ) : (

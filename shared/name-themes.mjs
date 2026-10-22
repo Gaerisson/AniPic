@@ -1,3 +1,4 @@
+import {moreNames} from './name-bank.mjs';
 export const nameThemes = {
   all: "Toutes les inspirations",
   nature: "Nature & fleurs",
@@ -256,9 +257,9 @@ const bank = {
 export function themedNames(theme, sex = "any") {
   return [
     ...new Set(
-      (bank[theme] || [])
+      (theme==='all'?Object.values(bank).flat():(bank[theme] || []))
         .filter(([s]) => sex === "any" || s === sex)
-        .flatMap(([, ...names]) => names),
+        .flatMap(([, ...names]) => names).concat(moreNames(theme,sex)),
     ),
   ];
 }

@@ -1,3 +1,4 @@
+import BannerEditor from "./banner-editor.jsx";
 import {
   visualThemes,
   visualTheme,
@@ -43,7 +44,7 @@ const cover = (ctx, image, x, y, w, h) => {
     h,
   );
 };
-export default function Wallpaper({ user, overview, notify }) {
+function WallpaperLegacy({ user, overview, notify }) {
   const canvas = useRef(),
     [animals, setAnimals] = useState([]),
     [chosen, setChosen] = useState([]),
@@ -580,6 +581,33 @@ export default function Wallpaper({ user, overview, notify }) {
           ))}
         </div>
       </section>
+    </>
+  );
+}
+
+export default function Wallpaper(props) {
+  const [mode, setMode] = useState("banner");
+  return (
+    <>
+      <nav className="banner-mode-tabs" aria-label="Type de visuel">
+        <Button
+          variant={mode === "banner" ? "" : "secondary"}
+          onClick={() => setMode("banner")}
+        >
+          Bannières créatives
+        </Button>
+        <Button
+          variant={mode === "wallpaper" ? "" : "secondary"}
+          onClick={() => setMode("wallpaper")}
+        >
+          Mosaïques & fonds d’écran
+        </Button>
+      </nav>
+      {mode === "banner" ? (
+        <BannerEditor {...props} />
+      ) : (
+        <WallpaperLegacy {...props} />
+      )}
     </>
   );
 }

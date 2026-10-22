@@ -21,3 +21,11 @@ HTTPS, accès sortant vers le service push du navigateur et compatibilité du t�
 Les brouillons appartiennent à leur auteur. Les faits, négations, réserves et ententes sont à vérifier avant publication. Ne pas fournir de données personnelles inutiles au prestataire IA.
 
 **Découvrir AniPic · 1 minute** donne un parcours court, disponible depuis l’accueil mobile et le pied de page. Les outils affichés suivent les modules et habilitations de chaque installation.
+
+## Options Android et sondages — 3.13
+
+L’accueil et les boutons du bas sont personnalisables depuis **Options de l’application**. Valeurs initiales : Refuge, Fil, Photos, Albums et C8. Widgets, ordre, thème, texte plus grand et animations sont mémorisés dans le navigateur de l’appareil. Un thème déjà choisi reste prioritaire ; sinon l’application démarre en SPA clair.
+
+Dans **Compte & appareils**, l’état de l’autorisation et l’enregistrement de l’appareil sont affichés. Le bouton **Tester les notifications** confirme que le service a accepté l’envoi ; il faut aussi vérifier sa réception sur le téléphone. Une reconnexion du même compte permet de réassocier l’abonnement à sa nouvelle session. Les sessions révoquées restent bloquées.
+
+Les [sondages d’équipe](WHATSAPP.md) sont accessibles depuis le menu et peuvent être ajoutés aux raccourcis Android. Voir aussi le [guide des créations et de la relecture](CREATIONS_ET_APPLICATION.md).

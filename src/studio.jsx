@@ -1,3 +1,4 @@
+import { AnnualStatistics } from "./annual-statistics.jsx";
 import {
   logoAnimations,
   particleStyles,
@@ -790,6 +791,12 @@ export default function Studio({
                 />
                 Statistiques à la fin
               </label>
+              <AnnualStatistics
+                year={Number(film.year) || new Date().getFullYear()}
+                user={user}
+                notify={notify}
+                onSaved={() => setFilm((f) => ({ ...f }))}
+              />
               <label>
                 Animation finale du logo
                 <select
@@ -1143,7 +1150,7 @@ export default function Studio({
           </small>
         </section>
       </div>
-      <section className="panel section-gap">
+      <section className="panel section-gap studio-clip-timeline">
         <div className="panel-heading">
           <h2>La timeline</h2>
           <span>{film.clips.length}/100 plans · 10 min maximum</span>

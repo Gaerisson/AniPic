@@ -15,12 +15,10 @@ const labels = {
   tags: "Tags",
   source_metadata: "Informations complémentaires",
 };
-const value = (v) =>
-  v == null
-    ? "Non renseigné"
-    : typeof v === "object"
-      ? JSON.stringify(v, null, 2)
-      : String(v);
+import {
+  historyGroups,
+  historyValue as value,
+} from "../shared/history-groups.mjs";
 export function AnimalHistory({ animalId, user, compact = false, open }) {
   const [data, setData] = useState(null),
     [error, setError] = useState(""),
@@ -36,7 +34,8 @@ export function AnimalHistory({ animalId, user, compact = false, open }) {
   useEffect(() => {
     let live = true;
     const query = new URLSearchParams({
-      limit: compact ? "20" : "40",
+      limit: "100",
+      order: "desc",
       after: String(cursor),
       baseline: baseline ? "1" : "0",
     });
@@ -90,33 +89,61 @@ export function AnimalHistory({ animalId, user, compact = false, open }) {
         </p>
       ) : (
         <div className="animal-history-list">
-          {items.map((r) => (
-            <article key={r.seq}>
+          {historyGroups(items).map((group) => (
+            <article className="history-group" key={group.key}>
               <header>
-                <span className="tag">
-                  {r.kind === "baseline"
-                    ? "État initial"
-                    : r.kind === "added"
-                      ? "Nouvelle fiche"
-                      : r.kind === "missing"
-                        ? "Absence confirmée"
-                        : "Modification SPA"}
-                </span>
-                <time>{new Date(r.observed_at).toLocaleString("fr-FR")}</time>
+                <div>
+                  <span className="tag">
+                    {group.kind === "baseline"
+                      ? "État initial"
+                      : group.kind === "added"
+                        ? "Nouvelle fiche"
+                        : group.kind === "missing"
+                          ? "Absence confirmée"
+                          : "Fiche actualisée"}
+                  </span>
+                  <small>{group.changes.length} information(s)</small>
+                </div>
+                <time>
+                  {new Date(group.observed_at).toLocaleString("fr-FR", {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })}
+                </time>
               </header>
               {!animalId && (
                 <button
                   className="history-animal"
-                  onClick={() => open?.({ type: "animal", id: r.animal_id })}
+                  onClick={() =>
+                    open?.({ type: "animal", id: group.animal_id })
+                  }
                 >
-                  {r.name}
-                  <small>{r.source_id}</small>
+                  <strong>{group.name}</strong>
+                  <small>{group.source_id}</small>
+                  <ArrowRight size={18} />
                 </button>
               )}
-              <strong>{labels[r.field] || r.field}</strong>
-              <div className="history-values">
-                {r.before !== null && <del>{value(r.before)}</del>}
-                <span>{value(r.after)}</span>
+              <div className="history-change-rows">
+                {group.changes.map((r) => (
+                  <div
+                    key={r.seq}
+                    className={
+                      "history-change-row " +
+                      (r.before === null ? "initial" : "")
+                    }
+                  >
+                    <strong>{labels[r.field] || r.field}</strong>
+                    <div className="history-values">
+                      {r.before !== null && (
+                        <>
+                          <del>{value(r.before, r.field)}</del>
+                          <ArrowRight size={16} />
+                        </>
+                      )}
+                      <span>{value(r.after, r.field)}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </article>
           ))}
@@ -124,7 +151,7 @@ export function AnimalHistory({ animalId, user, compact = false, open }) {
       )}
       {data?.next && (
         <Button variant="secondary" onClick={() => setCursor(data.next)}>
-          Changements suivants
+          Afficher les changements plus anciens
         </Button>
       )}
     </>
@@ -152,8 +179,9 @@ export function AnimalHistory({ animalId, user, compact = false, open }) {
         </a>
       </div>
       <p className="fineprint">
-        Chaque modification garde la valeur précédente et la nouvelle. L’état
-        initial correspond à l’activation du suivi.
+        Les changements sont regroupés par animal et par synchronisation, du
+        plus récent au plus ancien. Comparez les anciennes et les nouvelles
+        informations.
       </p>
       {content}
     </div>

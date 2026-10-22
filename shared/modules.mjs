@@ -51,8 +51,8 @@ export const moduleCatalog = Object.freeze([
     id: "planning",
     name: "Planning des bénévoles",
     description: "Créneaux, inscriptions et présences du jour",
-    pages: ["volunteers"],
-    api: ["/api/volunteers"],
+    pages: ["volunteers", "polls"],
+    api: ["/api/volunteers", "/api/team-polls"],
   },
   {
     id: "writing",

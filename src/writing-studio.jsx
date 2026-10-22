@@ -10,6 +10,7 @@ import {
 import { api, copyText, imageUrl } from "./api.js";
 import { Button, Spinner } from "./ui.jsx";
 import { SpaPhoto } from "./spa-photo.jsx";
+import { WritingReview, WritingPreview } from "./writing-review.jsx";
 export default function WritingStudio({ user, notify }) {
   const [data, setData] = useState(null),
     [tab, setTab] = useState("create"),
@@ -22,8 +23,9 @@ export default function WritingStudio({ user, notify }) {
       keywords: "",
       original: "",
       mode: "create",
-      provider: "local",
+      provider: "tokenharbor",
       tone: "chaleureux",
+      emojis: true,
     }),
     [proposal, setProposal] = useState(""),
     [busy, setBusy] = useState(false),
@@ -35,6 +37,7 @@ export default function WritingStudio({ user, notify }) {
       Promise.all([api("/writing/review"), api("/writing/drafts")])
         .then(([d, h]) => {
           setData(d);
+          if (!d.ai.tokenharbor) setForm((f) => ({ ...f, provider: "local" }));
           setDrafts(h.drafts);
         })
         .catch((e) => setError(e.message));
@@ -55,7 +58,7 @@ export default function WritingStudio({ user, notify }) {
   if (!user) return <p>Connectez-vous pour utiliser l’atelier de rédaction.</p>;
   if (!data) return error ? <p role="alert">{error}</p> : <Spinner />;
   return (
-    <div className="writing-studio">
+    <div className="writing-studio writing313">
       <div className="page-heading">
         <div>
           <div className="eyebrow">DES MOTS POUR UNE RENCONTRE</div>
@@ -63,7 +66,10 @@ export default function WritingStudio({ user, notify }) {
         </div>
         <FilePenLine size={30} />
       </div>
-      <div className="activity-tabs">
+      <nav
+        className="activity-tabs writing-tabs"
+        aria-label="Atelier de rédaction"
+      >
         <button
           aria-pressed={tab === "create"}
           onClick={() => {
@@ -88,14 +94,14 @@ export default function WritingStudio({ user, notify }) {
         >
           Mes propositions
         </button>
-      </div>
+      </nav>
       {tab === "history" ? (
         <div className="writing-history">
           {drafts.length ? (
             drafts.map((d) => (
               <article className="panel" key={d.id}>
                 <time>{new Date(d.created_at).toLocaleString("fr-FR")}</time>
-                <p>{d.proposal}</p>
+                <WritingPreview text={d.proposal} />
                 <Button
                   variant="secondary"
                   onClick={() =>
@@ -216,6 +222,19 @@ export default function WritingStudio({ user, notify }) {
                 }
               }}
             >
+              <div className="writing-editor-heading">
+                <span className="eyebrow">
+                  {tab === "review"
+                    ? "01 / LE TEXTE À RELIRE"
+                    : "01 / LES FAITS VÉRIFIÉS"}
+                </span>
+                <h2>{form.name || "Une nouvelle rencontre"}</h2>
+                <p>
+                  {tab === "review"
+                    ? "Comparez les corrections proposées, sans changer le sens du texte."
+                    : "Quelques mots simples suffisent pour préparer une présentation accueillante."}
+                </p>
+              </div>
               <div className="form-row">
                 <label>
                   Prénom
@@ -285,6 +304,18 @@ export default function WritingStudio({ user, notify }) {
                   service IA configuré. Évitez les informations personnelles.
                 </p>
               )}
+              {tab !== "review" && (
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={form.emojis}
+                    onChange={(e) =>
+                      setForm({ ...form, emojis: e.target.checked })
+                    }
+                  />
+                  Ajouter quelques émojis utiles 🐾
+                </label>
+              )}
               <Button disabled={busy} type="submit">
                 {busy ? (
                   <>
@@ -305,12 +336,21 @@ export default function WritingStudio({ user, notify }) {
             )}
             {proposal && (
               <div className="writing-proposal">
-                <h2>Votre proposition</h2>
-                <textarea
-                  rows="9"
-                  value={proposal}
-                  onChange={(e) => setProposal(e.target.value)}
-                />
+                <span className="eyebrow">02 / VOTRE PROPOSITION</span>
+                <h2>Des mots pour sa prochaine rencontre</h2>
+                {tab === "review" && (
+                  <WritingReview original={form.original} proposal={proposal} />
+                )}
+                <WritingPreview text={proposal} />
+                <label>
+                  Affiner le texte final
+                  <textarea
+                    className="writing-final-editor"
+                    rows="9"
+                    value={proposal}
+                    onChange={(e) => setProposal(e.target.value)}
+                  />
+                </label>
                 <Button
                   icon={Copy}
                   onClick={() =>

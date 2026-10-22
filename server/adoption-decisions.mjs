@@ -155,7 +155,7 @@ function confirm(db, animal, p, user, by, at, reason) {
       p.eventId,
       animal.id,
       "adopted",
-      at,
+      p.at,
     );
   }
   db.prepare("UPDATE animals SET status='adopted',updated_at=? WHERE id=?").run(
@@ -188,7 +188,7 @@ function confirm(db, animal, p, user, by, at, reason) {
       reason,
     },
   );
-  feedEvent(db, after, "adopted", publicAdoptionOrigin(p));
+  updateDecisionFeed(db, after, p, "adopted");
 }
 function reject(db, animal, p, user) {
   const at = now(),
@@ -219,7 +219,37 @@ function reject(db, animal, p, user) {
     inferredAt: p.at,
     at,
   });
-  feedEvent(db, after, "removed", publicAdoptionOrigin(p));
+  updateDecisionFeed(db, after, p, "removed");
+}
+
+// A review changes the existing departure, not its place in the refuge feed.
+export function updateDecisionFeed(db, animal, decision, kind) {
+  const rows = db
+    .prepare(
+      `SELECT e.id FROM feed_events e JOIN settings s
+    ON s.key='feedOrigin:'||e.id WHERE e.animal_id=? AND json_valid(s.value)
+    AND json_extract(s.value,'$.at')=? AND e.kind IN ('removed','adopted')
+    ORDER BY e.seq`,
+    )
+    .all(animal.id, decision.at);
+  if (!rows.length) {
+    feedEvent(db, animal, kind, publicAdoptionOrigin(decision), decision.at);
+    return;
+  }
+  const origin = publicAdoptionOrigin(decision);
+  db.prepare("UPDATE feed_events SET kind=?,status=? WHERE id=?").run(
+    kind,
+    animal.status,
+    rows[0].id,
+  );
+  db.prepare("UPDATE settings SET value=? WHERE key=?").run(
+    JSON.stringify(origin),
+    "feedOrigin:" + rows[0].id,
+  );
+  for (const row of rows.slice(1)) {
+    db.prepare("DELETE FROM settings WHERE key=?").run("feedOrigin:" + row.id);
+    db.prepare("DELETE FROM feed_events WHERE id=?").run(row.id);
+  }
 }
 
 // Run after a safe inventory and from the scheduler. Expiry alone never proves a continued absence.
@@ -297,6 +327,33 @@ export function reconcileAdoption(db, animal, sourceStatus) {
 }
 
 export async function registerAdoptionReviews(app, { db, authorized }) {
+  if (
+    !db.prepare("SELECT 1 FROM settings WHERE key='feedReviewStable313'").get()
+  ) {
+    transaction(db, () => {
+      for (const row of db
+        .prepare(
+          "SELECT a.*,s.value FROM settings s JOIN animals a ON s.key='autoAdoption:'||a.id WHERE json_valid(s.value) AND json_extract(s.value,'$.review') IS NOT NULL AND a.archived_at IS NOT NULL AND a.status IN ('adopted','source_missing') AND NOT EXISTS(SELECT 1 FROM settings t WHERE t.key='animalTrash:'||a.id)",
+        )
+        .all()) {
+        const p = JSON.parse(row.value);
+        if (p.eventId && p.review.decision !== "rejected")
+          db.prepare(
+            "UPDATE animal_status_events SET observed_at=? WHERE id=? AND animal_id=? AND status='adopted'",
+          ).run(p.at, p.eventId, row.id);
+        updateDecisionFeed(
+          db,
+          row,
+          p,
+          p.review.decision === "rejected" ? "removed" : "adopted",
+        );
+      }
+      db.prepare("INSERT INTO settings VALUES (?,?)").run(
+        "feedReviewStable313",
+        JSON.stringify(now()),
+      );
+    });
+  }
   const access = authorized(["admin", "agent"]);
   app.get(
     "/api/adoption-reviews",
@@ -369,12 +426,10 @@ export async function registerAdoptionReviews(app, { db, authorized }) {
           const animal = currentAnimal(db, animalId),
             p = automaticAdoption(db, animalId);
           if (!animal || !p || p.at !== body.expectedAt)
-            return reply
-              .code(409)
-              .send({
-                error:
-                  "Ce départ a changé ou n’est plus à vérifier. Actualisez la liste.",
-              });
+            return reply.code(409).send({
+              error:
+                "Ce départ a changé ou n’est plus à vérifier. Actualisez la liste.",
+            });
           if (
             stateOf(p) === desired &&
             (!body.expectedRevision ||
@@ -394,12 +449,10 @@ export async function registerAdoptionReviews(app, { db, authorized }) {
               .code(409)
               .send({ error: "Actualisez la décision avant de la modifier." });
           if (body.expectedRevision && body.expectedRevision !== revision(p))
-            return reply
-              .code(409)
-              .send({
-                error:
-                  "Un autre membre ou la règle automatique a modifié cette décision. Actualisez avant de continuer.",
-              });
+            return reply.code(409).send({
+              error:
+                "Un autre membre ou la règle automatique a modifié cette décision. Actualisez avant de continuer.",
+            });
           if (action === "confirm")
             confirm(db, animal, p, req.user, "team", now());
           else reject(db, animal, p, req.user);

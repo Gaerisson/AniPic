@@ -8,9 +8,9 @@ export function mobileAppLayout({
   return requested === "android" || standalone || remembered;
 }
 export const mobileDestinations = Object.freeze([
-  { page: "mobile", name: "Mon refuge", symbol: "home" },
-  { page: "feed", name: "Le fil", symbol: "feed" },
-  { page: "volunteers", name: "Planning", symbol: "planning" },
+  { page: "mobile", name: "Refuge", symbol: "home" },
+  { page: "feed", name: "Fil", symbol: "feed" },
   { page: "mobilePhotos", name: "Photos", symbol: "photos" },
+  { page: "collections", name: "Albums", symbol: "albums" },
   { page: "broadcasts", name: "C8", symbol: "tv" },
 ]);

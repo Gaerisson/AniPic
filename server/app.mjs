@@ -79,6 +79,8 @@ import { photoPriority, photoPrioritySql } from "../shared/photo-priority.mjs";
 import { scheduledSyncDue } from "../shared/sync-schedule.mjs";
 import { registerPrivacy, privacyCleanup } from "./privacy.mjs";
 import { registerWriting } from "./writing.mjs";
+import { registerAnnualStatistics } from "./annual-statistics.mjs";
+import { registerTeamPolls } from "./team-polls.mjs";
 import { registerNotifications } from "./notifications.mjs";
 import { registerVolunteers } from "./volunteers.mjs";
 import { registerModules, moduleHook, modulesConfig } from "./modules.mjs";
@@ -1067,7 +1069,7 @@ export async function createApp(overrides = {}) {
       return reply.code(404).send({ error: "Photo introuvable." });
     const original = req.query.original === "1" || req.query.full === "1";
     const width = Number(req.query.w || 640);
-    if (!original && ![320, 640, 1280].includes(width))
+    if (!original && ![160, 320, 640, 1280].includes(width))
       return reply.code(400).send({ error: "Taille non autorisée." });
     if (original) {
       if (!req.user)
@@ -1479,6 +1481,8 @@ export async function createApp(overrides = {}) {
     },
   );
   await registerExtras(app, { db, c, authorized, job });
+  await registerAnnualStatistics(app, { db, authorized });
+  await registerTeamPolls(app, { db, authorized });
   await registerInternalRegister(app, { db, authorized });
   await registerGroupPosters(app, { db, c, authorized });
   await registerAdoptionReviews(app, { db, authorized });

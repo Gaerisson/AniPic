@@ -1,3 +1,4 @@
+import { AnnualStatistics } from "./annual-statistics.jsx";
 import { Component, useEffect, useState } from "react";
 import { Monitor, ExternalLink, Save, Film, Settings2 } from "lucide-react";
 import { api } from "./api.js";
@@ -342,6 +343,12 @@ export function DisplaySettings({ notify, user }) {
             )}
           </div>
           <div className="signage-preview-col">
+            <AnnualStatistics
+              year={program.year}
+              user={user}
+              notify={notify}
+              onSaved={() => setCfg((v) => ({ ...v }))}
+            />
             <div className="section-heading">
               <h3>Aperçu en direct</h3>
               <span className="tag">

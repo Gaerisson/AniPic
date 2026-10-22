@@ -71,9 +71,91 @@ export async function registerDisplayControls(app, { db, c, authorized }) {
     db.prepare(
       "INSERT INTO display_config VALUES (?,?) ON CONFLICT(screen_id) DO UPDATE SET config=excluded.config",
     ).run(key, JSON.stringify(v));
+    if (!v.captureEnabled)
+      db.prepare("DELETE FROM display_live WHERE screen_id=?").run(key);
     audit(db, req.user, "display_screen_configured", { id: key, config: v });
     return { ok: true };
   });
+  app.post(
+    "/api/admin/display/screens/:id/live",
+    { ...access, config: { rateLimit: { max: 30, timeWindow: "1 minute" } } },
+    async (req) => {
+      const key = validKey(req),
+        v = z
+          .object({
+            seconds: z.union([
+              z.literal(0),
+              z.literal(2),
+              z.literal(5),
+              z.literal(10),
+              z.literal(30),
+            ]),
+          })
+          .strict()
+          .parse(req.body);
+      if (!v.seconds) {
+        db.prepare("DELETE FROM display_live WHERE screen_id=?").run(key);
+        return { active: false };
+      }
+      if (!displayConfig(db, key).captureEnabled)
+        throw Object.assign(
+          Error("Les captures sont désactivées pour cet écran."),
+          { statusCode: 409 },
+        );
+      const expiresAt = new Date(Date.now() + 180000).toISOString();
+      db.prepare(
+        "INSERT INTO display_live VALUES (?,?,?) ON CONFLICT(screen_id) DO UPDATE SET interval_seconds=excluded.interval_seconds,expires_at=excluded.expires_at",
+      ).run(key, v.seconds, expiresAt);
+      return { active: true, seconds: v.seconds, expiresAt };
+    },
+  );
+  app.post(
+    "/api/public/display/poll",
+    { config: { rateLimit: { max: 90, timeWindow: "1 minute" } } },
+    async (req, reply) => {
+      if (req.headers.origin && req.headers.origin !== c.origin)
+        return reply.code(403).send({ error: "Origine refusée." });
+      const v = z
+        .object({
+          id: z.string().uuid(),
+          token: z.string().regex(/^[\w-]{43}$/),
+        })
+        .strict()
+        .parse(req.body);
+      if (!screen(db, v.id, v.token))
+        return reply.code(403).send({ error: "Identité d’écran invalide." });
+      const cfg = displayConfig(db, v.id),
+        live = db
+          .prepare(
+            "SELECT * FROM display_live WHERE screen_id=? AND expires_at>?",
+          )
+          .get(v.id, now());
+      if (live && cfg.captureEnabled) {
+        const last = db
+          .prepare("SELECT created_at FROM display_snapshots WHERE screen_id=?")
+          .get(v.id);
+        if (
+          (!last ||
+            Date.now() - Date.parse(last.created_at) >=
+              live.interval_seconds * 1000) &&
+          !pendingDisplayCommands(db, v.id).some((c) => c.kind === "snapshot")
+        ) {
+          db.prepare(
+            "DELETE FROM display_commands WHERE screen_id=? AND (ack_at IS NOT NULL OR created_at<?)",
+          ).run(v.id, new Date(Date.now() - 120000).toISOString());
+          db.prepare("INSERT INTO display_commands VALUES (?,?,?,?,NULL)").run(
+            id(),
+            v.id,
+            "snapshot",
+            now(),
+          );
+        }
+      }
+      return reply
+        .header("Cache-Control", "no-store")
+        .send({ config: cfg, commands: pendingDisplayCommands(db, v.id) });
+    },
+  );
   app.post(
     "/api/admin/display/screens/:id/command",
     { ...access, config: { rateLimit: { max: 10, timeWindow: "1 minute" } } },
@@ -111,12 +193,10 @@ export async function registerDisplayControls(app, { db, c, authorized }) {
         )
         .get(validKey(req));
       if (!row)
-        return reply
-          .code(404)
-          .send({
-            error:
-              "Aucune capture reçue. Demandez une capture de l’écran connecté.",
-          });
+        return reply.code(404).send({
+          error:
+            "Aucune capture reçue. Demandez une capture de l’écran connecté.",
+        });
       return reply
         .header("Cache-Control", "no-store")
         .header("X-Captured-At", row.created_at)
@@ -128,7 +208,7 @@ export async function registerDisplayControls(app, { db, c, authorized }) {
     "/api/public/display/command-result",
     {
       bodyLimit: 750000,
-      config: { rateLimit: { max: 6, timeWindow: "1 minute" } },
+      config: { rateLimit: { max: 90, timeWindow: "1 minute" } },
     },
     async (req, reply) => {
       if (req.headers.origin && req.headers.origin !== c.origin)

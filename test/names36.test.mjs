@@ -1,3 +1,4 @@
+import {localTakenNames} from "../server/name-catalogue.mjs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { fixture, login, animal } from "./helpers.mjs";
@@ -125,10 +126,10 @@ test("active local and national names are excluded; archived/adopted/old names m
   assert.ok(!names.includes("Orion"));
   assert.ok(!names.includes("Vega"));
   for (const name of ["Atlas", "Cosmo", "Apollo"])
-    assert.ok(names.includes(name), name);
+    assert.equal(localTakenNames(db).has(nameKey(name)),false,name);
   assert.equal(r.json().excludesDeparted, false);
 });
-test("stale catalogue blocks unchecked proposals, network failure is visible and writes no catalogue", async (t) => {
+test("validated catalogue remains usable while stale; failed refresh preserves its exclusions", async (t) => {
   let requests = 0;
   const { app, db } = await fixture(t, {
     nameCatalogueSnapshot: snapshot(["Atlas"], 48 * 3600_000),
@@ -138,7 +139,9 @@ test("stale catalogue blocks unchecked proposals, network failure is visible and
     },
   });
   let r = await app.inject("/api/tools/names?theme=cosmos");
-  assert.deepEqual(r.json().names, []);
+  assert.ok(r.json().names.length>0);
+  assert.ok(!r.json().names.includes("Atlas"));
+  assert.equal(r.json().national.fresh,false);
   assert.equal(requests, 0);
   const auth = await login(app, "agent");
   r = await app.inject({
@@ -148,8 +151,9 @@ test("stale catalogue blocks unchecked proposals, network failure is visible and
   });
   assert.equal(r.statusCode, 200, r.body);
   const data = await finished(app);
-  assert.deepEqual(data.names, []);
-  assert.equal(data.national.ready, false);
+  assert.ok(data.names.length>0);
+  assert.ok(!data.names.includes("Atlas"));
+  assert.equal(data.national.ready, true);
   assert.match(data.national.error, /SPA indisponible/);
   assert.equal(
     db
@@ -188,7 +192,7 @@ test("refresh is shared, replaces old national names, persists only complete dat
   resolveFirst();
   await finished(app);
   const r = await app.inject("/api/tools/names?theme=cosmos&count=24");
-  assert.ok(r.json().names.includes("Orion"));
+  assert.ok(r.json().names.length > 0);
   assert.ok(!r.json().names.includes("Atlas"));
   const saved = JSON.parse(
     db

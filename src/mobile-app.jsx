@@ -18,7 +18,17 @@ import { mobileAppLayout, mobileDestinations } from "../shared/mobile-app.mjs";
 import { Button } from "./ui.jsx";
 import { NavLink } from "./nav-link.jsx";
 import { api } from "./api.js";
-import { QuickTour } from "./quick-tour.jsx";
+import { useAppPreferences } from "./app-options.jsx";
+import { appDestinations } from "./app-preferences.mjs";
+import { MobileNews, MobilePortraits } from "./mobile-widgets.jsx";
+import {
+  Folder,
+  Printer,
+  Wand2,
+  BarChart3,
+  Vote,
+  Settings,
+} from "lucide-react";
 export function useMobileApp() {
   const [appMode, setAppMode] = useState(() => {
       let remembered = false;
@@ -104,27 +114,39 @@ const icons = {
   tv: Tv,
   feed: Rss,
   planning: CalendarDays,
+  albums: Folder,
+  posters: Printer,
+  writing: Wand2,
+  stats: BarChart3,
+  polls: Vote,
 };
 export function AppBottomNav({ page, go, more, expanded, modules = {} }) {
+  const prefs = useAppPreferences();
+  const destinations = prefs.nav
+    .map((p) => appDestinations.find((d) => d.page === p))
+    .filter((d) => d && (!d.module || modules[d.module] !== false));
   return (
-    <nav className="app-bottom-nav" aria-label="Navigation de l’application">
-      {mobileDestinations
-        .filter((d) => d.page !== "volunteers" || modules.planning !== false)
-        .filter((d) => d.page !== "broadcasts" || modules.broadcasts !== false)
-        .map((d) => {
-          const Icon = icons[d.symbol];
-          return (
-            <NavLink
-              href={"#" + d.page}
-              key={d.page}
-              aria-current={page === d.page ? "page" : undefined}
-              onClick={() => go(d.page)}
-            >
-              <Icon size={21} />
-              <span>{d.name}</span>
-            </NavLink>
-          );
-        })}
+    <nav
+      className="app-bottom-nav"
+      aria-label="Navigation de l’application"
+      style={{
+        gridTemplateColumns: `repeat(${destinations.length + 1},minmax(0,1fr))`,
+      }}
+    >
+      {destinations.map((d) => {
+        const Icon = icons[d.symbol];
+        return (
+          <NavLink
+            href={"#" + d.page}
+            key={d.page}
+            aria-current={page === d.page ? "page" : undefined}
+            onClick={() => go(d.page)}
+          >
+            <Icon size={21} />
+            <span>{d.name}</span>
+          </NavLink>
+        );
+      })}
       <button
         aria-label="Tous les outils"
         aria-expanded={expanded}
@@ -145,6 +167,16 @@ export function MobileHome({
   pendingAdoptions,
   ui = {},
 }) {
+  const prefs = useAppPreferences();
+  const widget = (key, children) =>
+    prefs.widgets.includes(key) ? (
+      <div
+        className="mobile-widget"
+        style={{ order: prefs.widgets.indexOf(key) }}
+      >
+        {children}
+      </div>
+    ) : null;
   const [summary, setSummary] = useState(null),
     [error, setError] = useState("");
   useEffect(() => {
@@ -188,6 +220,13 @@ export function MobileHome({
           </p>
         </div>
         <Button
+          variant="ghost"
+          aria-label="Options de l’application"
+          onClick={() => go("appOptions")}
+        >
+          <Settings size={20} />
+        </Button>
+        <Button
           variant="secondary"
           aria-label="Compte et notifications"
           onClick={() => (user ? go("accountHub") : open({ type: "login" }))}
@@ -195,136 +234,177 @@ export function MobileHome({
           <Bell size={20} />
         </Button>
       </div>
-      {summary?.counts && (
-        <section className="mobile-recap-stats">
-          {[
-            ["adoptions", "Adoptions", Heart],
-            ["arrivals", "Arrivées", PawIcon],
-            ["changes", "Changements", Images],
-          ].map(([k, label, Icon]) => (
-            <button
-              className="panel"
-              key={k}
-              onClick={() => go(k === "adoptions" ? "mobileAdoptions" : "feed")}
-            >
-              <Icon size={20} />
-              <strong>{summary.counts[k] || 0}</strong>
-              <span>{label}</span>
-              <small>7 derniers jours</small>
-            </button>
-          ))}
-        </section>
+      {widget(
+        "recap",
+        summary?.counts && (
+          <section className="mobile-recap-stats">
+            {[
+              ["adoptions", "Adoptions", Heart],
+              ["arrivals", "Arrivées", PawIcon],
+              ["changes", "Changements", Images],
+            ].map(([k, label, Icon]) => (
+              <button
+                className="panel"
+                key={k}
+                onClick={() =>
+                  go(k === "adoptions" ? "mobileAdoptions" : "feed")
+                }
+              >
+                <Icon size={20} />
+                <strong>{summary.counts[k] || 0}</strong>
+                <span>{label}</span>
+                <small>7 derniers jours</small>
+              </button>
+            ))}
+          </section>
+        ),
       )}
-      {pending > 0 && ["admin", "agent"].includes(user?.role) && (
-        <button
-          className="panel mobile-pending"
-          onClick={() => go("adoptionReviews")}
-        >
-          <Heart size={24} />
-          <span>
-            <strong>{pending} adoption(s) à confirmer</strong>
-            <small>Vérifier les départs détectés</small>
-          </span>
-          <ArrowUpRight size={20} />
-        </button>
+      {widget(
+        "pending",
+        pending > 0 && ["admin", "agent"].includes(user?.role) && (
+          <button
+            className="panel mobile-pending"
+            onClick={() => go("adoptionReviews")}
+          >
+            <Heart size={24} />
+            <span>
+              <strong>{pending} adoption(s) à confirmer</strong>
+              <small>Vérifier les départs détectés</small>
+            </span>
+            <ArrowUpRight size={20} />
+          </button>
+        ),
       )}
-      <NavLink
-        href="#feed"
-        onClick={() => go("feed")}
-        className="panel mobile-feed-link"
-      >
-        <Rss size={25} />
-        <span>
-          <strong>Au fil du refuge</strong>
-          <small>Arrivées, adoptions et changements des fiches</small>
-        </span>
-        <ArrowUpRight size={20} />
-      </NavLink>
-      {user && ui.enabledModules?.planning !== false && (
-        <section className="panel mobile-today">
-          <div className="widget-heading">
-            <h2>Au refuge aujourd’hui</h2>
-            <Button variant="ghost" onClick={() => go("volunteers")}>
-              Planning ↗
-            </Button>
-          </div>
-          {today?.people.length ? (
-            <div className="today-people">
-              {today.people.map((p) => (
-                <span key={p.id}>
-                  <b>{p.name}</b>
-                  <small>{p.tasks.join(" · ")}</small>
-                </span>
-              ))}
+      {widget(
+        "feed",
+        <>
+          <NavLink
+            href="#feed"
+            onClick={() => go("feed")}
+            className="panel mobile-feed-link"
+          >
+            <Rss size={25} />
+            <span>
+              <strong>Au fil du refuge</strong>
+              <small>Arrivées, adoptions et changements des fiches</small>
+            </span>
+            <ArrowUpRight size={20} />
+          </NavLink>
+          <MobileNews go={go} open={open} />
+        </>,
+      )}
+      {widget(
+        "today",
+        user && ui.enabledModules?.planning !== false && (
+          <section className="panel mobile-today">
+            <div className="widget-heading">
+              <h2>Au refuge aujourd’hui</h2>
+              <Button variant="ghost" onClick={() => go("volunteers")}>
+                Planning ↗
+              </Button>
             </div>
-          ) : (
-            <p>Aucune présence confirmée. Ajoutez votre disponibilité.</p>
-          )}
-          {summary?.next?.length > 0 && (
-            <>
-              <h3>Mes prochains créneaux</h3>
-              {summary.next.map((s) => (
-                <button
-                  className="mobile-next-shift"
-                  key={s.id}
-                  onClick={() => go("volunteers")}
-                >
-                  <CalendarDays size={18} />
-                  <span>
-                    {s.title}
-                    <small>
-                      {s.date} · {s.start}–{s.end}
-                    </small>
+            {today?.people.length ? (
+              <div className="today-people">
+                {today.people.map((p) => (
+                  <span key={p.id}>
+                    <b>{p.name}</b>
+                    <small>{p.tasks.join(" · ")}</small>
                   </span>
-                </button>
-              ))}
-            </>
-          )}
-        </section>
+                ))}
+              </div>
+            ) : (
+              <p>Aucune présence confirmée. Ajoutez votre disponibilité.</p>
+            )}
+            {summary?.next?.length > 0 && (
+              <>
+                <h3>Mes prochains créneaux</h3>
+                {summary.next.map((s) => (
+                  <button
+                    className="mobile-next-shift"
+                    key={s.id}
+                    onClick={() => go("volunteers")}
+                  >
+                    <CalendarDays size={18} />
+                    <span>
+                      {s.title}
+                      <small>
+                        {s.date} · {s.start}–{s.end}
+                      </small>
+                    </span>
+                  </button>
+                ))}
+              </>
+            )}
+          </section>
+        ),
       )}
-      <div className="mobile-destination-grid">
-        {[
-          { page: "mobilePhotos", name: "Les portraits", Icon: Images },
-          {
-            page: "volunteers",
-            name: "Présences & missions",
-            Icon: CalendarDays,
-            module: "planning",
-          },
-          {
-            page: "broadcasts",
-            name: "Vidéo C8",
-            Icon: Tv,
-            module: "broadcasts",
-          },
-          {
-            page: "posters",
-            name: "Créer une affiche",
-            Icon: Download,
-            module: "posters",
-          },
-        ]
-          .filter((d) => !d.module || ui.enabledModules?.[d.module] !== false)
-          .map(({ page, name, Icon }) => (
-            <NavLink
-              key={page}
-              href={"#" + page}
-              onClick={() => go(page)}
-              className="panel mobile-destination"
-            >
-              <Icon size={25} />
-              <strong>{name}</strong>
-              <ArrowUpRight size={19} />
-            </NavLink>
-          ))}
-      </div>
+      {widget(
+        "shortcuts",
+        <div className="mobile-destination-grid">
+          {[
+            { page: "mobilePhotos", name: "Les portraits", Icon: Images },
+            {
+              page: "volunteers",
+              name: "Présences & missions",
+              Icon: CalendarDays,
+              module: "planning",
+            },
+            {
+              page: "broadcasts",
+              name: "Vidéo C8",
+              Icon: Tv,
+              module: "broadcasts",
+            },
+            {
+              page: "posters",
+              name: "Créer une affiche",
+              Icon: Download,
+              module: "posters",
+            },
+          ]
+            .filter((d) => !d.module || ui.enabledModules?.[d.module] !== false)
+            .map(({ page, name, Icon }) => (
+              <NavLink
+                key={page}
+                href={"#" + page}
+                onClick={() => go(page)}
+                className="panel mobile-destination"
+              >
+                <Icon size={25} />
+                <strong>{name}</strong>
+                <ArrowUpRight size={19} />
+              </NavLink>
+            ))}
+        </div>,
+      )}
       {error && <p role="status">{error}</p>}
       {!user && (
         <Button onClick={() => open({ type: "login" })}>
           Rejoindre mon espace équipe
         </Button>
       )}
-      <QuickTour go={go} user={user} />
+      {widget("portraits", <MobilePortraits go={go} open={open} />)}
+      {widget(
+        "notifications",
+        <button
+          className="panel mobile-pending"
+          onClick={() => (user ? go("accountHub") : open({ type: "login" }))}
+        >
+          <Bell size={22} />
+          <span>
+            <strong>Mes notifications</strong>
+            <small>Adoptions, arrivées et nouveaux portraits</small>
+          </span>
+          <ArrowUpRight size={19} />
+        </button>,
+      )}
+      <button
+        className="text-link mobile-configure"
+        onClick={() => go("appOptions")}
+      >
+        <Settings size={16} />
+        Personnaliser mon accueil
+      </button>
       <a href="/android" className="mobile-apk-link">
         <Download size={16} />
         Télécharger ou mettre à jour l’app Android

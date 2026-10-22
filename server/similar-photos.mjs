@@ -31,7 +31,7 @@ export async function findSimilar(db, c, threshold = 5) {
   assertStorage(c);
   const rows = db
     .prepare(
-      "SELECT DISTINCT b.hash,b.size FROM blobs b WHERE EXISTS(SELECT 1 FROM photos p WHERE p.hash=b.hash AND p.archived_at IS NULL) OR EXISTS(SELECT 1 FROM inbox_photos p WHERE p.hash=b.hash AND p.archived_at IS NULL) ORDER BY b.created_at DESC LIMIT 1501",
+      "SELECT DISTINCT b.hash,b.size FROM blobs b WHERE EXISTS(SELECT 1 FROM photos p JOIN animals a ON a.id=p.animal_id WHERE p.hash=b.hash AND p.archived_at IS NULL AND p.deleted_at IS NULL AND NOT EXISTS(SELECT 1 FROM settings s WHERE s.key='animalTrash:'||a.id)) OR EXISTS(SELECT 1 FROM inbox_photos p WHERE p.hash=b.hash AND p.archived_at IS NULL) ORDER BY b.created_at DESC LIMIT 1501",
     )
     .all();
   const limited = rows.length > 1500,
@@ -65,7 +65,7 @@ export async function findSimilar(db, c, threshold = 5) {
   function references(hash) {
     const photos = db
       .prepare(
-        "SELECT p.id,p.filename,p.animal_id,a.name FROM photos p JOIN animals a ON a.id=p.animal_id WHERE p.hash=? AND p.archived_at IS NULL LIMIT 8",
+        "SELECT p.id,p.filename,p.animal_id,a.name FROM photos p JOIN animals a ON a.id=p.animal_id WHERE p.hash=? AND p.archived_at IS NULL AND p.deleted_at IS NULL AND NOT EXISTS(SELECT 1 FROM settings s WHERE s.key='animalTrash:'||a.id) LIMIT 8",
       )
       .all(hash)
       .map((p) => ({ ...p, preview: `/media/${p.id}?w=640`, kind: "photo" }));

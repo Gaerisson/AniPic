@@ -1,3 +1,4 @@
+import { NavLink } from "./nav-link.jsx";
 import { useState } from "react";
 import { Camera, Download, ClipboardList } from "lucide-react";
 import { api, speciesName } from "./api.js";
@@ -54,28 +55,69 @@ export function TeamUtilities({ go }) {
     }
   };
   return (
-    <div className="utility-grid">
-      <section className="panel form-stack">
-        <h2>
-          <Camera size={20} /> À photographier
-        </h2>
-        <p>
-          Animaux actifs sans photo locale, y compris lorsqu’ils ont déjà un
-          portrait sur le site SPA.
-        </p>
-        <Button onClick={() => go("todo")} icon={ClipboardList}>
-          Ouvrir le planning photo
-        </Button>
-        <Button
-          variant="secondary"
-          onClick={missing}
-          disabled={busy}
-          icon={Download}
-        >
-          {busy ? "Préparation…" : "Exporter la liste CSV"}
-        </Button>
-        {error && <p className="error-text">{error}</p>}
-      </section>
-    </div>
+    <>
+      <nav className="team-shortcuts" aria-label="Les outils de l’équipe">
+        {[
+          [
+            "volunteers",
+            "Présences & missions",
+            "Qui sera là, pour quelle tâche et quel créneau.",
+          ],
+          [
+            "polls",
+            "Sondages à partager",
+            "Présences, collectes et prénoms, avec lien WhatsApp.",
+          ],
+          [
+            "writing",
+            "Rédaction & relecture",
+            "Préparer une belle présentation et comparer les corrections.",
+          ],
+          [
+            "posters",
+            "Affiches & créations",
+            "Fiches de box, grands posters et bannières.",
+          ],
+          [
+            "accountHub",
+            "Mon compte & notifications",
+            "Tester les alertes et gérer mes appareils.",
+          ],
+          [
+            "appOptions",
+            "Mon application",
+            "Organiser mon accueil et les boutons du bas.",
+          ],
+        ].map(([p, title, text]) => (
+          <NavLink href={"#" + p} onClick={() => go(p)} key={p}>
+            <strong>{title} ↗</strong>
+            <small>{text}</small>
+          </NavLink>
+        ))}
+      </nav>
+      <div className="utility-grid">
+        <section className="panel form-stack">
+          <h2>
+            <Camera size={20} /> À photographier
+          </h2>
+          <p>
+            Animaux actifs sans photo locale, y compris lorsqu’ils ont déjà un
+            portrait sur le site SPA.
+          </p>
+          <Button onClick={() => go("todo")} icon={ClipboardList}>
+            Ouvrir le planning photo
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={missing}
+            disabled={busy}
+            icon={Download}
+          >
+            {busy ? "Préparation…" : "Exporter la liste CSV"}
+          </Button>
+          {error && <p className="error-text">{error}</p>}
+        </section>
+      </div>
+    </>
   );
 }

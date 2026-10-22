@@ -77,10 +77,11 @@ export async function registerHistory(app, { db, authorized }) {
         after: z.coerce.number().int().min(0).default(0),
         limit: z.coerce.number().int().min(1).max(100).default(40),
         baseline: z.enum(["0", "1"]).default("0"),
+        order: z.enum(["asc", "desc"]).default("asc"),
       })
       .parse(req.query);
-    const where = ["c.seq > ?"],
-      args = [q.after];
+    const where = [q.order === 'desc' ? 'c.seq < ?' : 'c.seq > ?'],
+      args = [q.order === 'desc' && !q.after ? Number.MAX_SAFE_INTEGER : q.after];
     if (!internal) where.push("a.source_id IS NOT NULL");
     if (q.baseline === "0") where.push("c.kind != 'baseline'");
     for (const [value, sql] of [
@@ -95,7 +96,7 @@ export async function registerHistory(app, { db, authorized }) {
       }
     const rows = db
       .prepare(
-        `SELECT c.*,a.name,a.species,a.source_id,a.source_url FROM animal_changes c JOIN animals a ON a.id=c.animal_id WHERE ${where.join(" AND ")} ORDER BY c.seq LIMIT ?`,
+        `SELECT c.*,a.name,a.species,a.source_id,a.source_url FROM animal_changes c JOIN animals a ON a.id=c.animal_id WHERE ${where.join(" AND ")} ORDER BY c.seq ${q.order === 'desc' ? 'DESC' : 'ASC'} LIMIT ?`,
       )
       .all(...args, q.limit + 1);
     const more = rows.length > q.limit;

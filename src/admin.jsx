@@ -200,13 +200,27 @@ export function Admin({
           <ImportAutomation notify={notify} />
         </>
       ) : page === "settings" ? (
-        <InterfaceSettings
-          current={data.settings}
-          avatarUrl={overview?.assistantAvatarUrl}
-          updateAssistantAvatar={updateAssistantAvatar}
-          notify={notify}
-          reload={reload}
-        />
+        <>
+          <InterfaceSettings
+            current={data.settings}
+            avatarUrl={overview?.assistantAvatarUrl}
+            updateAssistantAvatar={updateAssistantAvatar}
+            notify={notify}
+            reload={reload}
+          />
+          <details className="feature-details">
+            <summary>Fonctions avancées et anciennes migrations</summary>
+            <div className="feature-body">
+              <p>
+                L’import GPIC est conservé pour les anciennes installations. Il
+                n’est pas nécessaire pour l’utilisation quotidienne.
+              </p>
+              <a className="button secondary" href="#migration">
+                Ouvrir l’import GPIC
+              </a>
+            </div>
+          </details>
+        </>
       ) : page === "messages" ? (
         <AdminMessages data={data} notify={notify} reload={reload} />
       ) : page === "migration" ? (
@@ -359,6 +373,11 @@ function Dashboard({ data, overview, open }) {
   );
 }
 const actionNames = {
+  team_poll_created: "Sondage créé",
+  team_poll_closed: "Sondage clôturé",
+  annual_statistics_updated: "Bilan annuel ajusté",
+  display_screen_configured: "Réglages d’un écran enregistrés",
+  writing_proposal_created: "Proposition de texte préparée",
   google_configured: "Connexion Google configurée",
   google_login: "Connexion avec Google",
   google_login_failed: "Connexion Google refusée",

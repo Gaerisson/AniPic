@@ -26,13 +26,13 @@ def twaManifest = [
     launchUrl: '/?app=android#mobile', // The start path for the TWA. Must be relative to the domain.
     name: 'AniPic', // The application name.
     launcherName: 'AniPic', // The name shown on the Android Launcher.
-    themeColor: '#18191C', // The color used for the status bar.
+    themeColor: '#fff8f0', // The color used for the status bar.
     themeColorDark: '#000000', // The color used for the dark status bar.
-    navigationColor: '#18191C', // The color used for the navigation bar.
+    navigationColor: '#fff8f0', // The color used for the navigation bar.
     navigationColorDark: '#000000', // The color used for the dark navbar.
     navigationDividerColor: '#000000', // The navbar divider color.
     navigationDividerColorDark: '#000000', // The dark navbar divider color.
-    backgroundColor: '#18191C', // The color used for the splash screen background.
+    backgroundColor: '#fff8f0', // The color used for the splash screen background.
     enableNotifications: true, // User-controlled notification delegation.
     // Every shortcut must include the following fields:
     // - name: String that will show up in the shortcut.
@@ -58,8 +58,8 @@ android {
         applicationId "fr.gaerisson.anipic"
         minSdkVersion 23
         targetSdkVersion 36
-        versionCode 31200
-        versionName "3.12.0"
+        versionCode 31300
+        versionName "3.13.0"
 
         // The name for the application
         resValue "string", "appName", twaManifest.name

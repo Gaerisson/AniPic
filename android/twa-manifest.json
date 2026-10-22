@@ -4,13 +4,13 @@
   "name": "AniPic",
   "launcherName": "AniPic",
   "display": "standalone",
-  "themeColor": "#18191C",
+  "themeColor": "#fff8f0",
   "themeColorDark": "#000000",
-  "navigationColor": "#18191C",
+  "navigationColor": "#fff8f0",
   "navigationColorDark": "#000000",
   "navigationDividerColor": "#000000",
   "navigationDividerColorDark": "#000000",
-  "backgroundColor": "#18191C",
+  "backgroundColor": "#fff8f0",
   "enableNotifications": true,
   "startUrl": "/?app=android#mobile",
   "iconUrl": "https://anipic.gaerisson.fr/app-icon-512.png",
@@ -20,8 +20,8 @@
     "path": "../../anipic-private/anipic-release.jks",
     "alias": "anipic"
   },
-  "appVersionName": "3.12.0",
-  "appVersionCode": 31200,
+  "appVersionName": "3.13.0",
+  "appVersionCode": 31300,
   "shortcuts": [],
   "generatorApp": "unknown",
   "fallbackType": "customtabs",
@@ -43,5 +43,5 @@
   "additionalTrustedOrigins": [],
   "retainedBundles": [],
   "displayOverride": [],
-  "appVersion": "3.12.0"
+  "appVersion": "3.13.0"
 }

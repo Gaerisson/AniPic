@@ -1,3 +1,4 @@
+import { CreationNav } from "./creation-nav.jsx";
 import { browserTheme, rememberTheme } from "./theme-store.mjs";
 import {
   useMobileApp,
@@ -147,13 +148,27 @@ import { pageModule } from "../shared/modules.mjs";
 import "./update312.css";
 import "./features312.css";
 import { PublicPosters } from "./public-posters.jsx";
-import { QuickTour } from "./quick-tour.jsx";
+import { SiteFooter } from "./site-footer.jsx";
+import AppOptions from "./app-options.jsx";
+import "./features313.css";
+const TeamPolls = lazy(() => import("./team-polls.jsx"));
 const TeamPlanning = lazy(() => import("./team-planning.jsx"));
 const WritingStudio = lazy(() => import("./writing-studio.jsx"));
 const AccountHub = lazy(() => import("./account-hub.jsx"));
 const ModuleSettings = lazy(() => import("./module-settings.jsx"));
 const iconProps = { size: 19, strokeWidth: 1.7 };
 const pages = {
+  appOptions: {
+    name: "Options de l’application",
+    icon: Settings,
+    group: "team",
+  },
+  polls: {
+    name: "Sondages",
+    icon: Users,
+    group: "team",
+    roles: ["admin", "agent", "editor", "volunteer", "viewer"],
+  },
   mobile: { name: "Mon refuge", icon: Smartphone, group: "library" },
   mobileAdoptions: { name: "Les adoptions", icon: Heart, group: "library" },
   mobilePhotos: { name: "Photos", icon: Images, group: "library" },
@@ -262,8 +277,10 @@ function App() {
     [q, setQ] = useState(""),
     [mobile, setMobile] = useState(false),
     [connectionError, setConnectionError] = useState("");
-  const [theme, setTheme] = useState(() => browserTheme());
   const appRuntime = useMobileApp();
+  const [theme, setTheme] = useState(
+    () => browserTheme() || (appRuntime.appMode ? "spa" : null),
+  );
   useEffect(() => {
     const load = () =>
       api("/modules")
@@ -284,14 +301,21 @@ function App() {
   );
   useEffect(() => {
     const sync = (e) => {
-      if (e.key === "anipic-theme")
+      if (!e.key || e.key === "anipic-theme")
         setTheme(
-          browserTheme() || overview?.interface?.themeDefault || "night",
+          browserTheme() ||
+            (appRuntime.appMode
+              ? "spa"
+              : overview?.interface?.themeDefault || "night"),
         );
     };
     window.addEventListener("storage", sync);
-    return () => window.removeEventListener("storage", sync);
-  }, [overview?.interface?.themeDefault]);
+    window.addEventListener("anipic-theme-changed", sync);
+    return () => {
+      window.removeEventListener("storage", sync);
+      window.removeEventListener("anipic-theme-changed", sync);
+    };
+  }, [overview?.interface?.themeDefault, appRuntime.appMode]);
   const [videoDraft, setVideoDraft] = useState(null);
   const [editorDraft, setEditorDraft] = useState(null);
   useEffect(() => {
@@ -622,8 +646,11 @@ function App() {
       luminance > 0.179 ? "#000000" : "#ffffff",
     );
     d.dataset.density = prefs.compactUI ? "compact" : "comfortable";
-    setTheme(browserTheme() || prefs.themeDefault || "night");
-  }, [overview?.interface]);
+    setTheme(
+      browserTheme() ||
+        (appRuntime.appMode ? "spa" : prefs.themeDefault || "night"),
+    );
+  }, [overview?.interface, appRuntime.appMode]);
   useEffect(() => {
     try {
       if (
@@ -726,35 +753,36 @@ function App() {
                   "collections",
                 ],
               ],
-              ["PRISE DE VUE", ["todo", "inbox", "print"]],
+              ["PHOTOS & SÉANCES", ["todo", "inbox", "print", "editor"]],
               [
                 "CRÉATION",
-                [
-                  "studio",
-                  "editor",
-                  "posters",
-                  "groupPoster",
-                  "wallpaper",
-                  "motion",
-                ],
+                ["studio", "posters", "groupPoster", "wallpaper", "motion"],
               ],
               [
                 "LE REFUGE",
                 [
                   "feed",
                   "stats",
-                  "tools",
-                  "agenda",
-                  "volunteers",
-                  "writing",
-                  "accountHub",
-                  "register",
-                  "archives",
                   "adoptionReviews",
+                  "archives",
                   "displaySettings",
                   "broadcasts",
                 ],
               ],
+              [
+                "L’ÉQUIPE",
+                [
+                  "volunteers",
+                  "agenda",
+                  "polls",
+                  "writing",
+                  "tools",
+                  "register",
+                  "accountHub",
+                  "appOptions",
+                ],
+              ],
+              ["RESSOURCES", ["about"]],
               ...(user?.role === "admin"
                 ? [
                     [
@@ -771,7 +799,6 @@ function App() {
                         "sync",
                         "storage",
                         "backups",
-                        "migration",
                       ],
                     ],
                   ]
@@ -976,6 +1003,15 @@ function App() {
                 </button>
               </div>
             )}
+            {[
+              "posters",
+              "groupPoster",
+              "wallpaper",
+              "studio",
+              "motion",
+            ].includes(page) && (
+              <CreationNav page={page} go={go} modules={modules} />
+            )}
             {connectionError ? (
               <Empty
                 icon={AlertCircle}
@@ -1055,6 +1091,12 @@ function App() {
                   text="Connectez-vous avec un compte administrateur."
                 />
               )
+            ) : page === "appOptions" ? (
+              <AppOptions {...actions} />
+            ) : page === "polls" ? (
+              <Suspense fallback={<Spinner />}>
+                <TeamPolls {...actions} />
+              </Suspense>
             ) : page === "volunteers" ||
               page === "writing" ||
               page === "accountHub" ||
@@ -1187,30 +1229,13 @@ function App() {
                 Changer de compte
               </button>
             )}
-            <footer className="footer">
-              <button className="footer-about" onClick={() => go("about")}>
-                © {new Date().getFullYear()} Gaerisson · À propos
-              </button>
-              <a className="footer-android" href="/android">
-                Installer sur Android
-              </a>
-              <a href="#legal" onClick={() => go("legal")}>
-                Mentions légales
-              </a>
-              <a href="#terms" onClick={() => go("terms")}>
-                Conditions
-              </a>
-              <a href="#privacy" onClick={() => go("privacy")}>
-                Confidentialité
-              </a>
-              <button onClick={() => setCookiePanel(true)}>Cookies</button>
-              <QuickTour go={go} user={user} />
-              <span>
-                {session?.demo
-                  ? "Démonstration · Profils fictifs / photos d’illustration"
-                  : "Anipic"}{" "}
-              </span>
-            </footer>
+            <SiteFooter
+              go={go}
+              user={user}
+              demo={session?.demo}
+              appMode={appRuntime.appMode}
+              onCookies={() => setCookiePanel(true)}
+            />
           </div>
         </main>
         {appRuntime.appMode && !modal && (

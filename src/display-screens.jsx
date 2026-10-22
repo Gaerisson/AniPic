@@ -242,6 +242,8 @@ function ScreenCard({ screen, at, onChange, notify }) {
             </li>
           ))}
         </ol>
+
+      </details>
         {confirm ? (
           <div className="tv-remove-confirm">
             <p>
@@ -268,7 +270,6 @@ function ScreenCard({ screen, at, onChange, notify }) {
             Retirer du suivi
           </Button>
         )}
-      </details>
     </article>
   );
 }

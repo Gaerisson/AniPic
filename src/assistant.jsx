@@ -459,7 +459,7 @@ export function About({ overview, go, user, voice }) {
     },
   ];
   return (
-    <div className="about-page">
+    <div className="about-page about313">
       <div className="page-heading">
         <h1>À propos</h1>
         <span className="about-version">Version {appVersion}</span>
@@ -476,10 +476,10 @@ export function About({ overview, go, user, voice }) {
             AniPic<span>.</span>
           </h2>
           <p>La photothèque et les outils de l’équipe du refuge.</p>
-          {overview.authorGithubUrl && (
+          {overview?.authorGithubUrl && (
             <a
               className="button secondary"
-              href={overview.authorGithubUrl}
+              href={overview?.authorGithubUrl}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -488,6 +488,23 @@ export function About({ overview, go, user, voice }) {
           )}
         </div>
       </section>
+      <div className="about-project-links">
+        <a
+          className="button"
+          href="https://github.com/Gaerisson/AniPic"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <Github size={17} />
+          Le projet open source ↗
+        </a>
+        <a className="button secondary" href="/android">
+          AniPic sur Android ↗
+        </a>
+        <button className="button secondary" onClick={() => go("tools")}>
+          Découvrir les outils
+        </button>
+      </div>
       <section className="panel about-services">
         <div className="about-section-heading">
           <h2>Les services d’Anipic</h2>
@@ -551,6 +568,18 @@ export function About({ overview, go, user, voice }) {
               <ChevronRight size={15} />
             </em>
           </button>
+        </div>
+      </section>
+      <section className="about-license">
+        <img src="/anipic-icon.svg" alt="" />
+        <div>
+          <h3>Imaginé pour les équipes du refuge.</h3>
+          <p>
+            © {new Date().getFullYear()} Gaerisson · Code sous GPLv3 avec
+            exception de liaison Remotion. Les photos et les marques conservent
+            leurs propres droits. Un outil indépendant pour prendre soin des
+            images et raconter les rencontres.
+          </p>
         </div>
       </section>
       <div className="about-credits">

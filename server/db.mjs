@@ -9,7 +9,7 @@ export function openDb(c) {
     "PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;",
   );
   const version = db.prepare("PRAGMA user_version").get().user_version;
-  if (version > 22) throw new Error("Base créée par une version plus récente.");
+  if (version > 23) throw new Error("Base créée par une version plus récente.");
   if (version === 0)
     db.exec(`
     BEGIN;
@@ -218,6 +218,7 @@ export function openDb(c) {
       PRAGMA user_version=21;`);
     });
   if(version<22)transaction(db,()=>upgrade312(db));
+  if(version<23)transaction(db,()=>upgrade313(db));
   db.prepare("DELETE FROM google_oauth WHERE expires_at < ?").run(now());
   db.prepare(
     "DELETE FROM site_passes WHERE expires_at<>'' AND expires_at < ?",
@@ -306,7 +307,7 @@ export function audit(db, user, action, detail = {}) {
     now(),
   );
 }
-export function feedEvent(db, animal, kind, origin = null) {
+export function feedEvent(db, animal, kind, origin = null, at = now()) {
   const eventId = id();
   db.prepare(
     "INSERT INTO feed_events(id,animal_id,name,species,kind,status,created_at) VALUES (?,?,?,?,?,?,?)",
@@ -317,7 +318,7 @@ export function feedEvent(db, animal, kind, origin = null) {
     animal.species,
     kind,
     animal.status || "available",
-    now(),
+    at,
   );
   if (origin)
     db.prepare("INSERT INTO settings VALUES (?,?)").run(
@@ -326,3 +327,4 @@ export function feedEvent(db, animal, kind, origin = null) {
     );
 }
 import {upgrade312} from "./upgrade312.mjs";
+import {upgrade313} from "./upgrade313.mjs";

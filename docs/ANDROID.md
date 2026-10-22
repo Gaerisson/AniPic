@@ -4,17 +4,17 @@
 
 La page **https://anipic.gaerisson.fr/android** est fournie par le même projet et la même stack. Elle est accessible depuis le pied de page et l’accueil mobile, avec bouton de téléchargement, QR code, étapes et empreintes. Elle ne contient aucune donnée du refuge et ne désactive pas le PIN des API.
 
-L’APK native 3.12.0 est incluse dans `public/downloads/`, avec son checksum. Vite la copie dans `dist/downloads/` et l’image Docker la livre avec le site. Il n’est pas nécessaire de créer un autre dépôt, une release APK séparée ou un serveur de fichiers. La version web 3.12.0 distribue cette APK native 3.12.0. Les exceptions Git/Docker ne concernent que cette distribution publique ; les clés et mots de passe restent exclus.
+L’APK native 3.13.0 est incluse dans `public/downloads/`, avec son checksum. Vite la copie dans `dist/downloads/` et l’image Docker la livre avec le site. Il n’est pas nécessaire de créer un autre dépôt, une release APK séparée ou un serveur de fichiers. La version web 3.13.0 distribue cette APK native 3.13.0. Les exceptions Git/Docker ne concernent que cette distribution publique ; les clés et mots de passe restent exclus.
 
 Lors d’une future mise à jour native, compiler et signer avec la même clé, mettre à jour `public/android-download.json`, le fichier APK et son `.sha256`, puis lancer `node scripts/check-android-download.mjs`. Les tests contrôlent aussi le paquet livré. La CI Android vérifie sa signature cryptographique et le certificat associé au domaine.
 
 ## Installer l’APK
 
-**AniPic 3.12.0** (`fr.gaerisson.anipic`) ouvre **https://anipic.gaerisson.fr/?app=android#mobile**. L’application utilise les pages, médias, comptes et droits du même site, sans seconde base à synchroniser.
+**AniPic 3.13.0** (`fr.gaerisson.anipic`) ouvre **https://anipic.gaerisson.fr/?app=android#mobile**. L’application utilise les pages, médias, comptes et droits du même site, sans seconde base à synchroniser.
 
 1. Mettre à jour la stack web avec le projet complet, en conservant ses volumes.
 2. Vérifier que `https://anipic.gaerisson.fr/.well-known/assetlinks.json` répond **200, en JSON, sans connexion ni redirection**. AniPic sert ce fichier public ; un proxy protégeant tout le domaine doit laisser passer ce seul fichier de vérification. Les API restent protégées.
-3. Installer `AniPic-3.12.0.apk` depuis le fichier fourni. Android peut demander d’autoriser ponctuellement l’installation depuis l’application ouvrant ce fichier. Aucune publication Play Store n’a été effectuée.
+3. Installer `AniPic-3.13.0.apk` depuis le fichier fourni. Android peut demander d’autoriser ponctuellement l’installation depuis l’application ouvrant ce fichier. Aucune publication Play Store n’a été effectuée.
 4. Utiliser un navigateur Android compatible et à jour, par exemple Chrome. Ouvrir AniPic, saisir le PIN si demandé puis se connecter normalement.
 
 L’APK est une **Trusted Web Activity**, utilisant le navigateur Android dans une fenêtre dédiée. L’association domaine/certificat permet de retirer la barre d’adresse. Tant que la nouvelle version web et son fichier d’association ne sont pas déployés, le navigateur peut garder sa barre. Les connexions Google passent par le navigateur, sans authentification dans une WebView.

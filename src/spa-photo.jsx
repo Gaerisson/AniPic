@@ -65,7 +65,7 @@ function SourcePhoto({
   }, [waiting, attempt]);
   return (
     <span
-      className={`spa-source-photo ${large ? "large" : ""} ${!loaded && !failed ? "spa-loading" : ""}`}
+      className={`spa-source-photo ${large ? "large" : ""} ${compact ? "compact" : ""} ${!loaded && !failed ? "spa-loading" : ""}`}
     >
       {!failed && (animal.source_metadata?.thumbnail || animal.hasSpaPhoto) ? (
         <img
@@ -96,7 +96,7 @@ function SourcePhoto({
             aria-label="Chargement de la photo SPA"
           />
         )}
-      {watermark && !compact && loaded && (
+      {watermark && large && !compact && loaded && (
         <i className="spa-reference-mark" aria-hidden="true">
           <Globe size={14} />
         </i>

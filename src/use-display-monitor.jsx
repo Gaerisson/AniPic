@@ -73,6 +73,91 @@ export function useDisplayMonitor() {
       setConnection({ name: "", state: "unavailable" });
       return;
     }
+    let processing = false;
+    const handleCommands = async (result) => {
+      if (processing || stopped || revoked) return;
+      processing = true;
+      try {
+        for (const command of result.commands || []) {
+          let image;
+          if (command.kind === "snapshot" && result.config?.captureEnabled) {
+            try {
+              // Capture the composition itself. Its parent is positioned and
+              // scaled to the TV viewport; cloning it offsets the screenshot.
+              const stage = document.querySelector(
+                ".show-full .show-stage",
+              )?.firstElementChild;
+              if (stage) {
+                const { toJpeg } = await import("html-to-image");
+                image = await toJpeg(stage, {
+                  width: stage.clientWidth,
+                  height: stage.clientHeight,
+                  quality: 0.75,
+                  canvasWidth: 960,
+                  canvasHeight: Math.round(
+                    (960 * stage.clientHeight) / stage.clientWidth,
+                  ),
+                  pixelRatio: 1,
+                  skipFonts: true,
+                  style: {
+                    transform: "none",
+                    position: "relative",
+                    top: "0",
+                    left: "0",
+                  },
+                });
+              }
+            } catch {}
+          }
+          const response = await fetch("/api/public/display/command-result", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: device.current.id,
+              token: device.current.token,
+              command: command.id,
+              ...(image ? { image } : {}),
+            }),
+          });
+          if (response.ok && command.kind === "refresh")
+            window.dispatchEvent(new Event("anipic-tv-refresh"));
+        }
+      } finally {
+        processing = false;
+      }
+    };
+    let polling = false;
+    const poll = async () => {
+      if (stopped || revoked || polling || connection?.state === "revoked")
+        return;
+      polling = true;
+      try {
+        const response = await fetch("/api/public/display/poll", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: device.current.id,
+            token: device.current.token,
+          }),
+        });
+        if (response.ok) {
+          const result = await response.json();
+          if (!stopped) {
+            setConfig((previous) =>
+              JSON.stringify(previous) === JSON.stringify(result.config)
+                ? previous
+                : result.config,
+            );
+            await handleCommands(result);
+          }
+        }
+      } catch {
+      } finally {
+        polling = false;
+      }
+    };
     const send = async () => {
       if (stopped || inFlight || revoked) return;
       inFlight = true;
@@ -103,51 +188,7 @@ export function useDisplayMonitor() {
               ? previous
               : result.config,
           );
-          for (const command of result.commands || []) {
-            let image;
-            if (command.kind === "snapshot" && result.config?.captureEnabled) {
-              try {
-                // Capture the composition itself. Its parent is positioned and
-                // scaled to the TV viewport; cloning it offsets the screenshot.
-                const stage = document.querySelector(
-                  ".show-full .show-stage",
-                )?.firstElementChild;
-                if (stage) {
-                  const { toJpeg } = await import("html-to-image");
-                  image = await toJpeg(stage, {
-                    width: stage.clientWidth,
-                    height: stage.clientHeight,
-                    quality: 0.75,
-                    canvasWidth: 960,
-                    canvasHeight: Math.round(
-                      (960 * stage.clientHeight) / stage.clientWidth,
-                    ),
-                    pixelRatio: 1,
-                    skipFonts: true,
-                    style: {
-                      transform: "none",
-                      position: "relative",
-                      top: "0",
-                      left: "0",
-                    },
-                  });
-                }
-              } catch {}
-            }
-            const response = await fetch("/api/public/display/command-result", {
-              method: "POST",
-              credentials: "same-origin",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                id: device.current.id,
-                token: device.current.token,
-                command: command.id,
-                ...(image ? { image } : {}),
-              }),
-            });
-            if (response.ok && command.kind === "refresh")
-              window.dispatchEvent(new Event("anipic-tv-refresh"));
-          }
+          await handleCommands(result);
         }
       } catch (e) {
         if (!stopped) {
@@ -164,6 +205,7 @@ export function useDisplayMonitor() {
     sendRef.current = send;
     send();
     const timer = setInterval(send, displayHeartbeatMs);
+    const pollTimer = setInterval(poll, 2000);
     const reconnected = () => {
       reconnections.current++;
       send();
@@ -175,6 +217,7 @@ export function useDisplayMonitor() {
       stopped = true;
       clearTimeout(pending.current);
       clearInterval(timer);
+      clearInterval(pollTimer);
       window.removeEventListener("online", reconnected);
       document.removeEventListener("visibilitychange", send);
       document.removeEventListener("fullscreenchange", send);

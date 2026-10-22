@@ -94,6 +94,7 @@ export function collectNotifications(db) {
   const current = {
     feed: db.prepare("SELECT COALESCE(MAX(seq),0) n FROM feed_events").get().n,
     photo: db.prepare("SELECT COALESCE(MAX(rowid),0) n FROM photos").get().n,
+    reviewedAt: now(),
   };
   if (!cursor) {
     db.prepare("INSERT INTO app_secrets VALUES (?,?)").run(
@@ -103,6 +104,14 @@ export function collectNotifications(db) {
     return;
   }
   cursor = JSON.parse(cursor.value);
+  // Confirmations update the original feed row. Use a separate timestamp so
+  // notification delivery does not require moving that event to the top.
+  for (const row of db.prepare(`SELECT s.key,s.value,a.name,a.id FROM settings s JOIN animals a ON s.key='autoAdoption:'||a.id
+    WHERE json_valid(s.value) AND json_extract(s.value,'$.review.decision')='confirmed'
+    AND json_extract(s.value,'$.review.at')>=? AND json_extract(s.value,'$.review.at')<=?`).all(cursor.reviewedAt||current.reviewedAt,current.reviewedAt)) {
+    const decision=JSON.parse(row.value);
+    notice(db,{id:'review:'+row.id+':'+(decision.revision||decision.review.at),kind:'adoptions',animalId:row.id,title:'Adoption confirmée 🧡',body:row.name,url:'/?app=android#feed'});
+  }
   for (const e of db
     .prepare(
       "SELECT * FROM feed_events WHERE seq>? AND kind IN ('added','adopted') ORDER BY seq",
@@ -225,9 +234,9 @@ export async function registerNotifications(app, { db, c, authorized }) {
     publicKey: keys.publicKey,
     subscriptions: db
       .prepare(
-        "SELECT id,created_at,last_success,last_error FROM notification_subscriptions WHERE user_id=?",
+        "SELECT id,created_at,last_success,last_error,token_hash=? AS current FROM notification_subscriptions WHERE user_id=?",
       )
-      .all(req.user.id),
+      .all(req.user.token_hash, req.user.id),
   }));
   app.put("/api/notifications/preferences", access, async (req) => {
     const v = preferences.parse(req.body);
@@ -270,10 +279,7 @@ export async function registerNotifications(app, { db, c, authorized }) {
         "SELECT id,user_id,token_hash FROM notification_subscriptions WHERE endpoint=?",
       )
       .get(v.endpoint);
-    if (
-      old &&
-      (old.user_id !== req.user.id || old.token_hash !== req.user.token_hash)
-    )
+    if (old && old.user_id !== req.user.id)
       return { ok: true, requiresResubscribe: true };
     if (
       !old &&
@@ -305,6 +311,62 @@ export async function registerNotifications(app, { db, c, authorized }) {
     ).run(z.string().uuid().parse(req.params.id), req.user.id);
     return { ok: true };
   });
+  app.post(
+    "/api/notifications/test",
+    { ...access, config: { rateLimit: { max: 3, timeWindow: "1 minute" } } },
+    async (req) => {
+      const subscriptions = db
+        .prepare(
+          "SELECT * FROM notification_subscriptions WHERE user_id=? AND token_hash=?",
+        )
+        .all(req.user.id, req.user.token_hash);
+      if (!subscriptions.length)
+        throw Object.assign(
+          Error("Activez d’abord les notifications sur cet appareil."),
+          { statusCode: 409 },
+        );
+      let sent = 0;
+      for (const subscription of subscriptions) {
+        try {
+          await (c.pushSender || webpush.sendNotification)(
+            JSON.parse(subscription.subscription),
+            JSON.stringify({
+              id: "test:" + id(),
+              title: "AniPic est prêt 🐾",
+              body: "Les notifications fonctionnent sur cet appareil.",
+              url: "/?app=android#accountHub",
+            }),
+            {
+              vapidDetails: { subject: c.origin, ...keys },
+              TTL: 60,
+              timeout: 8000,
+            },
+          );
+          db.prepare(
+            "UPDATE notification_subscriptions SET last_success=?,last_error=NULL WHERE id=?",
+          ).run(now(), subscription.id);
+          sent++;
+        } catch (e) {
+          if ([404, 410].includes(e.statusCode))
+            db.prepare("DELETE FROM notification_subscriptions WHERE id=?").run(
+              subscription.id,
+            );
+          else
+            db.prepare(
+              "UPDATE notification_subscriptions SET last_error=? WHERE id=?",
+            ).run("PUSH_DELIVERY_FAILED", subscription.id);
+        }
+      }
+      if (!sent)
+        throw Object.assign(
+          Error(
+            "Le service de notification n’a pas accepté le test. Réactivez cet appareil puis réessayez.",
+          ),
+          { statusCode: 502 },
+        );
+      return { sent, total: subscriptions.length };
+    },
+  );
   let running = false;
   const tick = async () => {
     if (running) return;

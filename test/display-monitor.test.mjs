@@ -306,7 +306,7 @@ test("schema 20 migration preserves data and sessions, and screen identities sur
     "DROP TABLE display_screen_events;DROP TABLE display_screens;PRAGMA user_version=20;",
   );
   const migrated = openDb(c);
-  assert.equal(migrated.prepare("PRAGMA user_version").get().user_version, 22);
+  assert.equal(migrated.prepare("PRAGMA user_version").get().user_version, 23);
   assert.equal(migrated.prepare("SELECT COUNT(*) n FROM sessions").get().n, 1);
   assert.equal(
     migrated.prepare("SELECT id FROM animals WHERE id=?").get(aid).id,

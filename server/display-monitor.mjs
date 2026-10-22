@@ -40,6 +40,9 @@ export function displayRevision(db, cfg = settings(db), at = new Date()) {
       JSON.stringify({
         date: from,
         settings: Object.fromEntries(keys.map((k) => [k, cfg[k]])),
+        annual: Object.entries(cfg).filter(([key]) =>
+          key.startsWith("annualAdoptions:"),
+        ),
         agenda: agendaItems(db, from, end.toISOString().slice(0, 10), {
           channel: "tv",
           limit: 6,

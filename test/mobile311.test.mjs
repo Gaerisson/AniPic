@@ -19,7 +19,7 @@ test("mobile launch mode is explicit, retains ordinary web navigation and maps a
   );
   assert.deepEqual(
     mobileDestinations.map((x) => x.page),
-    ["mobile", "feed", "volunteers", "mobilePhotos", "broadcasts"],
+    ["mobile", "feed", "mobilePhotos", "collections", "broadcasts"],
   );
   assert.equal(accessForPage("mobileAdoptions", { activity: "team" }), "team");
   assert.equal(

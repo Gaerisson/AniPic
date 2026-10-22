@@ -1,3 +1,4 @@
+import { annualAdoptions } from "./annual-statistics.mjs";
 import { hasAnimalInfo } from "../shared/animal-info.mjs";
 import { missingAnimalIds } from "./source-presence.mjs";
 import { displayManagerRoles } from "../shared/page-access.mjs";
@@ -180,11 +181,7 @@ export async function buildDisplay(
     .all(...sourceMissing);
   const stats = {
     year: program.year,
-    adoptions: db
-      .prepare(
-        "SELECT COUNT(DISTINCT animal_id) n FROM animal_status_events WHERE status='adopted' AND observed_at>=? AND observed_at<?",
-      )
-      .get(`${program.year}-01-01`, `${program.year + 1}-01-01`).n,
+    adoptions: annualAdoptions(db, program.year).count,
     dogs: 0,
     cats: 0,
     other: 0,

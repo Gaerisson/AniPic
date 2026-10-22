@@ -1,3 +1,4 @@
+import { annualAdoptions } from "./annual-statistics.mjs";
 import { beginMediaWrite } from "./media-maintenance.mjs";
 import { animalQrAddress, qrData } from "./qr.mjs";
 import { sourcePhotoBuffer } from "./source-photo.mjs";
@@ -400,11 +401,7 @@ export function resolveFilm(db, c, input, assetURL) {
   const yearStats =
     film.template === "year"
       ? {
-          adopted: db
-            .prepare(
-              "SELECT COUNT(DISTINCT animal_id) n FROM animal_status_events WHERE status='adopted' AND substr(observed_at,1,4)=?",
-            )
-            .get(String(film.year || new Date().getFullYear())).n,
+          adopted: annualAdoptions(db, film.year || new Date().getFullYear()).count,
           portraits: unique.length,
           dogs: unique.filter((c) => c.species === "dog").length,
           cats: unique.filter((c) => c.species === "cat").length,

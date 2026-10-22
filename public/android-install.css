@@ -873,3 +873,12 @@ footer a {
     transform: none !important;
   }
 }
+
+/* Keep the phone a compact illustration beside the installation action. */
+.hero{grid-template-columns:1.2fr .8fr;gap:35px;padding:35px 0 60px;min-height:640px}
+.hero-visual{min-height:480px;max-width:390px;justify-self:center;width:100%}
+.hero-visual .phone{width:265px;min-height:0;transform:rotate(-5deg) scale(.88);transform-origin:center;max-width:100%}
+.hero-visual .orbit{width:300px;height:300px}.hero-visual .orbit-two{width:370px;height:370px}
+.hero-visual .floating-label{bottom:16px;right:0;padding:14px 18px;font-size:11px;max-width:275px}
+@media(max-width:760px){.hero{grid-template-columns:1fr;padding:25px 0 40px;gap:15px;min-height:0}.hero-visual{min-height:410px;max-height:520px}.hero-visual .phone{transform:rotate(-4deg) scale(.73);transform-origin:top center}.hero-visual .floating-label{bottom:5px;right:15px}.hero-copy h1{font-size:clamp(39px,9vw,61px)}.hero-copy p{font-size:14px;line-height:1.8}.site-header{height:85px}}
+@keyframes phone313{from{opacity:0;transform:translateX(-50%) translateY(16px) rotate(-5deg) scale(.7)}to{opacity:1;transform:translateX(-50%) rotate(-5deg) scale(.7)}}.hero-visual{height:560px;min-height:560px;position:relative}.hero-visual .phone{position:absolute;top:0;left:50%;min-height:0;transform-origin:top center;transform:translateX(-50%) rotate(-5deg) scale(.7);animation:phone313 .7s ease-out both}.hero-visual .floating-label{bottom:15px}@media(max-width:760px){@keyframes phone313mobile{from{opacity:0;transform:translateX(-50%) translateY(12px) rotate(-4deg) scale(.56)}to{opacity:1;transform:translateX(-50%) rotate(-4deg) scale(.56)}}.hero-visual{height:440px;min-height:440px;max-height:440px}.hero-visual .phone{animation:phone313mobile .7s ease-out both;transform:translateX(-50%) rotate(-4deg) scale(.56)}}@media(prefers-reduced-motion:reduce){.hero-visual .phone{animation:none}}

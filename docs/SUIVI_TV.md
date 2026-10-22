@@ -51,3 +51,11 @@ Dans la carte d’une TV, ouvrir **Réglages & aperçu réel**. Chaque écran pe
 **Capturer l’écran** demande un JPEG du lecteur AniPic connecté, pas du bureau de la télévision. **Suivi visuel · 45 s** renouvelle la demande tant que ce panneau est ouvert et visible. La date de capture reste affichée : une ancienne capture n’est pas présentée comme une vidéo en direct. Les images restent privées aux agents/administrateurs et ne sont conservées que 24 h. Une capture peut être désactivée écran par écran.
 
 Le suivi affiche aussi la durée d’ouverture, le réseau déclaré par le navigateur, les reconnexions et la densité d’affichage. Au retour du réseau, le programme est rechargé ; pendant une interruption, le dernier reçu est gardé tant que la page reste ouverte. Un redémarrage de navigateur recharge sa configuration avec l’identité d’écran conservée localement. AniPic ne peut pas rallumer une TV éteinte, démarrer son navigateur à la place du système, ni rétablir un plein écran nécessitant un geste utilisateur : configurer le navigateur/kiosque de l’appareil pour ces points.
+
+## Aperçu rapproché — 3.13
+
+Ouvrir **Réglages & aperçu réel**, choisir 2, 5, 10 ou 30 secondes puis **Aperçu en direct**. Il s’agit de captures du lecteur AniPic, sans capture du bureau et sans diffusion vidéo du bureau. Les commandes sont récupérées environ toutes les 2 secondes ; le temps d’encodage, le réseau et la mise en veille peuvent espacer les images.
+
+La consultation est renouvelée chaque minute et expire côté serveur après trois minutes sans renouvellement. Fermer le panneau, masquer l’onglet ou arrêter le suivi le désactive. Le retrait d’un appareil reste réversible depuis le lecteur : il révoque son identité de suivi sans supprimer le programme ni les photos.
+
+Les captures restent réservées aux agents et administrateurs. Le jeton propre à l’écran et le PIN global, s’il est activé, restent nécessaires. La désactivation des captures arrête le suivi visuel. Les options de bilan annuel sont décrites dans le [guide des créations](CREATIONS_ET_APPLICATION.md).

@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 3.13.0 — 22 octobre 2026
+
+Interface et pied de page harmonisés, bannières avec détourage et placement libre, relecture annotée, historique SPA regroupé, prénoms enrichis avec catalogue nocturne, application personnalisable, notifications réparables et testables, aperçus TV rapprochés, statistiques annuelles ajustables et sondages à partager sur WhatsApp. Miniatures 160 px, photos supprimées et date des adoptions corrigées. [Notes détaillées](RELEASE_v3.13.0.md).
+
 ## 3.12.0 — 21 octobre 2026
 
 Planning des bénévoles, accueil mobile et fil simplifiés, notifications et appareils révocables, mises à jour APK, page Android et lien d’accueil, modules activables, rédaction/relecture, affiches publiques, capture et configuration des TV, confidentialité et consentement avant statistiques. [Notes détaillées](RELEASE_v3.12.0.md).

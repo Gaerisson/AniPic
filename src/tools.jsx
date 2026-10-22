@@ -564,7 +564,7 @@ export function AgentTools({ notify, open, go, user, ui = {} }) {
                 {national.running
                   ? "Vérification du catalogue national SPA…"
                   : national.ready
-                    ? "Catalogue national vérifié"
+                    ? "Prénoms disponibles immédiatement"
                     : "Vérification nationale nécessaire"}
               </strong>
               {national.running && national.progress ? (
@@ -590,33 +590,29 @@ export function AgentTools({ notify, open, go, user, ui = {} }) {
               {national.error && <p>{national.error}</p>}
               {!national.ready && !national.running && (
                 <p>
-                  Aucun prénom n’est proposé tant que le catalogue n’est pas à
-                  jour.
+                  Le premier catalogue est en préparation. Les prochaines
+                  propositions seront immédiates, y compris pendant une actualisation.
                 </p>
               )}
               <small>
-                Le catalogue national est valable 24 h. Il couvre les fiches
-                publiques du site SPA ; les noms absents du nouveau relevé
-                redeviennent disponibles.
+                Actualisation automatique chaque nuit à 03 h 15 (heure de Paris).
+                Les propositions utilisent le dernier relevé national complet,
+                sans attendre son renouvellement. Les animaux partis du refuge
+                ne bloquent pas leur prénom.
               </small>
             </div>
           )}
           <div className="name-catalogue-actions">
             <Button
-              icon={busy || national?.running ? LoaderCircle : RefreshCw}
+              icon={busy || (!national?.ready && national?.running) ? LoaderCircle : RefreshCw}
               disabled={
                 busy ||
-                national?.running ||
                 (!national?.ready &&
                   !["admin", "editor", "agent"].includes(user?.role))
               }
               onClick={() => generate(!national?.ready)}
             >
-              {national?.running
-                ? "Vérification en cours…"
-                : national?.ready
-                  ? "Trouver des prénoms"
-                  : "Vérifier les noms SPA"}
+              {national?.ready ? "Trouver des prénoms" : national?.running ? "Préparation du catalogue…" : "Vérifier les noms SPA"}
             </Button>
             {national?.ready &&
               ["admin", "editor", "agent"].includes(user?.role) && (

@@ -107,7 +107,7 @@ export async function ingest(
           ? "SELECT id FROM inbox_photos WHERE hash=?"
           : albumId
             ? "SELECT id FROM album_photos WHERE collection_id=? AND hash=?"
-            : "SELECT id FROM photos WHERE animal_id=? AND hash=?",
+            : "SELECT id,deleted_at FROM photos WHERE animal_id=? AND hash=?",
       )
       .get(...(inbox ? [digest] : [albumId || animalId, digest]));
     if (duplicate) {
@@ -115,6 +115,15 @@ export async function ingest(
         db.prepare("UPDATE album_photos SET deleted_at=NULL WHERE id=?").run(
           duplicate.id,
         );
+      else if (!inbox && duplicate.deleted_at)
+        transaction(db, () => {
+          db.prepare(
+            "UPDATE photos SET deleted_at=NULL,archived_at=NULL,hidden=MAX(hidden,?),created_at=? WHERE id=?",
+          ).run(Number(hidden), now(), duplicate.id);
+          db.prepare(
+            "UPDATE animals SET cover_id=COALESCE(cover_id,?),updated_at=? WHERE id=?",
+          ).run(duplicate.id, now(), animalId);
+        });
       return { id: duplicate.id, duplicate: true };
     }
     transaction(db, () => {
