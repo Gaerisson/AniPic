@@ -37,6 +37,8 @@ const names = {
   source_adoption_confirmed: "Adoption confirmée par un statut source",
   json_imported: "Import des fiches SPA",
   backup: "Sauvegarde",
+  backup_deleted: "Sauvegarde supprimée",
+  backups_expired: "Anciennes sauvegardes supprimées automatiquement",
   archive_compress: "Compression des archives",
   photo_updated: "Photo modifiée",
   inbox_assigned: "Photos attribuées à un animal",

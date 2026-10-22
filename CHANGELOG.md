@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 3.15.0 — Ateliers, bannières et outils du refuge
+
+Proportions liées par défaut dans Canvas, neuf modèles et atelier partagé avec les bannières ; outils organisés par rubrique, galerie Liquid glass, corrections françaises et émojis d’entente. Retour automatique des écrans retirés hors ligne, sauvegardes avec durée et suppression manuelle, nouvelles tentatives DNS bornées. [Notes complètes](RELEASE_v3.15.0.md).
+
 ## 3.14.3 — Ententes longues et synchronisation SPA
 
 Suppression de la limite de 100 caractères qui bloquait tout l’inventaire et des coupures silencieuses dans les ententes. Les conseils enfant/chat/chien sont conservés ; les protections d’archivage et les photos restent inchangées. [Notes complètes](RELEASE_v3.14.3.md).

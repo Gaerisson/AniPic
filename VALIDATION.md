@@ -1,5 +1,15 @@
 # Vérifications — AniPic
 
+## V3.15.0 — Créations, sauvegardes et reprises DNS
+
+Suite complète sous Node.js 24 : **306 tests réussis**, aucun échec ni test ignoré, en 155,9 secondes. Après les ajustements visuels, 43 tests ciblés réussissent aussi. Les nouveaux contrôles portent sur les frontières de mots françaises, le placement des émojis, les neuf modèles dans les cinq formats, la reprise DNS et son épuisement sans dépassement des budgets, la rétention des sauvegardes avec protection des originaux, les rôles et le CSRF, les chemins dangereux et le stockage absent. Le retrait d’une TV en ligne est refusé ; un appareil hors ligne est masqué puis réapparaît avec son identité vérifiée et son nom conservé.
+
+Dans le navigateur, sur un serveur de démonstration isolé : largeur du portrait passée de 299 à 450 px et hauteur ajustée de 396 à 596 px ; le JSON téléchargé conserve exactement des échelles X/Y égales. La saisie validée par Entrée passe aussi un second portrait de 264×396 à 280×420 px et le projet est réellement enregistré. Nouvelle composition magazine, bannière duo avec deux animaux séparés, confirmation intégrée de remplacement de modèle, connexion de démonstration, rubriques de l’équipe et sauvegarde réelle de démonstration de 2,8 Mo. À 390 px, les outils et bannières n’ont pas de débordement horizontal. La durée 21 jours est enregistrée et la confirmation de suppression est affichée puis annulée. Aucun fichier de production n’est supprimé.
+
+Liquid glass est réellement rendu en 1920×1080 et 1080×1920, avec un MP4 de quatre secondes à demi-résolution. Les images proviennent uniquement du serveur de test local. Le cache de navigateur indiqué par un ancien fichier était absent ; le rendu a réussi avec Chrome installé, sans changement de la configuration livrée.
+
+Builds frontend et vidéo réussis. Les transports DNS et les pannes de stockage sont explicitement simulés dans les tests. Le NAS/Portainer et les appareils Android/TV physiques de production ne sont pas utilisés. La publication attend les contrôles GitHub complets, dont la construction et le démarrage Docker.
+
 ## V3.14.3 — Synchronisation et ententes longues
 
 Suite complète sous Node.js 24.18.1 : **298 tests réussis**, aucun échec ni test ignoré, en 157,9 secondes. Builds frontend et vidéo réussis ; six variantes Compose vérifiées.

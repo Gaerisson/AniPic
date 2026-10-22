@@ -1,4 +1,5 @@
 import BannerEditor from "./banner-editor.jsx";
+import CanvasStudio from "./canvas-studio.jsx";
 import {
   visualThemes,
   visualTheme,
@@ -597,6 +598,12 @@ export default function Wallpaper(props) {
           Bannières créatives
         </Button>
         <Button
+          variant={mode === "duo" ? "" : "secondary"}
+          onClick={() => setMode("duo")}
+        >
+          Duo & détourage
+        </Button>
+        <Button
           variant={mode === "wallpaper" ? "" : "secondary"}
           onClick={() => setMode("wallpaper")}
         >
@@ -604,6 +611,8 @@ export default function Wallpaper(props) {
         </Button>
       </nav>
       {mode === "banner" ? (
+        <CanvasStudio {...props} workspace="banner" />
+      ) : mode === "duo" ? (
         <BannerEditor {...props} />
       ) : (
         <WallpaperLegacy {...props} />

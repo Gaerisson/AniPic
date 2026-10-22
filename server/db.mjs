@@ -266,6 +266,7 @@ export const defaults = {
   archiveMissing: false,
   backupIntervalHours: 24,
   backupKeep: 7,
+  backupRetentionDays: 0,
   themeDefault: "night",
   accentColor: "#f4ab70",
   compactUI: true,

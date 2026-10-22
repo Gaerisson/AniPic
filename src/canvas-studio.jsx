@@ -30,9 +30,11 @@ import {
   Plus,
   Upload,
   Palette,
+  Link2,
+  Unlink,
 } from "lucide-react";
 import { api, apiBlob, imageUrl } from "./api.js";
-import { Button } from "./ui.jsx";
+import { Button, Modal } from "./ui.jsx";
 import { SpaPhoto } from "./spa-photo.jsx";
 import {
   canvasFormats,
@@ -41,8 +43,18 @@ import {
   canonicalCanvasDocument,
 } from "../shared/canvas-document.mjs";
 import { canvasDraft } from "./canvas-storage.js";
+import {
+  canvasTemplates,
+  canvasTemplateDocument,
+} from "../shared/canvas-templates.mjs";
 
-FabricObject.customProperties = ["name", "animalId", "sourceKind", "photoId"];
+FabricObject.customProperties = [
+  "name",
+  "animalId",
+  "sourceKind",
+  "photoId",
+  "ratioLocked",
+];
 const origin = { originX: "left", originY: "top" };
 const palette = {
   refuge: ["#ece0ca", "#f47721", "#514838"],
@@ -73,10 +85,48 @@ const label = (object) =>
     : object.type === "image"
       ? "Image"
       : "Forme");
-export default function CanvasStudio({ user, overview, notify = () => {} }) {
+function DimensionField({ name, value, commit }) {
+  const [draft, setDraft] = useState(String(Math.round(value))),
+    [editing, setEditing] = useState(false);
+  useEffect(() => {
+    if (!editing) setDraft(String(Math.round(value)));
+  }, [value, editing]);
+  return (
+    <label>
+      {name}
+      <input
+        type="number"
+        min="10"
+        max="8000"
+        value={draft}
+        onFocus={() => setEditing(true)}
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={() => {
+          setEditing(false);
+          const parsed = Number(draft);
+          if (Number.isFinite(parsed) && parsed > 0) commit(parsed);
+          else setDraft(String(Math.round(value)));
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            event.currentTarget.blur();
+          }
+        }}
+      />
+    </label>
+  );
+}
+export default function CanvasStudio({
+  user,
+  overview,
+  notify = () => {},
+  workspace = "canvas",
+}) {
   const element = useRef(),
     stage = useRef(),
     canvas = useRef(),
+    templateId = useRef(""),
     dimensions = useRef({ width: 1920, height: 720 });
   const history = useRef([]),
     future = useRef([]),
@@ -104,13 +154,16 @@ export default function CanvasStudio({ user, overview, notify = () => {} }) {
     [saved, setSaved] = useState("Brouillon local"),
     [shared, setShared] = useState(false),
     [tick, setTick] = useState(0),
+    [pendingTemplate, setPendingTemplate] = useState(null),
     [expanded, setExpanded] = useState(false);
-  const draftKey = "draft:" + (user?.id || "visitor"),
+  const draftKey =
+      (workspace === "canvas" ? "draft:" : "banner:") + (user?.id || "visitor"),
     canSave = ["admin", "agent", "editor", "volunteer"].includes(user?.role);
   const snapshot = () =>
     canonicalCanvasDocument(
       {
         schema: 1,
+        template: templateId.current,
         ...dimensions.current,
         scene: canvas.current.toJSON(),
       },
@@ -121,6 +174,18 @@ export default function CanvasStudio({ user, overview, notify = () => {} }) {
     if (!c) return;
     setObjects([...c.getObjects()].reverse());
     setSelection(c.getActiveObject() || null);
+    c.uniformScaling = c.getActiveObject()?.ratioLocked !== false;
+    for (const object of [...c.getObjects(), c.getActiveObject()].filter(
+      Boolean,
+    )) {
+      const free = object.ratioLocked === false;
+      object.setControlsVisibility({ ml: free, mr: free, mt: free, mb: free });
+      object.set({
+        lockScalingFlip: true,
+        lockSkewingX: true,
+        lockSkewingY: true,
+      });
+    }
     setTick((t) => t + 1);
   };
   const fit = () => {
@@ -170,6 +235,9 @@ export default function CanvasStudio({ user, overview, notify = () => {} }) {
   const restore = async (doc) => {
     doc = canonicalCanvasDocument(doc, location.origin);
     validateCanvasDocument(doc);
+    templateId.current = canvasTemplates.some(([id]) => id === doc.template)
+      ? doc.template
+      : "";
     restoring.current = true;
     try {
       await canvas.current.loadFromJSON(doc.scene);
@@ -205,13 +273,14 @@ export default function CanvasStudio({ user, overview, notify = () => {} }) {
       .concat(inserted.map((object) => object.toObject()));
     validateCanvasDocument(canonicalCanvasDocument(doc, location.origin));
   };
-  const add = (object) => {
+  const add = (object, { hide = [] } = {}) => {
     try {
       assertInsert([object]);
     } catch (error) {
       setError(error.message);
       return false;
     }
+    hide.forEach((item) => item.set({ visible: false }));
     canvas.current.add(object);
     canvas.current.setActiveObject(object);
     record();
@@ -223,6 +292,21 @@ export default function CanvasStudio({ user, overview, notify = () => {} }) {
     selection.setCoords();
     canvas.current.requestRenderAll();
     record();
+  };
+  const resizeSelection = (axis, value) => {
+    if (!selection || !Number.isFinite(value) || value <= 0) return;
+    const ratio =
+      Math.min(8000, Math.max(10, value)) /
+      (axis === "width"
+        ? selection.getScaledWidth()
+        : selection.getScaledHeight());
+    patch(
+      selection.ratioLocked !== false
+        ? { scaleX: selection.scaleX * ratio, scaleY: selection.scaleY * ratio }
+        : axis === "width"
+          ? { scaleX: selection.scaleX * ratio }
+          : { scaleY: selection.scaleY * ratio },
+    );
   };
   const remove = () => {
     const c = canvas.current;
@@ -272,17 +356,37 @@ export default function CanvasStudio({ user, overview, notify = () => {} }) {
       {},
       { ...origin, ...metadata },
     );
+    const duo = templateId.current === "duo";
+    const imageCount = canvas.current
+      .getObjects()
+      .filter(
+        (object) => object.type === "image" && object.name !== "Logo SPA",
+      ).length;
     const ratio = Math.min(
-      (dimensions.current.width * 0.3) / bitmap.width,
+      (dimensions.current.width * (duo ? 0.22 : 0.3)) / bitmap.width,
       (dimensions.current.height * 0.55) / bitmap.height,
       1,
     );
     bitmap.scale(ratio);
     bitmap.set({
-      left: dimensions.current.width * 0.82 - bitmap.getScaledWidth() / 2,
-      top: dimensions.current.height * 0.36,
+      left:
+        dimensions.current.width *
+          (duo ? (imageCount % 2 ? 0.835 : 0.165) : 0.82) -
+        bitmap.getScaledWidth() / 2,
+      top: dimensions.current.height * (duo ? 0.28 : 0.36),
     });
-    add(bitmap);
+    const slot = (imageCount % 2) + 1;
+    add(bitmap, {
+      hide: duo
+        ? canvas.current
+            .getObjects()
+            .filter((object) =>
+              ["Emplacement photo " + slot, "Repère photo " + slot].includes(
+                object.name,
+              ),
+            )
+        : [],
+    });
     return bitmap;
   };
   const importPhoto = (file) =>
@@ -313,112 +417,20 @@ export default function CanvasStudio({ user, overview, notify = () => {} }) {
     });
   const template = (type) =>
     run(async () => {
-      if (
-        canvas.current.getObjects().length &&
-        !window.confirm(
-          "Remplacer le visuel ? Vous pourrez annuler ce changement.",
-        )
-      )
-        return;
-      restoring.current = true;
-      const c = canvas.current,
-        w = dimensions.current.width,
-        h = dimensions.current.height,
-        colors = palette[theme];
-      try {
-        c.clear();
-        c.backgroundColor = colors[0];
-        setBackground(colors[0]);
-        if (type === "glass")
-          c.add(
-            new Rect({
-              ...origin,
-              left: w * 0.05,
-              top: h * 0.13,
-              width: w * 0.9,
-              height: h * 0.74,
-              rx: h * 0.055,
-              ry: h * 0.055,
-              fill: "#ffffff20",
-              stroke: "#ffffff60",
-              strokeWidth: 2,
-              name: "Panneau de verre",
-              shadow: new Shadow({ color: "#00000020", blur: 40, offsetY: 15 }),
-            }),
-          );
-        if (type === "editorial")
-          c.add(
-            new Rect({
-              ...origin,
-              left: w * 0.66,
-              top: 0,
-              width: w * 0.34,
-              height: h,
-              fill: colors[1],
-              name: "Fond de droite",
-            }),
-          );
-        if (type === "season") {
-          c.backgroundColor = new Gradient({
-            type: "linear",
-            coords: { x1: 0, y1: 0, x2: w, y2: h },
-            colorStops: [
-              { offset: 0, color: colors[0] },
-              { offset: 1, color: colors[1] },
-            ],
-          });
-          for (let i = 0; i < 16; i++)
-            c.add(
-              new Circle({
-                ...origin,
-                left: w * ((i * 0.137) % 1),
-                top: h * ((i * 0.27) % 1),
-                radius: h * (0.005 + (i % 3) * 0.003),
-                fill: "#ffffff40",
-                name: "Particule",
-              }),
-            );
-        }
-        c.add(
-          text(overview?.refugeName || "Le refuge de Morée", {
-            top: h * 0.16,
-            width: w * 0.54,
-            fontSize: w / 35,
-            fill: colors[2],
-          }),
-        );
-        c.add(
-          text("Leur prochaine\nbelle histoire,\nc’est vous.", {
-            top: h * 0.32,
-            width: w * 0.55,
-            fontSize: w / 24,
-            fontWeight: "bold",
-            fill: colors[2],
-          }),
-        );
-        c.add(
-          text("À rencontrer au refuge", {
-            top: h * 0.78,
-            width: w * 0.54,
-            fontSize: w / 65,
-            fill: colors[2],
-          }),
-        );
-        const logo = await FabricImage.fromURL(
-          "/spa-logo.png",
-          {},
-          { ...origin, name: "Logo SPA" },
-        );
-        logo.scaleToWidth(w * 0.085);
-        logo.set({ left: w * 0.86, top: h * 0.08 });
-        c.add(logo);
-      } finally {
-        restoring.current = false;
-      }
-      c.discardActiveObject();
+      await restore(
+        canvasTemplateDocument(type, {
+          ...dimensions.current,
+          colors: palette[theme],
+          refuge: overview?.refugeName || "Refuge de Morée",
+        }),
+      );
       record();
-      c.requestRenderAll();
+      canvas.current.requestRenderAll();
     });
+  const requestTemplate = (type) => {
+    if (canvas.current.getObjects().length) setPendingTemplate(type);
+    else template(type);
+  };
   const historyMove = (direction) =>
     run(async () => {
       if (direction < 0 && history.current.length > 1) {
@@ -604,6 +616,8 @@ export default function CanvasStudio({ user, overview, notify = () => {} }) {
       preserveObjectStacking: true,
       backgroundColor: "#ece0ca",
       selection: true,
+      uniformScaling: true,
+      uniScaleKey: null,
     });
     canvas.current = c;
     c.on("object:modified", record);
@@ -710,7 +724,9 @@ export default function CanvasStudio({ user, overview, notify = () => {} }) {
       <div className="page-heading">
         <div>
           <div className="eyebrow">VOTRE ATELIER VISUEL</div>
-          <h1>Le Canvas</h1>
+          <h1>
+            {workspace === "banner" ? "Visuels & bannières" : "Le Canvas"}
+          </h1>
           <p>Du premier mot au dernier détail. Déplacez, composez, créez.</p>
         </div>
         <Palette size={32} />
@@ -898,33 +914,26 @@ export default function CanvasStudio({ user, overview, notify = () => {} }) {
                   ))}
                 </select>
               </label>
-              {[
-                [
-                  "editorial",
-                  "Éditorial SPA",
-                  "Titres nets, deux espaces à composer.",
-                ],
-                [
-                  "glass",
-                  "Glass moderne",
-                  "Un panneau translucide sur un fond profond.",
-                ],
-                [
-                  "season",
-                  "Lumière de saison",
-                  "Dégradé et touches lumineuses.",
-                ],
-              ].map(([id, name, help]) => (
+              {canvasTemplates.map(([id, name, help]) => (
                 <button
                   className={"canvas-template " + id}
                   key={id}
                   disabled={Boolean(busy)}
-                  onClick={() => template(id)}
+                  onClick={() => requestTemplate(id)}
                   style={{
                     background: `linear-gradient(135deg,${palette[theme][0]},${palette[theme][1]})`,
                     color: palette[theme][2],
                   }}
                 >
+                  <span
+                    className="canvas-template-art"
+                    data-preset={id}
+                    aria-hidden="true"
+                  >
+                    <i />
+                    <b />
+                    <em />
+                  </span>
                   <strong>{name}</strong>
                   <small>{help}</small>
                 </button>
@@ -1268,21 +1277,36 @@ export default function CanvasStudio({ user, overview, notify = () => {} }) {
                   />
                 </label>
               </div>
-              <label>
-                Largeur
-                <input
-                  type="number"
-                  min="10"
-                  max="8000"
-                  value={Math.round(selection.getScaledWidth())}
-                  onChange={(e) => {
-                    selection.scaleToWidth(
-                      Math.max(10, Math.min(8000, Number(e.target.value))),
-                    );
-                    patch({});
-                  }}
+              <div className="canvas-dimensions-heading">
+                <strong>Dimensions</strong>
+                <Button
+                  icon={selection.ratioLocked !== false ? Link2 : Unlink}
+                  variant="quiet"
+                  aria-pressed={selection.ratioLocked !== false}
+                  title={
+                    selection.ratioLocked !== false
+                      ? "Proportions liées : aucune déformation"
+                      : "Proportions libres"
+                  }
+                  onClick={() =>
+                    patch({ ratioLocked: selection.ratioLocked === false })
+                  }
+                >
+                  {selection.ratioLocked !== false ? "Liées" : "Libres"}
+                </Button>
+              </div>
+              <div className="canvas-inspector-row">
+                <DimensionField
+                  name="Largeur"
+                  value={selection.getScaledWidth()}
+                  commit={(value) => resizeSelection("width", value)}
                 />
-              </label>
+                <DimensionField
+                  name="Hauteur"
+                  value={selection.getScaledHeight()}
+                  commit={(value) => resizeSelection("height", value)}
+                />
+              </div>
               <div className="canvas-inspector-row">
                 <Button
                   variant="secondary"
@@ -1377,6 +1401,34 @@ export default function CanvasStudio({ user, overview, notify = () => {} }) {
           Créé avec Fabric.js · MIT
         </a>
       </footer>
+      {pendingTemplate && (
+        <Modal
+          title="Changer de modèle ?"
+          onClose={() => setPendingTemplate(null)}
+        >
+          <p>
+            Les éléments actuels seront remplacés. Vous pourrez annuler ce
+            changement dans l’atelier.
+          </p>
+          <div className="button-row">
+            <Button
+              onClick={() => {
+                const next = pendingTemplate;
+                setPendingTemplate(null);
+                template(next);
+              }}
+            >
+              Remplacer le visuel
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setPendingTemplate(null)}
+            >
+              Annuler
+            </Button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

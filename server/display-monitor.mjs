@@ -148,8 +148,6 @@ export async function registerDisplayMonitor(app, { db, c, authorized }) {
           )
         )
           throw fail("Identité d’écran invalide.", 403);
-        if (existing.revoked_at)
-          throw fail("Le suivi de cet écran a été retiré.", 410);
       } else {
         const cutoff = new Date(Date.now() - 3600000).toISOString();
         if (
@@ -195,7 +193,7 @@ export async function registerDisplayMonitor(app, { db, c, authorized }) {
           addEvent(db, key, "connected", [], stamp);
         } else {
           db.prepare(
-            "UPDATE display_screens SET ip=?,user_agent=?,status=?,last_seen=? WHERE id=?",
+            "UPDATE display_screens SET ip=?,user_agent=?,status=?,last_seen=?,revoked_at=NULL,revision=revision+CASE WHEN revoked_at IS NULL THEN 0 ELSE 1 END WHERE id=?",
           ).run(
             req.ip,
             String(req.headers["user-agent"] || "").slice(0, 250),
@@ -295,6 +293,16 @@ export async function registerDisplayMonitor(app, { db, c, authorized }) {
         .object({ revision: z.number().int().positive() })
         .strict()
         .parse(req.body);
+    const screen = db
+      .prepare(
+        "SELECT last_seen FROM display_screens WHERE id=? AND revoked_at IS NULL",
+      )
+      .get(key);
+    if (screen && Date.now() - Date.parse(screen.last_seen) <= displayOfflineMs)
+      throw fail(
+        "Cet écran est encore en ligne. Seuls les appareils hors ligne peuvent être retirés du suivi.",
+        409,
+      );
     if (
       !db
         .prepare(

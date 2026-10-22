@@ -43,8 +43,11 @@ export function localWritingIssues(text) {
     };
   add(/[^\S\n]{2,}/g, " ", "Espaces répétés");
   add(/\.{4,}/g, "…", "Ponctuation répétée");
-  add(/\s+([,.])/g, (m) => m[1], "Espace avant une virgule ou un point");
-  add(/\b([\p{L}]+)\s+\1\b/giu, (m) => m[1], "Mot répété : à vérifier");
+  add(
+    /(?<![\p{L}\p{M}\p{N}_])([\p{L}\p{M}]+)[^\S\r\n]+\1(?![\p{L}\p{M}\p{N}_])/giu,
+    (m) => m[1],
+    "Mot répété : à vérifier",
+  );
   return issues
     .sort((a, b) => a.from - b.from)
     .filter((issue, index, all) => !index || issue.from >= all[index - 1].to);

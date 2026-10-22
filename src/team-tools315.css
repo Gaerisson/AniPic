@@ -1,0 +1,220 @@
+.team-tool-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.team-tool-tabs button {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  text-align: left;
+  padding: 23px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  color: var(--ink);
+  transition:
+    background 0.2s,
+    transform 0.2s;
+}
+.team-tool-tabs button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+.team-tool-tabs button:hover {
+  transform: translateY(-2px);
+}
+.team-tool-tabs svg {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.team-tool-tabs span {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+.team-tool-tabs strong {
+  font-size: 1rem;
+}
+.team-tool-tabs small {
+  font-size: 0.74rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.team-tool-quick {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0 0 26px;
+}
+.team-tool-quick a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 30px;
+  padding: 10px 15px;
+  font-size: 0.78rem;
+}
+.team-tool-quick a:hover {
+  border-color: var(--accent);
+}
+.team-tool-quick a span {
+  color: var(--accent);
+}
+.team-tool-content {
+  min-width: 0;
+}
+.team-tool-content .names-tool {
+  padding: 32px;
+  max-width: 1000px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  grid-template-rows: auto auto min-content min-content 1fr auto;
+  column-gap: 26px;
+  row-gap: 14px;
+}
+.team-tool-content .names-tool > .panel-heading,
+.team-tool-content .names-tool > p {
+  grid-column: 1/-1;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.team-tool-content .names-tool label {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  font-size: 0.8rem;
+}
+.team-tool-content .names-tool input,
+.team-tool-content .names-tool select {
+  width: 100%;
+  min-width: 0;
+}
+.team-tool-content .names-tool > .form-row {
+  grid-column: 1;
+  grid-row: 3;
+  gap: 12px;
+  align-items: end;
+}
+.team-tool-content .names-tool > .form-row label {
+  flex: 1;
+  min-width: 0;
+}
+.team-tool-content .names-tool > .name-theme {
+  grid-column: 1;
+  grid-row: 4;
+  margin: 0;
+}
+.team-tool-content .names-tool > .name-catalogue-actions {
+  grid-column: 1;
+  grid-row: 5;
+  align-self: start;
+}
+.team-tool-content .names-tool > .name-chips {
+  grid-column: 2;
+  grid-row: 3/6;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  margin: 0;
+  gap: 8px;
+}
+.team-tool-content .names-tool > .name-chips button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 14px;
+  min-width: 0;
+}
+.team-tool-content .names-tool > .name-catalogue-status {
+  grid-column: 1/-1;
+  grid-row: 6;
+  padding: 12px 16px;
+  margin: 0;
+}
+.team-tool-content .names-tool h2 {
+  font-size: 1.6rem;
+  letter-spacing: -0.03em;
+}
+.team-tool-content .names-tool .name-chips {
+  margin-top: 0;
+  gap: 12px;
+}
+.team-tool-content .name-chips button {
+  padding: 14px 20px;
+  border-radius: 14px;
+}
+.team-tool-content .name-catalogue-status small {
+  display: none;
+}
+.team-tool-content .name-catalogue-status {
+  padding: 16px 18px;
+  margin: 20px 0;
+}
+.team-tool-content .name-theme {
+  margin-top: 16px;
+}
+.team-tool-content .weather-full {
+  max-width: 1000px;
+  margin: auto;
+  padding: 24px;
+}
+.backup-retention {
+  margin-bottom: 18px;
+  align-items: end;
+}
+.backup-retention .fineprint {
+  flex-basis: 100%;
+  margin: 0;
+}
+@media (max-width: 700px) {
+  .team-tool-content .names-tool {
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+  }
+  .team-tool-content .names-tool > .name-chips {
+    grid-column: 1;
+    grid-row: 6;
+  }
+  .team-tool-content .names-tool > .name-catalogue-status {
+    grid-row: 7;
+  }
+  .team-tool-tabs {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .team-tool-tabs button {
+    padding: 16px;
+  }
+  .team-tool-content .names-tool {
+    padding: 20px;
+  }
+  .team-tool-content .names-tool h2 {
+    font-size: 1.3rem;
+  }
+  .team-tool-quick {
+    flex-wrap: nowrap;
+    overflow: auto;
+    padding-bottom: 8px;
+  }
+  .team-tool-quick a {
+    white-space: nowrap;
+  }
+  .team-tool-content .name-chips button {
+    padding: 12px 15px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .team-tool-tabs button {
+    transition: none;
+  }
+  .team-tool-tabs button:hover {
+    transform: none;
+  }
+}

@@ -64,7 +64,7 @@ import {
   hashPassword,
 } from "./auth.mjs";
 import { ingest, derivative, directoryBytes, sweepCache } from "./storage.mjs";
-import { createBackup, pruneBackups } from "./backup.mjs";
+import { createBackup, pruneBackups, removeBackup } from "./backup.mjs";
 import { normalizeSnapshot, applySnapshot, synchronize } from "./source.mjs";
 import { registerExtras } from "./extras.mjs";
 import { accountAllowsIP, normalizedIP } from "./ip-access.mjs";
@@ -112,6 +112,7 @@ const Settings = z.object({
   archiveMissing: z.boolean(),
   backupIntervalHours: z.number().int().min(0).max(168),
   backupKeep: z.number().int().min(1).max(30),
+  backupRetentionDays: z.number().int().min(0).max(3650).default(0),
   themeDefault: z.enum(["night", "amber", "sage", "spa"]).default("night"),
   accentColor: z
     .string()
@@ -1336,9 +1337,19 @@ export async function createApp(overrides = {}) {
     async (req) =>
       job("backup", req.user, async () => {
         const result = await createBackup(db, c);
-        await pruneBackups(db, c, settings(db).backupKeep);
+        const cfg = settings(db);
+        await pruneBackups(db, c, cfg.backupKeep, cfg.backupRetentionDays);
         return result;
       }),
+  );
+  app.delete(
+    "/api/admin/backups/:id",
+    { preHandler: authorized(["admin"]) },
+    async (req) => {
+      const result = await removeBackup(db, c, UUID.parse(req.params.id));
+      audit(db, req.user, "backup_deleted", result);
+      return { ok: true };
+    },
   );
   app.get(
     "/api/admin/backups/:id/download",
@@ -1514,10 +1525,28 @@ export async function createApp(overrides = {}) {
       return reply.code(404).send({ error: "Route introuvable." });
     });
   }
-  let timer;
+  let timer,
+    lastBackupPrune = 0;
   if (overrides.scheduler !== false)
     timer = setInterval(async () => {
       const cfg = settings(db);
+      if (
+        cfg.backupRetentionDays > 0 &&
+        Date.now() - lastBackupPrune > 3600000
+      ) {
+        lastBackupPrune = Date.now();
+        try {
+          const result = await pruneBackups(
+            db,
+            c,
+            cfg.backupKeep,
+            cfg.backupRetentionDays,
+          );
+          if (result.removed) audit(db, null, "backups_expired", result);
+        } catch (error) {
+          app.log.error(error, "Nettoyage des sauvegardes impossible");
+        }
+      }
       const last = db
         .prepare(
           "SELECT created_at FROM jobs WHERE kind='backup' ORDER BY created_at DESC LIMIT 1",
@@ -1531,7 +1560,7 @@ export async function createApp(overrides = {}) {
       )
         await job("backup", null, async () => {
           const result = await createBackup(db, c);
-          await pruneBackups(db, c, cfg.backupKeep);
+          await pruneBackups(db, c, cfg.backupKeep, cfg.backupRetentionDays);
           return result;
         }).catch(() => {});
       const sync = db

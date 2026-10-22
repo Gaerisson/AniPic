@@ -3,7 +3,10 @@ import React, { useEffect, useRef, useMemo } from "react";
 import { compatibilityLabels } from "../video/facts.mjs";
 import { CompatibilityIcon } from "./compatibility-icons.mjs";
 import { MessageScene } from "./MessageScene.jsx";
-import { PhotoConstellation } from "./PhotoConstellation.jsx";
+import {
+  PhotoConstellation,
+  GlassPhotoBackdrop,
+} from "./PhotoConstellation.jsx";
 import { showDefaults, showSize, showTimeline, sceneAt } from "./signage.mjs";
 const orange = "#eb651c",
   white = "#f9f6f2",
@@ -148,11 +151,13 @@ export function SignageCanvas({
     exit = motion ? clamp((scene.duration - local) / (fps * 0.5)) : 1,
     opacity = enter * exit;
   const anim =
-    p.transition === "slide"
-      ? `translateY(${(1 - enter) * 45 * u}px)`
-      : p.transition === "zoom"
-        ? `scale(${0.96 + 0.04 * enter})`
-        : undefined;
+    p.style === "glass"
+      ? undefined
+      : p.transition === "slide"
+        ? `translateY(${(1 - enter) * 45 * u}px)`
+        : p.transition === "zoom"
+          ? `scale(${0.96 + 0.04 * enter})`
+          : undefined;
   const a = scene.animal,
     media = scene.media,
     isAnimal = scene.type === "animal",
@@ -168,7 +173,7 @@ export function SignageCanvas({
         .flatMap((a) =>
           (a.media || [])
             .filter((m) => m.kind === "photo")
-            .map((m) => ({ ...m, name: a.name })),
+            .map((m) => ({ ...m, name: a.name, animalId: a.id })),
         )
         .slice(0, 18),
     [show.items],
@@ -229,7 +234,10 @@ export function SignageCanvas({
               overflow: "hidden",
               boxShadow: cards ? "0 40px 100px #0008" : undefined,
               transform:
-                (cards || p.pace === "dynamic") && motion && p.motion === "3d"
+                !glass &&
+                (cards || p.pace === "dynamic") &&
+                motion &&
+                p.motion === "3d"
                   ? `perspective(2000px) rotateY(${Math.sin(progress * Math.PI) * -5 * power}deg) rotateZ(${-1.2 * power}deg)`
                   : undefined,
             }}
@@ -258,9 +266,12 @@ export function SignageCanvas({
                   width: "100%",
                   height: "100%",
                   objectFit: "cover",
-                  transform: motion
-                    ? `translate3d(${Math.sin(smoothProgress * Math.PI * 2) * 7 * u * power}px,${Math.cos(smoothProgress * Math.PI) * 5 * u * power}px,0) scale(${1.035 + smoothProgress * 0.045 * power})`
-                    : undefined,
+                  transform:
+                    glass && motion
+                      ? `scale(${1.015 + smoothProgress * 0.012 * power})`
+                      : motion
+                        ? `translate3d(${Math.sin(smoothProgress * Math.PI * 2) * 7 * u * power}px,${Math.cos(smoothProgress * Math.PI) * 5 * u * power}px,0) scale(${1.035 + smoothProgress * 0.045 * power})`
+                        : undefined,
                   willChange: motion ? "transform" : undefined,
                   backfaceVisibility: "hidden",
                 }}
@@ -515,24 +526,37 @@ export function SignageCanvas({
           )}
         </div>
       ) : scene.type === "wallpaper" || scene.type === "logo" ? (
-        <PhotoConstellation
-          photos={photos}
-          frame={local}
-          fps={fps}
-          width={w}
-          height={h}
-          logoSrc={logoSrc}
-          motion={motion}
-          dynamic={p.pace === "dynamic"}
-          duration={scene.duration / fps}
-          title={p.title || show.refugeName}
-          photoBlend={p.logoPhotoBlend}
-          animation={p.logoAnimation}
-          particleDensity={p.particleDensity}
-          particleSpeed={p.particleSpeed}
-          particleStyle={p.particleStyle}
-          backgroundTheme={p.backgroundTheme}
-        />
+        p.style === "glass" && scene.type === "wallpaper" ? (
+          <GlassPhotoBackdrop
+            photos={photos}
+            frame={local}
+            fps={fps}
+            width={w}
+            height={h}
+            logoSrc={logoSrc}
+            title={p.title || show.refugeName}
+            motion={motion}
+          />
+        ) : (
+          <PhotoConstellation
+            photos={photos}
+            frame={local}
+            fps={fps}
+            width={w}
+            height={h}
+            logoSrc={logoSrc}
+            motion={motion}
+            dynamic={p.pace === "dynamic"}
+            duration={scene.duration / fps}
+            title={p.title || show.refugeName}
+            photoBlend={p.logoPhotoBlend}
+            animation={p.logoAnimation}
+            particleDensity={p.particleDensity}
+            particleSpeed={p.particleSpeed}
+            particleStyle={p.particleStyle}
+            backgroundTheme={p.backgroundTheme}
+          />
+        )
       ) : scene.type === "stats" ? (
         <div
           style={{

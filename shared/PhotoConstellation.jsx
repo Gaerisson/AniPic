@@ -4,6 +4,159 @@ import { visualTheme } from "./visual-themes.mjs";
 import { mosaicPoints } from "../video/spa-mosaic.mjs";
 const clamp = (v) => Math.max(0, Math.min(1, v));
 const ease = (v) => 1 - Math.pow(1 - clamp(v), 3);
+export function GlassPhotoBackdrop({
+  photos,
+  frame,
+  fps = 24,
+  width: w,
+  height: h,
+  logoSrc = "/spa-logo.png",
+  title = "Le refuge",
+  motion = true,
+}) {
+  const portrait = h > w,
+    u = Math.min(w, h) / 1080,
+    t = frame / fps,
+    selected = photos
+      .filter(
+        (photo, index, all) =>
+          all.findIndex(
+            (other) =>
+              (other.animalId || other.src) === (photo.animalId || photo.src),
+          ) === index,
+      )
+      .slice(0, 6),
+    cols = Math.min(
+      selected.length || 1,
+      portrait || selected.length === 4 ? 2 : 3,
+    ),
+    remainder = selected.length % cols;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        overflow: "hidden",
+        background: "linear-gradient(135deg,#13252f,#38564f)",
+        color: "#fff",
+        padding: `${55 * u}px ${65 * u}px`,
+        boxSizing: "border-box",
+        display: "flex",
+        flexDirection: "column",
+        gap: 30 * u,
+      }}
+    >
+      {selected[0] && (
+        <img
+          src={selected[0].src}
+          alt=""
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            filter: `blur(${70 * u}px)`,
+            opacity: 0.18,
+            transform: "scale(1.12)",
+          }}
+        />
+      )}
+      <header
+        style={{
+          position: "relative",
+          display: "flex",
+          alignItems: "center",
+          gap: 30 * u,
+          padding: `${18 * u}px ${35 * u}px`,
+          border: "1px solid #ffffff45",
+          borderRadius: 28 * u,
+          background: "linear-gradient(120deg,#ffffff20,#ffffff0c)",
+          backdropFilter: `blur(${25 * u}px)`,
+          flexShrink: 0,
+        }}
+      >
+        <img
+          src={logoSrc}
+          alt="La SPA"
+          style={{ width: 80 * u, height: 88 * u, objectFit: "contain" }}
+        />
+        <div>
+          <div style={{ color: "#f3c894", fontSize: 17 * u, letterSpacing: 3 }}>
+            LES BELLES HISTOIRES COMMENCENT ICI
+          </div>
+          <h1
+            style={{
+              margin: "10px 0 0",
+              fontSize: (portrait ? 38 : 44) * u,
+              lineHeight: 1.15,
+              color: "#fff",
+              fontFamily: "inherit",
+              letterSpacing: -1,
+            }}
+          >
+            {title}
+          </h1>
+        </div>
+      </header>
+      <div
+        style={{
+          position: "relative",
+          display: "grid",
+          gridTemplateColumns: `repeat(${cols * 2},minmax(0,1fr))`,
+          gridAutoRows: "minmax(0,1fr)",
+          gap: 26 * u,
+          flex: 1,
+          minHeight: 0,
+        }}
+      >
+        {selected.map((photo, i) => (
+          <div
+            key={i}
+            style={{
+              position: "relative",
+              gridColumn: `span ${remainder && i >= selected.length - remainder ? (cols * 2) / remainder : 2}`,
+              minHeight: 0,
+              overflow: "hidden",
+              borderRadius: 24 * u,
+              border: "1px solid #ffffff55",
+              boxShadow: `0 ${15 * u}px ${35 * u}px #0003`,
+              background: "#ffffff12",
+              transform: motion
+                ? `translateY(${Math.sin(t * 0.35 + i) * 4 * u}px)`
+                : undefined,
+              opacity: motion ? ease((t - i * 0.08) / 0.7) : 1,
+            }}
+          >
+            <img
+              src={photo.src}
+              alt={photo.name || "Animal du refuge"}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+            {photo.name && (
+              <span
+                style={{
+                  position: "absolute",
+                  bottom: 16 * u,
+                  left: 16 * u,
+                  padding: `${10 * u}px ${18 * u}px`,
+                  borderRadius: 16 * u,
+                  color: "white",
+                  background: "#192b36b3",
+                  backdropFilter: `blur(${16 * u}px)`,
+                  fontSize: 23 * u,
+                  fontWeight: 600,
+                }}
+              >
+                {photo.name}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 export function PhotoConstellation({
   photos,
   frame,

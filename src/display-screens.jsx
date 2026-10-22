@@ -242,34 +242,39 @@ function ScreenCard({ screen, at, onChange, notify }) {
             </li>
           ))}
         </ol>
-
       </details>
-        {confirm ? (
-          <div className="tv-remove-confirm">
-            <p>
-              Retirer cet écran du suivi ? La lecture continue. Le suivi pourra
-              être réactivé depuis les commandes de la TV.
-            </p>
-            <Button variant="secondary" disabled={busy} onClick={remove}>
-              Confirmer le retrait
-            </Button>
-            <Button
-              variant="quiet"
-              disabled={busy}
-              onClick={() => setConfirm(false)}
-            >
-              Conserver
-            </Button>
-          </div>
-        ) : (
+      {confirm ? (
+        <div className="tv-remove-confirm">
+          <p>
+            Masquer cet écran hors ligne ? Il réapparaîtra automatiquement à sa
+            prochaine connexion, avec ses réglages.
+          </p>
+          <Button variant="secondary" disabled={busy} onClick={remove}>
+            Confirmer le retrait
+          </Button>
           <Button
             variant="quiet"
-            icon={Trash2}
-            onClick={() => setConfirm(true)}
+            disabled={busy}
+            onClick={() => setConfirm(false)}
           >
-            Retirer du suivi
+            Conserver
           </Button>
-        )}
+        </div>
+      ) : (
+        <Button
+          variant="quiet"
+          icon={Trash2}
+          disabled={online}
+          title={
+            online
+              ? "Le retrait est disponible quand cet écran est hors ligne."
+              : "Masquer jusqu’à la prochaine connexion"
+          }
+          onClick={() => setConfirm(true)}
+        >
+          Retirer du suivi
+        </Button>
+      )}
     </article>
   );
 }

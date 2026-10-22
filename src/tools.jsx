@@ -4,6 +4,7 @@ import {
   Plus,
   Check,
   Clock,
+  Images,
   Flag,
   Copy,
   RefreshCw,
@@ -22,6 +23,8 @@ import { Button, Empty, Spinner, Modal } from "./ui.jsx";
 import { Weather } from "./home.jsx";
 import { SpaPhoto } from "./spa-photo.jsx";
 import { priorityLabels } from "../shared/photo-priority.mjs";
+import { NavLink } from "./nav-link.jsx";
+import "./team-tools315.css";
 import { TeamUtilities } from "./team-utilities.jsx";
 const CreativeWorkshop = lazy(() => import("./creative-workshop.jsx"));
 export function TaskForm({ animal, close, notify, reload }) {
@@ -416,6 +419,7 @@ export function ShootBoard({
   );
 }
 export function AgentTools({ notify, open, go, user, ui = {} }) {
+  const [toolTab, setToolTab] = useState("names");
   const [sex, setSex] = useState("any"),
     [theme, setTheme] = useState("all"),
     [themes, setThemes] = useState({ all: "Toutes les inspirations" }),
@@ -484,205 +488,229 @@ export function AgentTools({ notify, open, go, user, ui = {} }) {
           <p>Un prénom, un créneau de lumière, une prochaine histoire.</p>
         </div>
       </div>
-      <div className="tool-links priority-tools">
-        <Button icon={Camera} onClick={() => go("todo")}>
-          À photographier
-        </Button>
-        {user?.role === "admin" && (
-          <Button variant="secondary" onClick={() => go("storage")}>
-            Rechercher les doublons
-          </Button>
-        )}
-        <Button
-          variant="secondary"
-          onClick={() =>
-            document
-              .querySelector(".weather-full")
-              ?.scrollIntoView({ behavior: "smooth", block: "center" })
-          }
-        >
-          Météo du refuge
-        </Button>
-        <Button variant="secondary" onClick={() => go("canvas")}>
-          Atelier Canvas
-        </Button>
-      </div>
-      <div className="tool-links">
-        {["admin", "agent"].includes(user?.role) && (
-          <Button
-            variant="secondary"
-            icon={Users}
-            onClick={() => go("register")}
+      <nav className="team-tool-tabs" aria-label="Rubriques des outils">
+        {[
+          [
+            "names",
+            "Un prénom",
+            "Trouver sa prochaine belle identité",
+            Sparkles,
+          ],
+          [
+            "organize",
+            "La vie de l’équipe",
+            "Agenda, gazette et outils pratiques",
+            Users,
+          ],
+          [
+            "weather",
+            "La bonne lumière",
+            "Météo et prochains créneaux photo",
+            Camera,
+          ],
+        ].map(([key, title, detail, Icon]) => (
+          <button
+            key={key}
+            aria-pressed={toolTab === key}
+            onClick={() => setToolTab(key)}
           >
-            Registre interne
-          </Button>
-        )}
-        <Button
-          variant="secondary"
-          icon={Printer}
-          onClick={() => go("groupPoster")}
-        >
-          Grande affiche du refuge
-        </Button>
-      </div>
-      <div className="tools-grid">
-        <section className="panel names-tool">
-          <div className="panel-heading">
-            <h2>Comment va-t-on l’appeler ?</h2>
-            <Sparkles size={23} />
-          </div>
-          <p>
-            Les noms des animaux encore présents au refuge et actuellement
-            publiés sur le site national SPA sont exclus, sans distinction
-            d’accents ou de ponctuation. Les noms des animaux partis peuvent
-            être réutilisés.
-          </p>
-          <div className="form-row">
-            <label>
-              Sexe
-              <select value={sex} onChange={(e) => setSex(e.target.value)}>
-                <option value="any">Toutes les idées</option>
-                <option value="female">Femelle</option>
-                <option value="male">Mâle</option>
+            <Icon size={23} />
+            <span>
+              <strong>{title}</strong>
+              <small>{detail}</small>
+            </span>
+          </button>
+        ))}
+      </nav>
+      <nav className="team-tool-quick" aria-label="Accès utiles">
+        {[
+          ["todo", "À photographier", Camera],
+          ["volunteers", "Présences & missions", Users],
+          ["writing", "Rédaction & relecture", Sparkles],
+          ["canvas", "Atelier Canvas", Printer],
+          ...(user?.role === "admin" ? [["storage", "Doublons", Images]] : []),
+        ].map(([page, title, Icon]) => (
+          <NavLink key={page} href={"#" + page} onClick={() => go(page)}>
+            <Icon size={17} />
+            {title}
+            <span>↗</span>
+          </NavLink>
+        ))}
+      </nav>
+      <div className="team-tool-content">
+        {toolTab === "names" && (
+          <section className="panel names-tool">
+            <div className="panel-heading">
+              <h2>Comment va-t-on l’appeler ?</h2>
+              <Sparkles size={23} />
+            </div>
+            <p>
+              Des idées disponibles, en excluant les prénoms actuellement
+              utilisés au refuge et dans le catalogue SPA.
+            </p>
+            <div className="form-row">
+              <label>
+                Sexe
+                <select value={sex} onChange={(e) => setSex(e.target.value)}>
+                  <option value="any">Toutes les idées</option>
+                  <option value="female">Femelle</option>
+                  <option value="male">Mâle</option>
+                </select>
+              </label>
+              <label>
+                Première lettre
+                <input
+                  value={letter}
+                  maxLength={1}
+                  onChange={(e) => setLetter(e.target.value)}
+                  placeholder="Facultatif"
+                />
+              </label>
+            </div>
+            <label className="name-theme">
+              Univers des prénoms
+              <select value={theme} onChange={(e) => setTheme(e.target.value)}>
+                {Object.entries(themes).map(([key, label]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
               </select>
             </label>
-            <label>
-              Première lettre
-              <input
-                value={letter}
-                maxLength={1}
-                onChange={(e) => setLetter(e.target.value)}
-                placeholder="Facultatif"
-              />
-            </label>
-          </div>
-          <label className="name-theme">
-            Univers des prénoms
-            <select value={theme} onChange={(e) => setTheme(e.target.value)}>
-              {Object.entries(themes).map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-          {national && (
-            <div
-              className={
-                "name-catalogue-status " + (national.error ? "has-error" : "")
-              }
-              role="status"
-            >
-              <strong>
-                {national.running
-                  ? "Vérification du catalogue national SPA…"
-                  : national.ready
-                    ? "Prénoms disponibles immédiatement"
-                    : "Vérification nationale nécessaire"}
-              </strong>
-              {national.running && national.progress ? (
-                <>
-                  <progress
-                    value={national.progress.page}
-                    max={national.progress.pages}
-                  />
-                  {national.progress.animals} / {national.progress.total} fiches
-                  lues
-                </>
-              ) : national.checkedAt ? (
-                <span>
-                  {national.names.toLocaleString("fr-FR")} noms connus · relevé
-                  du {new Date(national.checkedAt).toLocaleString("fr-FR")}
-                </span>
-              ) : (
-                <span>
-                  Une première lecture des noms publics SPA prend quelques
-                  minutes. Vous pouvez quitter cette page.
-                </span>
-              )}
-              {national.error && <p>{national.error}</p>}
-              {!national.ready && !national.running && (
-                <p>
-                  Le premier catalogue est en préparation. Les prochaines
-                  propositions seront immédiates, y compris pendant une
-                  actualisation.
-                </p>
-              )}
-              <small>
-                Actualisation automatique chaque nuit à 03 h 15 (heure de
-                Paris). Les propositions utilisent le dernier relevé national
-                complet, sans attendre son renouvellement. Les animaux partis du
-                refuge ne bloquent pas leur prénom.
-              </small>
-            </div>
-          )}
-          <div className="name-catalogue-actions">
-            <Button
-              icon={
-                busy || (!national?.ready && national?.running)
-                  ? LoaderCircle
-                  : RefreshCw
-              }
-              disabled={
-                busy ||
-                (!national?.ready &&
-                  !["admin", "editor", "agent"].includes(user?.role))
-              }
-              onClick={() => generate(!national?.ready)}
-            >
-              {national?.ready
-                ? "Trouver des prénoms"
-                : national?.running
-                  ? "Préparation du catalogue…"
-                  : "Vérifier les noms SPA"}
-            </Button>
-            {national?.ready &&
-              ["admin", "editor", "agent"].includes(user?.role) && (
-                <button
-                  className="text-link"
-                  disabled={busy || national.running}
-                  onClick={() => generate(true)}
-                >
-                  Actualiser le catalogue SPA
-                </button>
-              )}
-          </div>
-          <div className="name-chips">
-            {names.map((name) => (
-              <button
-                key={name}
-                onClick={() =>
-                  copyText(name)
-                    .then(() => notify(name + " copié."))
-                    .catch(() => notify("Copie indisponible.", "error"))
+            {national && (
+              <div
+                className={
+                  "name-catalogue-status " + (national.error ? "has-error" : "")
                 }
+                role="status"
               >
-                {name}
-                <Copy size={13} />
-              </button>
-            ))}
-          </div>
-          {!names.length && !busy && national?.ready && !national.running && (
-            <p>
-              Tous les prénoms de cette sélection sont déjà utilisés. Essayez
-              une autre initiale ou un autre univers.
-            </p>
-          )}
-        </section>
-        <section className="panel weather-full">
-          <Weather />
-        </section>
+                <strong>
+                  {national.running
+                    ? "Vérification du catalogue national SPA…"
+                    : national.ready
+                      ? "Prénoms disponibles immédiatement"
+                      : "Vérification nationale nécessaire"}
+                </strong>
+                {national.running && national.progress ? (
+                  <>
+                    <progress
+                      value={national.progress.page}
+                      max={national.progress.pages}
+                    />
+                    {national.progress.animals} / {national.progress.total}{" "}
+                    fiches lues
+                  </>
+                ) : national.checkedAt ? (
+                  <span>
+                    {national.names.toLocaleString("fr-FR")} noms connus ·
+                    relevé du{" "}
+                    {new Date(national.checkedAt).toLocaleString("fr-FR")}
+                  </span>
+                ) : (
+                  <span>
+                    Une première lecture des noms publics SPA prend quelques
+                    minutes. Vous pouvez quitter cette page.
+                  </span>
+                )}
+                {national.error && <p>{national.error}</p>}
+                {!national.ready && !national.running && (
+                  <p>
+                    Le premier catalogue est en préparation. Les prochaines
+                    propositions seront immédiates, y compris pendant une
+                    actualisation.
+                  </p>
+                )}
+                <small>
+                  Actualisation automatique chaque nuit à 03 h 15 (heure de
+                  Paris). Les propositions utilisent le dernier relevé national
+                  complet, sans attendre son renouvellement. Les animaux partis
+                  du refuge ne bloquent pas leur prénom.
+                </small>
+              </div>
+            )}
+            <div className="name-catalogue-actions">
+              <Button
+                icon={
+                  busy || (!national?.ready && national?.running)
+                    ? LoaderCircle
+                    : RefreshCw
+                }
+                disabled={
+                  busy ||
+                  (!national?.ready &&
+                    !["admin", "editor", "agent"].includes(user?.role))
+                }
+                onClick={() => generate(!national?.ready)}
+              >
+                {national?.ready
+                  ? "Trouver des prénoms"
+                  : national?.running
+                    ? "Préparation du catalogue…"
+                    : "Vérifier les noms SPA"}
+              </Button>
+              {national?.ready &&
+                ["admin", "editor", "agent"].includes(user?.role) && (
+                  <button
+                    className="text-link"
+                    disabled={busy || national.running}
+                    onClick={() => generate(true)}
+                  >
+                    Actualiser le catalogue SPA
+                  </button>
+                )}
+            </div>
+            <div className="name-chips">
+              {names.map((name) => (
+                <button
+                  key={name}
+                  onClick={() =>
+                    copyText(name)
+                      .then(() => notify(name + " copié."))
+                      .catch(() => notify("Copie indisponible.", "error"))
+                  }
+                >
+                  {name}
+                  <Copy size={13} />
+                </button>
+              ))}
+            </div>
+            {!names.length && !busy && national?.ready && !national.running && (
+              <p>
+                Tous les prénoms de cette sélection sont déjà utilisés. Essayez
+                une autre initiale ou un autre univers.
+              </p>
+            )}
+          </section>
+        )}
+        {toolTab === "weather" && (
+          <section className="panel weather-full">
+            <Weather />
+          </section>
+        )}
       </div>
-      <TeamUtilities go={go} modules={ui.enabledModules} />
-      <Suspense fallback={<Spinner />}>
-        <CreativeWorkshop
-          user={user}
-          notify={notify}
-          open={open}
-          go={go}
-          ui={ui}
-        />
-      </Suspense>
+      {toolTab === "organize" && (
+        <>
+          <TeamUtilities go={go} modules={ui.enabledModules} />
+          <Suspense fallback={<Spinner />}>
+            <CreativeWorkshop
+              user={user}
+              notify={notify}
+              open={open}
+              go={go}
+              ui={ui}
+            />
+          </Suspense>
+          {["admin", "agent"].includes(user?.role) && (
+            <NavLink
+              className="text-link"
+              href="#register"
+              onClick={() => go("register")}
+            >
+              Registre interne ↗
+            </NavLink>
+          )}
+        </>
+      )}
     </>
   );
 }

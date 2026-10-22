@@ -1,0 +1,38 @@
+.backup-retention {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) auto;
+  gap: 14px;
+  align-items: end;
+  margin-bottom: 18px;
+  padding: 24px;
+}
+.backup-retention label {
+  display: grid;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+.backup-retention p {
+  grid-column: 1/-1;
+  margin: 0;
+  max-width: 85ch;
+  line-height: 1.65;
+}
+.backup-list .backup-description {
+  min-width: 0;
+}
+.backup-list .backup-description small {
+  overflow-wrap: anywhere;
+}
+.backup-list > .button,
+.backup-list > div > .button {
+  flex-shrink: 0;
+}
+@media (max-width: 650px) {
+  .backup-retention {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+  .backup-retention .button {
+    justify-self: start;
+  }
+}

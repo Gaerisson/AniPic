@@ -1,4 +1,5 @@
 import { ServerClock } from "./journal-view.jsx";
+import "./admin315.css";
 import { ConnectionPreferences } from "./app-feedback.jsx";
 import { GoogleAuthSettings, VolunteerRequests } from "./google-auth.jsx";
 import { UserPicture } from "./user-avatar.jsx";
@@ -27,9 +28,10 @@ import {
   AlertCircle,
   LoaderCircle,
   Leaf,
+  Trash2,
 } from "lucide-react";
 import { api, bytes, date, speciesName } from "./api.js";
-import { Spinner, Empty, Button } from "./ui.jsx";
+import { Spinner, Empty, Button, Modal } from "./ui.jsx";
 import { ApiSettings, InterfaceSettings } from "./preferences.jsx";
 import { LegacyImport } from "./legacy.jsx";
 import { AdminMessages } from "./messages.jsx";
@@ -189,7 +191,7 @@ export function Admin({
           <SimilarPhotos notify={notify} open={open} />
         </>
       ) : page === "backups" ? (
-        <Backups data={data} run={run} />
+        <Backups data={data} run={run} reload={load} notify={notify} />
       ) : page === "sync" ? (
         <Sync data={data} notify={notify} reload={reload} />
       ) : page === "api" ? (
@@ -410,6 +412,8 @@ const actionNames = {
   cache_cleared: "Cache libéré",
   backup: "Sauvegarde vérifiée",
   backup_failed: "Échec de sauvegarde",
+  backup_deleted: "Sauvegarde supprimée",
+  backups_expired: "Anciennes sauvegardes supprimées automatiquement",
   sync: "Synchronisation terminée",
   sync_failed: "Synchronisation interrompue",
   json_imported: "Export JSON importé",
@@ -647,10 +651,57 @@ function Storage({ data, notify, reload }) {
     </>
   );
 }
-function Backups({ data, run }) {
+function Backups({ data, run, reload, notify }) {
   const cfg = data.settings;
+  const [days, setDays] = useState(cfg.backupRetentionDays || 0),
+    [deleting, setDeleting] = useState(null),
+    [busy, setBusy] = useState(false);
+  const action = async (fn, message) => {
+    setBusy(true);
+    try {
+      await fn();
+      setDeleting(null);
+      await reload();
+      notify(message);
+    } catch (error) {
+      notify(error.message, "error");
+    } finally {
+      setBusy(false);
+    }
+  };
   return (
     <>
+      <form
+        className="panel backup-retention form-row"
+        onSubmit={(e) => {
+          e.preventDefault();
+          action(
+            () =>
+              api("/admin/settings", {
+                method: "PUT",
+                body: { backupRetentionDays: days },
+              }),
+            "Durée de conservation enregistrée.",
+          );
+        }}
+      >
+        <label>
+          Conserver les sauvegardes pendant (jours)
+          <input
+            type="number"
+            min="0"
+            max="3650"
+            value={days}
+            onChange={(e) => setDays(Number(e.target.value))}
+          />
+        </label>
+        <Button disabled={busy}>Enregistrer la durée</Button>
+        <p className="fineprint">
+          0 : pas de limite d’âge. Le dernier point de restauration et les
+          sauvegardes protégeant des originaux restent conservés. La limite du
+          nombre de copies continue de s’appliquer.
+        </p>
+      </form>
       <div className="stat-grid three">
         <Stat
           icon={ShieldCheck}
@@ -664,7 +715,11 @@ function Backups({ data, run }) {
           icon={Clock}
           label="Rétention"
           value={cfg.backupKeep + " copies"}
-          detail="Rotation après une sauvegarde réussie"
+          detail={
+            cfg.backupRetentionDays > 0
+              ? `Pendant ${cfg.backupRetentionDays} jours · dernier point conservé`
+              : "Rotation après une sauvegarde réussie"
+          }
         />
         <Stat
           icon={HardDrive}
@@ -699,7 +754,7 @@ function Backups({ data, run }) {
                   <small>{b.filename}</small>
                   {!!b.protected && (
                     <small className="tag">
-                      Protégée · originaux avant compression
+                      Protégée · point de restauration requis
                     </small>
                   )}
                   <code title={b.checksum}>
@@ -714,6 +769,16 @@ function Backups({ data, run }) {
                   <Download size={16} />
                   <span>Télécharger</span>
                 </a>
+                {!b.protected && (
+                  <Button
+                    icon={Trash2}
+                    variant="quiet"
+                    disabled={busy}
+                    onClick={() => setDeleting(b)}
+                  >
+                    Supprimer
+                  </Button>
+                )}
               </div>
             ))}
           </div>
@@ -730,6 +795,39 @@ function Backups({ data, run }) {
           />
         )}
       </section>
+      {deleting && (
+        <Modal
+          title="Supprimer une sauvegarde"
+          onClose={() => !busy && setDeleting(null)}
+        >
+          <h3>Supprimer la sauvegarde du {date(deleting.created_at)} ?</h3>
+          <p>
+            Seule cette archive de sauvegarde sera supprimée définitivement. Les
+            photos et la base active sont conservées.
+          </p>
+          <div className="heading-actions">
+            <Button
+              disabled={busy}
+              onClick={() =>
+                action(
+                  () =>
+                    api("/admin/backups/" + deleting.id, { method: "DELETE" }),
+                  "Sauvegarde supprimée.",
+                )
+              }
+            >
+              {busy ? "Suppression…" : "Confirmer la suppression"}
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={busy}
+              onClick={() => setDeleting(null)}
+            >
+              Annuler
+            </Button>
+          </div>
+        </Modal>
+      )}
       <div className="two-column section-gap">
         <section className="panel text-panel">
           <Undo2 size={25} />

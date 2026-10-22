@@ -53,38 +53,63 @@ export function collectorIO(cfg, deps = {}) {
     }
   };
   const read = async (url) => {
-    if (requests >= cfg.sourceMaxRequests)
-      throw Object.assign(new Error("Budget de requêtes atteint."), {
-        code: "BUDGET",
-      });
-    if (requests) {
-      if (deadline - Date.now() <= cfg.sourceDelayMs)
-        throw Object.assign(new Error("Durée maximale de collecte atteinte."), {
+    for (let attempt = 0; ; attempt++) {
+      if (requests >= cfg.sourceMaxRequests)
+        throw Object.assign(new Error("Budget de requêtes atteint."), {
           code: "BUDGET",
         });
-      await delay(cfg.sourceDelayMs);
-    }
-    await check(url);
-    requests++;
-    try {
-      const text = await fetchText(url, cfg.sourceMaxResponseMB * 1024 ** 2, {
-        timeoutMs: remaining(),
-      });
-      deps.onCheck?.({
-        stage: "http",
-        url,
-        status: "ok",
-        message: `Réponse reçue · ${Buffer.byteLength(text)} octets.`,
-      });
-      return text;
-    } catch (e) {
-      deps.onCheck?.({
-        stage: "http",
-        url,
-        status: "error",
-        message: e.message,
-      });
-      throw e;
+      if (requests) {
+        if (deadline - Date.now() <= cfg.sourceDelayMs)
+          throw Object.assign(
+            new Error("Durée maximale de collecte atteinte."),
+            {
+              code: "BUDGET",
+            },
+          );
+        await delay(cfg.sourceDelayMs);
+      }
+      let attemptedHttp = false;
+      try {
+        await check(url);
+        requests++;
+        attemptedHttp = true;
+        const text = await fetchText(url, cfg.sourceMaxResponseMB * 1024 ** 2, {
+          timeoutMs: remaining(),
+        });
+        deps.onCheck?.({
+          stage: "http",
+          url,
+          status: "ok",
+          message: `Réponse reçue · ${Buffer.byteLength(text)} octets.`,
+        });
+        return text;
+      } catch (e) {
+        if (attemptedHttp)
+          deps.onCheck?.({
+            stage: "http",
+            url,
+            status: "error",
+            message: e.message,
+          });
+        if (
+          attempt < 2 &&
+          (e.code === "EAI_AGAIN" ||
+            e.cause?.code === "EAI_AGAIN" ||
+            /\bEAI_AGAIN\b/.test(e.message))
+        ) {
+          const pause = 500 * 2 ** attempt;
+          if (deadline - Date.now() <= pause) throw e;
+          deps.onCheck?.({
+            stage: "retry",
+            url,
+            status: "info",
+            message: `Résolution DNS temporairement indisponible. Nouvelle tentative ${attempt + 1}/2.`,
+          });
+          await delay(pause);
+          continue;
+        }
+        throw e;
+      }
     }
   };
   return {

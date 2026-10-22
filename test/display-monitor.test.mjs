@@ -244,7 +244,7 @@ test("incidents and recoveries are deduplicated, retain their time and have boun
     db.prepare("SELECT COUNT(*) n FROM display_screen_events").get().n <= 50,
   );
 });
-test("screen naming uses revisions; withdrawing monitoring revokes the identity without stopping the programme", async (t) => {
+test("screen naming uses revisions; only offline screens can be hidden and the same authenticated identity reappears", async (t) => {
   const { app, db } = await fixture(t),
     manager = await login(app, "agent"),
     payload = report(db);
@@ -269,6 +269,21 @@ test("screen naming uses revisions; withdrawing monitoring revokes the identity 
   );
   const other = report(db);
   await send(app, other);
+  assert.equal(
+    (
+      await app.inject({
+        method: "DELETE",
+        url: `${list}/${payload.id}`,
+        headers: manager.headers,
+        payload: { revision: 2 },
+      })
+    ).statusCode,
+    409,
+  );
+  db.prepare("UPDATE display_screens SET last_seen=? WHERE id=?").run(
+    new Date(Date.now() - displayOfflineMs - 1000).toISOString(),
+    payload.id,
+  );
   r = await app.inject({
     method: "DELETE",
     url: `${list}/${payload.id}`,
@@ -276,11 +291,25 @@ test("screen naming uses revisions; withdrawing monitoring revokes the identity 
     payload: { revision: 2 },
   });
   assert.equal(r.statusCode, 200);
-  assert.equal((await send(app, payload)).statusCode, 410);
   assert.deepEqual(
     (await screens(app, manager.headers)).map((s) => s.id),
     [other.id],
   );
+  assert.equal(
+    (
+      await send(app, {
+        ...payload,
+        token: randomBytes(32).toString("base64url"),
+      })
+    ).statusCode,
+    403,
+  );
+  assert.equal((await send(app, payload)).statusCode, 200);
+  const restored = (await screens(app, manager.headers)).find(
+    (s) => s.id === payload.id,
+  );
+  assert.equal(restored.name, "Accueil · TV principale");
+  assert.ok(restored.revision > 2);
   assert.equal(
     (await app.inject({ url: "/api/public/display" })).statusCode,
     200,

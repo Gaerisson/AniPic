@@ -192,7 +192,7 @@ export function useDisplayMonitor() {
         }
       } catch (e) {
         if (!stopped) {
-          revoked = e.status === 410;
+          revoked = e.status === 403;
           setConnection((previous) => ({
             ...previous,
             state: revoked ? "revoked" : "unavailable",

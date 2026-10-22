@@ -56,7 +56,7 @@ Le suivi affiche aussi la durée d’ouverture, le réseau déclaré par le navi
 
 Ouvrir **Réglages & aperçu réel**, choisir 2, 5, 10 ou 30 secondes puis **Aperçu en direct**. Il s’agit de captures du lecteur AniPic, sans capture du bureau et sans diffusion vidéo du bureau. Les commandes sont récupérées environ toutes les 2 secondes ; le temps d’encodage, le réseau et la mise en veille peuvent espacer les images.
 
-La consultation est renouvelée chaque minute et expire côté serveur après trois minutes sans renouvellement. Fermer le panneau, masquer l’onglet ou arrêter le suivi le désactive. Le retrait d’un appareil reste réversible depuis le lecteur : il révoque son identité de suivi sans supprimer le programme ni les photos.
+La consultation est renouvelée chaque minute et expire côté serveur après trois minutes sans renouvellement. Fermer le panneau, masquer l’onglet ou arrêter le suivi le désactive. Depuis la version 3.15, **Retirer du suivi** est disponible uniquement pour un appareil hors ligne. Il est masqué jusqu’à son prochain signal de présence : le même appareil réapparaît automatiquement avec son nom, ses réglages et son historique. Son jeton reste vérifié ; un tiers ne peut pas réactiver cette identité. Le programme et les photos restent conservés.
 
 Les captures restent réservées aux agents et administrateurs. Le jeton propre à l’écran et le PIN global, s’il est activé, restent nécessaires. La désactivation des captures arrête le suivi visuel. Les options de bilan annuel sont décrites dans le [guide des créations](CREATIONS_ET_APPLICATION.md).
 

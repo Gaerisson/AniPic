@@ -1,4 +1,4 @@
-# Déploiement AniPic 3.14.3
+# Déploiement AniPic 3.15.0
 
 ## Installer sur Debian avec Docker
 
@@ -33,10 +33,10 @@ sudo node scripts/prepare-storage.mjs --mount /mnt/nas --root /mnt/nas/anipic --
 Node.js 24 est nécessaire pour ce script. Sans Node sur l’hôte, construire d’abord l’image puis utiliser son runtime, en montant le parent NAS existant :
 
 ```sh
-docker build -t anipic:3.14.3 .
+docker build -t anipic:3.15.0 .
 docker run --rm --read-only --user 1000:1000 \
   --mount type=bind,src=/mnt/nas,dst=/mnt/nas \
-  --entrypoint node anipic:3.14.3 scripts/prepare-storage.mjs \
+  --entrypoint node anipic:3.15.0 scripts/prepare-storage.mjs \
   --mount /mnt/nas --root /mnt/nas/anipic --uid 1000 --gid 1000 --with-c8 --with-import
 ```
 
@@ -54,7 +54,7 @@ Choisir le mode adapté à la stack existante. `compose.yml` compile le dépôt 
 
 ### Image GitHub prête à télécharger
 
-Après la réussite du workflow de publication, utiliser `portainer-ghcr.yml` dans la **même stack**. Ce fichier référence `ghcr.io/gaerisson/anipic:3.14.3` avec `pull_policy: always` ; ici, **Re-pull image peut être activé**. Conserver toutes les variables NAS, UID/GID, port, origine et overrides C8/Import.
+Après la réussite du workflow de publication, utiliser `portainer-ghcr.yml` dans la **même stack**. Ce fichier référence `ghcr.io/gaerisson/anipic:3.15.0` avec `pull_policy: always` ; ici, **Re-pull image peut être activé**. Conserver toutes les variables NAS, UID/GID, port, origine et overrides C8/Import.
 
 ```sh
 docker compose -f portainer-ghcr.yml pull
@@ -80,8 +80,8 @@ Ne pas utiliser `portainer-stack.yml` pour une compilation automatique depuis Gi
 Après avoir récupéré les nouveaux fichiers du projet, construire l’image sur **le moteur Docker utilisé par Portainer**, depuis le répertoire contenant le Dockerfile :
 
 ```sh
-docker build -t anipic:3.14.3 .
-docker image inspect anipic:3.14.3 --format '{{.Id}}'
+docker build -t anipic:3.15.0 .
+docker image inspect anipic:3.15.0 --format '{{.Id}}'
 ```
 
 Redéployer ensuite la stack existante avec `portainer-stack.yml`, en conservant **Re-pull image désactivé**. Ce fichier garde `pull_policy: never` et exige que l’image existe déjà sur ce moteur. Si Portainer ne construit pas depuis Git, cette procédure permet de préparer l’image sur l’hôte puis de la déployer. Swarm nécessite aussi une image déjà construite, accessible à chacun des nœuds concernés ; un build Compose n’est pas un mécanisme de déploiement Swarm.
@@ -179,3 +179,8 @@ Les fichiers Compose limitent le conteneur à **2 Gio par défaut**, même si la
 Avec le nom de conteneur réellement affiché dans Portainer, `docker inspect NOM_CONTENEUR --format '{{.HostConfig.Memory}}'` doit indiquer `4294967296` pour 4 Gio. `docker stats --no-stream NOM_CONTENEUR` affiche la consommation et le plafond en cours.
 
 AniPic n’augmente pas la mémoire du NAS ou de la VM et ne désactive pas son contrôle pour lancer le modèle sans marge suffisante. Un modèle plus petit peut consommer moins tout en conservant une partie du fond : il n’est pas activé automatiquement au détriment de la qualité.
+
+
+## Conservation des sauvegardes
+
+Dans **Configuration → Sauvegardes**, choisir une durée en jours puis enregistrer. `0` désactive la limite d’âge ; le nombre de copies configuré continue de s’appliquer. Le nettoyage est vérifié chaque heure et après une sauvegarde réussie. Le dernier point de restauration ordinaire et les sauvegardes protégeant des originaux restent conservés. La suppression manuelle demande une confirmation et est réservée aux administrateurs ; les sauvegardes protégées ne peuvent pas être supprimées. Le contrôle de stockage est exécuté avant toute suppression.

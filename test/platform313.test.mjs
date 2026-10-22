@@ -390,6 +390,10 @@ test("fast TV capture polling requires the screen identity without a site PIN, e
   });
   assert.equal((await poll()).statusCode, 200);
   saveSettings(db, { accessPinEnabled: false });
+  db.prepare("UPDATE display_screens SET last_seen=? WHERE id=?").run(
+    new Date(Date.now() - 600000).toISOString(),
+    key,
+  );
   await call(app, a.headers, "DELETE", "/api/admin/display/screens/" + key, {
     revision: 1,
   });

@@ -1,9 +1,14 @@
-import { promises as fs, createReadStream } from "node:fs";
+import {
+  promises as fs,
+  createReadStream,
+  unlinkSync,
+  lstatSync,
+} from "node:fs";
 import { DatabaseSync, backup } from "node:sqlite";
 import path from "node:path";
 import { createHash } from "node:crypto";
 import * as tar from "tar";
-import { id, now } from "./db.mjs";
+import { id, now, transaction } from "./db.mjs";
 import { assertStorage } from "./config.mjs";
 export async function fileHash(filename) {
   const h = createHash("sha256");
@@ -81,18 +86,75 @@ export async function createBackup(db, c) {
     await fs.unlink(destination + ".part").catch(() => {});
   }
 }
-export async function pruneBackups(db, c, keep) {
+export async function removeBackup(db, c, key) {
+  assertStorage(c);
+  return transaction(db, () => {
+    const row = db.prepare("SELECT * FROM backups WHERE id=?").get(key);
+    if (!row)
+      throw Object.assign(Error("Sauvegarde introuvable."), {
+        statusCode: 404,
+      });
+    if (
+      db
+        .prepare(
+          "SELECT 1 FROM archive_compactions WHERE backup_id=? UNION ALL SELECT 1 FROM settings WHERE key=?",
+        )
+        .get(key, "protectedBackup:" + key)
+    )
+      throw Object.assign(
+        Error(
+          "Cette sauvegarde protège des originaux et ne peut pas être supprimée.",
+        ),
+        { statusCode: 409 },
+      );
+    if (
+      path.basename(row.filename) !== row.filename ||
+      /[\\/:]/.test(row.filename) ||
+      !row.filename.endsWith(".tar.gz")
+    )
+      throw Error("Chemin de sauvegarde invalide.");
+    const file = path.resolve(c.backupDir, row.filename);
+    if (path.dirname(file) !== path.resolve(c.backupDir))
+      throw Error("Chemin de sauvegarde invalide.");
+    try {
+      if (!lstatSync(file).isFile())
+        throw Error("La sauvegarde n’est pas un fichier régulier.");
+      unlinkSync(file);
+    } catch (e) {
+      if (e.code !== "ENOENT") throw e;
+    }
+    db.prepare("DELETE FROM backups WHERE id=?").run(key);
+    return { id: key, filename: row.filename };
+  });
+}
+export async function pruneBackups(
+  db,
+  c,
+  keep,
+  retentionDays = 0,
+  clock = Date.now(),
+) {
+  assertStorage(c);
   const rows = db
     .prepare(
       "SELECT * FROM backups WHERE id NOT IN (SELECT backup_id FROM archive_compactions) AND NOT EXISTS(SELECT 1 FROM settings s WHERE s.key='protectedBackup:'||backups.id) ORDER BY created_at DESC",
     )
     .all();
-  for (const row of rows.slice(keep)) {
-    await fs.unlink(path.join(c.backupDir, row.filename)).catch((e) => {
-      if (e.code !== "ENOENT") throw e;
-    });
-    db.prepare("DELETE FROM backups WHERE id=?").run(row.id);
+  let removed = 0;
+  for (const [index, row] of rows.entries()) {
+    if (!index) continue; // Always retain the newest ordinary restore point.
+    if (
+      index < Math.max(1, keep) &&
+      !(
+        retentionDays > 0 &&
+        clock - Date.parse(row.created_at) > retentionDays * 86400000
+      )
+    )
+      continue;
+    await removeBackup(db, c, row.id);
+    removed++;
   }
+  return { removed };
 }
 export async function restoreBackup(archive, destination) {
   try {

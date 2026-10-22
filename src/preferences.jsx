@@ -478,6 +478,12 @@ export function InterfaceSettings({
             ["thumbQuality", "Qualité WebP", 40, 90],
             ["backupIntervalHours", "Sauvegarde toutes les (h)", 0, 168],
             ["backupKeep", "Copies conservées", 1, 30],
+            [
+              "backupRetentionDays",
+              "Supprimer après (jours, 0 = jamais)",
+              0,
+              3650,
+            ],
           ].map(([k, label, min, max]) => (
             <label key={k}>
               {label}
