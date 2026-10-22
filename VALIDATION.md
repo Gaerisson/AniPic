@@ -1,5 +1,14 @@
 # Vérifications — AniPic 3.13.0
 
+## V3.14.1 — Exports et duplication Canvas
+
+Neuf tests ciblés réussis (validation Canvas, sécurité, IA, vidéo et publication), build frontend réussi et six configurations Compose contrôlées. Les images d’un SVG exporté dans le navigateur sont intégrées (2images, aucun lien extérieur) ; le fichier a été relu et rendu hors serveur enPNG1920×720. Une sélection multiple a été dupliquée réellement :12calques ordinaires, décalage30px correct, export JSON accepté par le validateur et restauration des12éléments après rechargement. Les limites sont contrôlées avant insertion ; une sélection temporaire n’est jamais enregistrée comme un calque.
+
+La version3.14.0 de base a aussi passé les **295tests dans GitHub Actions**, les builds frontend/vidéo, la compilation et le lint Android, le contrôle de l’APK signée, la construction Docker complète et le démarrage de l’image avec rendu MP4 réel. Le player a été testé sans session avec PIN actif, puis avec une vraie interruption du serveur isolé : le statut a basculé hors connexion et la lecture s’est reconnectée au retour du serveur. Une perte de fichier d’interface après rebuild a déclenché une récupération automatique réelle et conservé l’accès PIN. À390px, le thème SPA clair n’a plus de débordement horizontal et les corrections Unicode sur plusieurs paragraphes s’appliquent correctement.
+
+L’APK native demeure3.14.0, avec les mêmes octets et certificat. Les corrections3.14.1 sont fournies par le serveur web. Les limites relatives au téléphone, au NAS/Portainer et à une TV physiques, ainsi qu’aux transports SPA/Harbor simulés, restent celles détaillées ci-dessous.
+
+
 ## V3.14.0 — Navigation, Canvas et relecture
 
 - Installation propre `npm ci` avec Node.js 24.18.1 réussie, manifeste et lockfile produits par npm, aucune vulnérabilité signalée.

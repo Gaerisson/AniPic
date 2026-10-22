@@ -4,6 +4,7 @@ import {
   Canvas,
   FabricObject,
   FabricImage,
+  ActiveSelection,
   Textbox,
   Rect,
   Circle,
@@ -196,7 +197,21 @@ export default function CanvasStudio({ user, overview, notify = () => {} }) {
       if (alive.current) setBusy("");
     }
   };
+  const assertInsert = (inserted, removed = []) => {
+    const doc = snapshot(),
+      current = canvas.current.getObjects();
+    doc.scene.objects = doc.scene.objects
+      .filter((_, index) => !removed.includes(current[index]))
+      .concat(inserted.map((object) => object.toObject()));
+    validateCanvasDocument(canonicalCanvasDocument(doc, location.origin));
+  };
   const add = (object) => {
+    try {
+      assertInsert([object]);
+    } catch (error) {
+      setError(error.message);
+      return false;
+    }
     canvas.current.add(object);
     canvas.current.setActiveObject(object);
     record();
@@ -217,10 +232,28 @@ export default function CanvasStudio({ user, overview, notify = () => {} }) {
   };
   const duplicate = () =>
     run(async () => {
-      if (!selection) return;
-      const clone = await selection.clone();
-      clone.set({ left: selection.left + 30, top: selection.top + 30 });
-      add(clone);
+      const c = canvas.current,
+        originals = [...c.getActiveObjects()];
+      if (!originals.length) return;
+      // Discarding the temporary selection restores each object's document
+      // coordinates. The selection itself must never be saved as a layer.
+      c.discardActiveObject();
+      const clones = await Promise.all(
+        originals.map(async (object) => {
+          const clone = await object.clone();
+          clone.set({ left: object.left + 30, top: object.top + 30 });
+          return clone;
+        }),
+      );
+      assertInsert(clones);
+      c.add(...clones);
+      c.setActiveObject(
+        clones.length === 1
+          ? clones[0]
+          : new ActiveSelection(clones, { canvas: c }),
+      );
+      record();
+      c.requestRenderAll();
     });
   const text = (value = "Une rencontre peut tout changer.", options = {}) =>
     new Textbox(value, {
@@ -468,12 +501,35 @@ export default function CanvasStudio({ user, overview, notify = () => {} }) {
         c.setViewportTransform([1, 0, 0, 1, 0, 0]);
         c.setDimensions(dimensions.current);
         c.renderAll();
-        if (type === "svg")
-          download(
-            new Blob([c.toSVG()], { type: "image/svg+xml" }),
-            title + ".svg",
-          );
-        else {
+        if (type === "svg") {
+          const embedded = new Map(),
+            escape = (value) =>
+              value
+                .replaceAll("&", "&amp;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("<", "&lt;");
+          const collect = (object) => {
+            if (object.type === "image") {
+              const element = object.getElement(),
+                raster = document.createElement("canvas");
+              raster.width = element.naturalWidth || element.width;
+              raster.height = element.naturalHeight || element.height;
+              raster.getContext("2d").drawImage(element, 0, 0);
+              embedded.set(
+                escape(object.getSrc()),
+                raster.toDataURL("image/png"),
+              );
+            }
+            object.getObjects?.().forEach(collect);
+          };
+          c.getObjects().forEach(collect);
+          const svg = c.toSVG({}, (markup) => {
+            for (const [src, data] of embedded)
+              markup = markup.replaceAll(src, data);
+            return markup;
+          });
+          download(new Blob([svg], { type: "image/svg+xml" }), title + ".svg");
+        } else {
           const output = c.toCanvasElement(1);
           const blob = await new Promise((resolve) =>
             output.toBlob(resolve, "image/" + type, 0.95),
@@ -535,8 +591,12 @@ export default function CanvasStudio({ user, overview, notify = () => {} }) {
         },
       );
       replacement.scaleToWidth(target.getScaledWidth());
+      assertInsert([replacement], [target]);
       canvas.current.remove(target);
-      add(replacement);
+      canvas.current.add(replacement);
+      canvas.current.setActiveObject(replacement);
+      record();
+      canvas.current.requestRenderAll();
     });
   useEffect(() => {
     alive.current = true;

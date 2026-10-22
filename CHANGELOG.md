@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 3.14.1 — Finitions du Canvas
+
+Duplication fiable des sélections multiples, exports SVG avec images intégrées et contrôle des limites avant ajout. [Notes complètes](RELEASE_v3.14.1.md). L’APK native reste en3.14.0 : la mise à jour du site fournit ces correctifs à l’application.
+
 ## 3.14.0 — Atelier Canvas, navigation et fiabilité
 
 Voir [les notes complètes](RELEASE_v3.14.0.md). Éditeur visuel avec calques et sauvegarde, relecture interactive, formats de réponse IA, bilan annuel SPA, player TV sans PIN, journal et horloge, suppression définitive des fiches après sauvegarde.

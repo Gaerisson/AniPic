@@ -146,6 +146,24 @@ test("Canvas projects enforce private ownership, sharing, role checks, CSRF and 
 });
 test("Canvas validation rejects remote URLs, executable types, excessive sizes and prototype pollution; history is bounded", () => {
   assert.equal(validateCanvasDocument(document()).width, 1920);
+  assert.throws(() =>
+    validateCanvasDocument({
+      ...document(),
+      scene: { objects: [{ type: "ActiveSelection", objects: [] }] },
+    }),
+  );
+  assert.throws(() =>
+    validateCanvasDocument({
+      ...document(),
+      scene: {
+        objects: Array.from({ length: 251 }, () => ({
+          type: "Rect",
+          width: 10,
+          height: 10,
+        })),
+      },
+    }),
+  );
   const portable = canonicalCanvasDocument(
     {
       ...document(),
