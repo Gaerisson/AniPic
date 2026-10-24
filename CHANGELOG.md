@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 3.16.1 — Photos SPA et visiteurs
+
+Les erreurs temporaires de photos SPA renvoient une réponse JSON non mise en cache, permettant une nouvelle tentative sans erreur de format Fastify. Le tableau Visiteurs s’actualise automatiquement et précise si la collecte est désactivée, sans consentement ou bloquée par GPC. Les retours sur un onglet sont enregistrés avec consentement ; une connexion juste après une consultation anonyme ne masque plus le compte. La durée de conservation affichée suit le réglage du site. [Notes complètes](RELEASE_v3.16.1.md). L’APK native reste en 3.14.0.
+
 ## 3.16.0 — Studio vidéo et narration synchronisée
 
 Timeline avec pistes image, voix, musique et sous-titres, réglages regroupés et ajout d’un album complet. Calage automatique sur la durée réelle de la voix, reprises de visuels signalées, animations variées et mixage progressif. Aperçu et MP4 utilisent le même timing sans écraser les clips source. [Notes complètes](RELEASE_v3.16.0.md). L’APK native reste en 3.14.0.

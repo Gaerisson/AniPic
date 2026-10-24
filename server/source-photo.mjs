@@ -128,10 +128,12 @@ export async function registerSourcePhoto(app, { db, c }) {
           .update("spa:" + url)
           .digest("hex")}-${width}-78.webp`,
         target = path.join(c.cacheDir, key);
-      reply.header("Cache-Control", "private, max-age=1800");
-      const existing = await fs.stat(target).catch(() => null);
-      if (existing && Date.now() - existing.mtimeMs < 6 * 3600_000)
-        return reply.type("image/webp").send(await fs.readFile(target));
+      const existing = await cached(target);
+      if (existing)
+        return reply
+          .header("Cache-Control", "private, max-age=1800")
+          .type("image/webp")
+          .send(existing);
       if (!pending.has(key)) {
         if (queue.length >= 128)
           return reply
@@ -155,10 +157,18 @@ export async function registerSourcePhoto(app, { db, c }) {
         );
       }
       try {
-        return reply.type("image/webp").send(await pending.get(key));
+        // Resolve before choosing the image type: an upstream failure must still
+        // be a JSON response, not an object sent with Content-Type image/webp.
+        const data = await pending.get(key);
+        return reply
+          .header("Cache-Control", "private, max-age=1800")
+          .type("image/webp")
+          .send(data);
       } catch {
         return reply
-          .code(404)
+          .header("Cache-Control", "no-store")
+          .header("Retry-After", "2")
+          .code(503)
           .send({ error: "Photo SPA temporairement indisponible." });
       }
     },

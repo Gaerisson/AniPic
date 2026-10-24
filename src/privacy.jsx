@@ -1,12 +1,26 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { api } from "./api.js";
 import { Button, Modal, Spinner } from "./ui.jsx";
 export function usePrivacy() {
   const [data, setData] = useState(null);
+  const revision = useRef(0);
   useEffect(() => {
-    api("/privacy")
-      .then(setData)
-      .catch(() => {});
+    let active = true;
+    const refresh = () => {
+      if (document.visibilityState === "hidden") return;
+      const request = ++revision.current;
+      api("/privacy")
+        .then((d) => active && request === revision.current && setData(d))
+        .catch(() => {});
+    };
+    refresh();
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      active = false;
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
   }, []);
   return {
     data,
@@ -16,6 +30,8 @@ export function usePrivacy() {
         method: "POST",
         body: { analytics, version: data.version },
       });
+      // An older refresh must never replace a choice just saved by the user.
+      revision.current++;
       setData((d) => ({ ...d, consent: r.consent }));
     },
   };

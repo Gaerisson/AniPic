@@ -89,7 +89,7 @@ function Breakdown({ title, icon: Icon, items, total, format = (v) => v }) {
     </section>
   );
 }
-export function Visitors() {
+export function Visitors({ onPrivacyChoices }) {
   const [data, setData] = useState(null),
     [days, setDays] = useState(7),
     [query, setQuery] = useState(""),
@@ -100,24 +100,39 @@ export function Visitors() {
     [expanded, setExpanded] = useState(null),
     [copied, setCopied] = useState(null);
   useEffect(() => {
-    let active = true;
-    setBusy(true);
-    const timer = setTimeout(
-      () =>
-        api(`/admin/visitors?days=${days}&query=${encodeURIComponent(query)}`)
-          .then((d) => {
-            if (active) {
-              setData(d);
-              setError("");
-            }
-          })
-          .catch((e) => active && setError(e.message))
-          .finally(() => active && setBusy(false)),
-      200,
-    );
+    let active = true,
+      loading = false;
+    const controller = new AbortController();
+    const load = () => {
+      if (loading || document.visibilityState === "hidden") return;
+      loading = true;
+      setBusy(true);
+      api(`/admin/visitors?days=${days}&query=${encodeURIComponent(query)}`, {
+        signal: controller.signal,
+      })
+        .then((d) => {
+          if (active) {
+            setData(d);
+            setError("");
+          }
+        })
+        .catch((e) => active && setError(e.message))
+        .finally(() => {
+          loading = false;
+          if (active) setBusy(false);
+        });
+    };
+    const timer = setTimeout(load, 200),
+      interval = setInterval(load, 15000);
+    window.addEventListener("focus", load);
+    document.addEventListener("visibilitychange", load);
     return () => {
       active = false;
       clearTimeout(timer);
+      clearInterval(interval);
+      controller.abort();
+      window.removeEventListener("focus", load);
+      document.removeEventListener("visibilitychange", load);
     };
   }, [days, query, revision]);
   useEffect(() => {
@@ -164,6 +179,41 @@ export function Visitors() {
         <Spinner />
       ) : (
         <>
+          <section className="panel visitor-collection">
+            <div>
+              <strong>
+                {!data.collection?.enabled
+                  ? "Statistiques désactivées sur ce site"
+                  : data.collection.globalPrivacyControl
+                    ? "Votre navigateur refuse le suivi (GPC)"
+                    : data.collection.consent !== "accepted"
+                      ? "Vos consultations ne sont pas enregistrées"
+                      : "Statistiques activées · votre navigateur a accepté"}
+              </strong>
+              <p>
+                {!data.collection?.enabled
+                  ? "La collecte doit être activée dans Mentions et confidentialité pour enregistrer de nouvelles consultations."
+                  : data.collection.globalPrivacyControl
+                    ? "Le signal de confidentialité de ce navigateur bloque la collecte, même si les cookies ont été acceptés."
+                    : data.collection.consent !== "accepted"
+                      ? "Les statistiques sont facultatives. Sans votre accord dans les choix de cookies, votre visite n’apparaît pas ici, même connecté à un compte."
+                      : "Les changements de page et les retours sur le site sont comptés, y compris pour les comptes connectés. Rester sur une page ne crée pas de nouvelles consultations."}
+              </p>
+              <small>
+                Consultations consenties uniquement · actualisation automatique
+                toutes les 15 s · dernière réponse :{" "}
+                {instant(data.generatedAt).toLocaleTimeString("fr-FR", {
+                  timeZone: "Europe/Paris",
+                })}
+              </small>
+            </div>
+            {data.collection?.enabled &&
+              !data.collection.globalPrivacyControl && (
+                <Button variant="secondary" onClick={onPrivacyChoices}>
+                  Mes choix de cookies
+                </Button>
+              )}
+          </section>
           <div className="visitor-summary">
             {[
               [
@@ -390,7 +440,9 @@ export function Visitors() {
               </div>
             )}
             <div className="visitor-log-footer">
-              <small>Conservation : 30 jours · accès administrateur</small>
+              <small>
+                Conservation : {data.retentionDays} jours · accès administrateur
+              </small>
               <div>
                 <Button
                   variant="quiet"

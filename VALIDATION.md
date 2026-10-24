@@ -1,5 +1,13 @@
 # Vérifications — AniPic
 
+## V3.16.1 — Photos SPA et visiteurs, contrôles locaux du 24 octobre 2026
+
+27 tests ciblés réussis sous Node.js 24 : `source-photo-visitors`, `programme-admin`, `programme-editor`, `platform312` et `workbench`. Les trois nouvelles régressions échouaient avant correction : panne de photo répondant 500, compte masqué par la déduplication après une visite anonyme et absence d’état explicite de collecte. Elles vérifient maintenant une erreur temporaire JSON 503 sans cache suivie d’une image WebP valide, le rattachement au compte et l’exclusion des doublons, le diagnostic de consentement/GPC et la conservation configurée. Les contrôles existants de refus, consentement signé, permissions, origine, confidentialité et limites des images restent verts.
+
+Build frontend et Prettier réussis. Sur une base et une origine de test séparées de la démonstration restaurée : zéro visite avant consentement, apparition d’une consultation liée au compte après acceptation sans bouton Actualiser, progression de l’heure de réponse toutes les 15 secondes sans nouvelles pages vues pendant l’inactivité, puis aucune visite supplémentaire après refus malgré deux navigations. Une photo SPA simulant une panne a répondu 503 `application/json`, puis 200 `image/webp` sur la nouvelle tentative automatique de l’interface, sans rechargement de la page. Affichage contrôlé sur ordinateur et à 390/320 px sans débordement du document.
+
+Cette validation n’accède pas aux cookies ou aux journaux de l’instance de production : la cause exacte d’une visite particulière non enregistrée reste à vérifier sur le navigateur concerné. La mesure reste facultative et les protections de consentement/GPC sont conservées. La publication corrective 3.16.1 est autorisée par l’utilisateur et conditionnée aux tests complets, aux builds web et vidéo, à Android et au contrôle Docker avec MP4 réel sur GitHub Actions pour le commit exact. Aucun déploiement NAS n’est effectué ; la version native Android reste en 3.14.0.
+
 ## V3.16.0 — Studio vidéo, contrôles locaux du 23 octobre 2026
 
 57 tests ciblés réussis sous Node.js 24, sans échec ni test ignoré : timing, médias, studio, sous-titres et contrats de narration Mistral. Sept nouveaux tests vérifient les chevauchements, les durées courtes et longues, les décalages, les reprises de vidéos sans dépasser l’extrait source, les mosaïques annuelles, les déplacements et l’absence de modification des clips source. Les tests serveur vérifient la durée mesurée plutôt qu’une durée envoyée par le navigateur, les limites, les sous-titres et le cycle enregistrement/réouverture/aperçu. Les appels Mistral de ces tests sont simulés ; aucun appel payant n’est nécessaire à cette validation.

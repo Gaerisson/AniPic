@@ -86,9 +86,14 @@ export async function registerVisitors(app, { db, c, authorized }) {
       if (
         db
           .prepare(
-            "SELECT 1 FROM visits WHERE session_hash=? AND path=? AND created_at>? LIMIT 1",
+            "SELECT 1 FROM visits WHERE session_hash=? AND path=? AND user_id IS ? AND created_at>? LIMIT 1",
           )
-          .get(sessionHash, v.path, new Date(Date.now() - 15000).toISOString())
+          .get(
+            sessionHash,
+            v.path,
+            req.user?.id || null,
+            new Date(Date.now() - 15000).toISOString(),
+          )
       )
         return { ok: true };
       const trusted =
@@ -213,7 +218,18 @@ export async function registerVisitors(app, { db, c, authorized }) {
       const geo = await geoReader(c)
         .then((v) => ({ source: v.source, updatedAt: v.updatedAt }))
         .catch(() => null);
+      const legal = legalConfig(db),
+        consent = app.audienceConsent(req);
       return {
+        collection: {
+          enabled: legal.analyticsEnabled,
+          consent: !consent.decided
+            ? "undecided"
+            : consent.analytics
+              ? "accepted"
+              : "refused",
+          globalPrivacyControl: req.headers["sec-gpc"] === "1",
+        },
         geoip: geo,
         summary: { ...summary, online },
         breakdowns: {
@@ -231,7 +247,7 @@ export async function registerVisitors(app, { db, c, authorized }) {
           session_hash: undefined,
           ...browserInfo(r.user_agent),
         })),
-        retentionDays: 30,
+        retentionDays: legal.visitorRetentionDays,
         countrySource: geo
           ? "local"
           : c.visitorCountryHeader

@@ -211,6 +211,25 @@
 .visitors-page {
   --visitor-soft: color-mix(in srgb, var(--accent) 8%, transparent);
 }
+.visitor-collection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.visitor-collection > div {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+.visitor-collection p {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+.visitor-collection small {
+  color: var(--muted);
+}
 .visitors-page .panel {
   min-width: 0;
   padding: 24px;

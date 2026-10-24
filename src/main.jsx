@@ -700,7 +700,8 @@ function App() {
     try {
       if (
         !privacy.data?.legal.analyticsEnabled ||
-        !privacy.data?.consent.analytics
+        !privacy.data?.consent.analytics ||
+        navigator.globalPrivacyControl === true
       ) {
         sessionStorage.removeItem("anipic-visit");
         return;
@@ -710,12 +711,43 @@ function App() {
         session = uid();
         sessionStorage.setItem("anipic-visit", session);
       }
-      api("/visit", {
-        method: "POST",
-        body: { session, path: "#" + page },
-      }).catch(() => {});
+      let lastSent = 0,
+        sending = false;
+      const track = async () => {
+        if (
+          document.visibilityState === "hidden" ||
+          sending ||
+          Date.now() - lastSent < 15000
+        )
+          return;
+        sending = true;
+        try {
+          await api("/visit", {
+            method: "POST",
+            body: { session, path: "#" + page },
+          });
+          lastSent = Date.now();
+        } catch {
+        } finally {
+          sending = false;
+        }
+      };
+      track();
+      window.addEventListener("focus", track);
+      window.addEventListener("online", track);
+      document.addEventListener("visibilitychange", track);
+      return () => {
+        window.removeEventListener("focus", track);
+        window.removeEventListener("online", track);
+        document.removeEventListener("visibilitychange", track);
+      };
     } catch {}
-  }, [page, user?.id, privacy.data?.consent.analytics]);
+  }, [
+    page,
+    user?.id,
+    privacy.data?.consent.analytics,
+    privacy.data?.legal.analyticsEnabled,
+  ]);
   const admin = pages[page].group === "admin";
   if (["privacy", "terms", "legal"].includes(page))
     return (
@@ -1145,7 +1177,7 @@ function App() {
             ) : page === "visitors" ? (
               user?.role === "admin" ? (
                 <Suspense fallback={<Spinner />}>
-                  <Visitors />
+                  <Visitors onPrivacyChoices={() => setCookiePanel(true)} />
                 </Suspense>
               ) : (
                 <Empty
