@@ -1,4 +1,5 @@
 import { registerCanvas } from "./canvas.mjs";
+import { registerPublicShares } from "./public-shares.mjs";
 import {
   compatibilityState,
   normalizeCompatibility,
@@ -280,6 +281,7 @@ export async function createApp(overrides = {}) {
   });
   await registerSiteAccess(app, { db, c, authorized });
   await registerPrivacy(app, { db, c, authorized });
+  await registerPublicShares(app, { db, c, authorized });
   await registerModules(app, { db, c, authorized });
   await registerDevices(app, { db, c, authorized });
   await registerNotifications(app, { db, c, authorized });

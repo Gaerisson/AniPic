@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 3.17.0 — Liens de partage public
+
+Boutons pour copier le lien public d’une fiche animal ou de la photo sélectionnée. Pages dédiées accessibles sans PIN ni compte, liens de 30 jours et désactivation depuis la fiche. Les photos privées restent exclues et les liens ne donnent pas accès au reste du site ni aux originaux. [Guide du partage](docs/PARTAGE_PUBLIC.md) · [Notes de version](RELEASE_v3.17.0.md). L’APK native reste en 3.14.0.
+
 ## 3.16.1 — Photos SPA et visiteurs
 
 Les erreurs temporaires de photos SPA renvoient une réponse JSON non mise en cache, permettant une nouvelle tentative sans erreur de format Fastify. Le tableau Visiteurs s’actualise automatiquement et précise si la collecte est désactivée, sans consentement ou bloquée par GPC. Les retours sur un onglet sont enregistrés avec consentement ; une connexion juste après une consultation anonyme ne masque plus le compte. La durée de conservation affichée suit le réglage du site. [Notes complètes](RELEASE_v3.16.1.md). L’APK native reste en 3.14.0.

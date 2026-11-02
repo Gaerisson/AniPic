@@ -1,5 +1,7 @@
 import { id, now } from "./db.mjs";
 const names = {
+  public_share_created: "Lien de partage public créé",
+  public_share_revoked: "Lien de partage public désactivé",
   inbox_scanned: "Dossier d’import vérifié",
   sync_failed: "Synchronisation SPA interrompue",
   inbox_scan: "Analyse du dossier d’import",

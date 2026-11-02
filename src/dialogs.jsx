@@ -1,4 +1,5 @@
 import { ActionMenu } from "./action-menu.jsx";
+import { ShareLink } from "./share-link.jsx";
 import { hasAnimalInfo } from "../shared/animal-info.mjs";
 import { PhotoTrash } from "./photo-trash-lazy.jsx";
 import { UserAvatarEditor, UserPicture } from "./user-avatar.jsx";
@@ -298,6 +299,15 @@ export function AnimalDetail({
             >
               <Download size={17} /> Télécharger
             </a>
+          )}
+          {photo && canCreate && (
+            <ShareLink
+              key={photo.id}
+              kind="photo"
+              targetId={photo.id}
+              notify={notify}
+              unavailable={!!photo.hidden || !!photo.archived_at}
+            />
           )}
         </>
       }
@@ -642,6 +652,14 @@ export function AnimalDetail({
                       : ""}
                 </span>
               </h2>
+              {canCreate && (
+                <ShareLink
+                  key={animal.id}
+                  kind="animal"
+                  targetId={animal.id}
+                  notify={notify}
+                />
+              )}
               <p className="detail-description">
                 {animal.description || "Description non renseignée par la SPA."}
               </p>

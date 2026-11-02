@@ -2,7 +2,7 @@ name: anipic
 services:
   anipic:
     build: .
-    image: anipic:3.16.1
+    image: anipic:3.17.0
     # Image locale construite depuis le dépôt. Dans Portainer, désactiver
     # « Re-pull image » : aucune image anipic n’est publiée dans un registre.
     pull_policy: build

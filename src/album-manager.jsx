@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { ShareLink } from "./share-link.jsx";
 import {
   Upload,
   Download,
@@ -546,14 +547,26 @@ export function ManagedAlbumPhoto({
       wide
       className="managed-album-view"
       headerActions={
-        <a
-          className="button"
-          href={download}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Download size={17} />
-          Télécharger
-        </a>
+        <>
+          <a
+            className="button"
+            href={download}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Download size={17} />
+            Télécharger
+          </a>
+          {user &&
+            ["admin", "editor", "agent", "volunteer"].includes(user.role) &&
+            !p.mime?.startsWith("video/") && (
+              <ShareLink
+                key={p.id}
+                kind="photo"
+                targetId={p.id}
+                notify={notify}
+              />
+            )}
+        </>
       }
     >
       {p.mime?.startsWith("video/") ? (

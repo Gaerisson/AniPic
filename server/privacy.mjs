@@ -176,6 +176,11 @@ export async function registerPrivacy(app, { db, c, authorized }) {
             "SELECT config FROM notification_preferences WHERE user_id=?",
           )
           .get(req.user.id) || null,
+      publicShares: db
+        .prepare(
+          "SELECT id,kind,target_id,created_at,expires_at,revoked_at FROM public_shares WHERE created_by=?",
+        )
+        .all(req.user.id),
     }),
   );
   privacyCleanup(db);

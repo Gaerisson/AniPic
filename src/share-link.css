@@ -1,0 +1,44 @@
+.public-share-control {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+.detail-info > .public-share-control {
+  margin: 12px 0 20px;
+}
+.public-share-row {
+  border-top: 1px solid var(--line, #7774);
+  padding-top: 10px;
+  margin-top: 10px;
+}
+.public-share-row small {
+  display: block;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+.public-share-manual {
+  flex: 1 1 100%;
+  min-width: 0;
+  font-size: 12px;
+}
+.public-share-manual input {
+  width: 100%;
+  min-width: 0;
+}
+:is(.photo-modal, .managed-album-view) .modal-header-actions {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+@media (max-width: 640px) {
+  :is(.photo-modal, .managed-album-view) .modal-title {
+    flex-wrap: wrap;
+  }
+  :is(.photo-modal, .managed-album-view) .modal-header-actions {
+    order: 3;
+    flex-basis: 100%;
+    justify-content: flex-start;
+  }
+}
