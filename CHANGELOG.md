@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 3.17.1 — Ouverture dans AniPic et photos JPG
+
+Les pages partagées proposent de retrouver la fiche dans AniPic ou d’ouvrir la section Albums, avec les règles d’accès habituelles du refuge. Le téléchargement d’une photo produit un véritable fichier JPG sans EXIF, y compris pour les références SPA ; la page continue d’afficher un aperçu WebP.
+
 ## 3.17.0 — Liens de partage public
 
 Boutons pour copier le lien public d’une fiche animal ou de la photo sélectionnée. Pages dédiées accessibles sans PIN ni compte, liens de 30 jours et désactivation depuis la fiche. Les photos privées restent exclues et les liens ne donnent pas accès au reste du site ni aux originaux. [Guide du partage](docs/PARTAGE_PUBLIC.md) · [Notes de version](RELEASE_v3.17.0.md). L’APK native reste en 3.14.0.

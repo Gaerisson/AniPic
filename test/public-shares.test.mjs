@@ -138,6 +138,23 @@ test("an animal link opens without PIN but discloses only its public card and ph
   assert.equal($("h1").text(), '<img src=x onerror="alert(1)">');
   assert.equal($("figure img").length, 1);
   assert.equal($("figure img").attr("src"), `${share.path}/photo/${p.id}`);
+  assert.equal(
+    $("a")
+      .filter((_, el) => $(el).text() === "Ouvrir la fiche dans AniPic")
+      .attr("href"),
+    `/#animal/${a}`,
+  );
+  assert.equal($("a.download").attr("download"), "portrait.jpg");
+  const downloaded = await app.inject({ url: $("a.download").attr("href") });
+  assert.match(downloaded.headers["content-type"], /image\/jpeg/);
+  assert.match(
+    downloaded.headers["content-disposition"],
+    /attachment; filename="portrait.jpg"/,
+  );
+  const jpeg = await sharp(downloaded.rawPayload).metadata();
+  assert.equal(jpeg.format, "jpeg");
+  assert.equal(jpeg.exif, undefined);
+  assert.equal(jpeg.width, 1280);
   for (const secret of [
     "PRIVATE METADATA",
     "PRIVATE CAPTION",
@@ -176,10 +193,28 @@ test("photo links cannot expose siblings, originals or SPA endpoints and stop wh
   const share = await create(app, admin.headers, "photo", p.id),
     media = `${share.path}/photo/${p.id}`;
   const page = await app.inject({ url: share.path });
-  assert.equal(cheerio.load(page.body)("figure img").length, 1);
+  const $ = cheerio.load(page.body);
+  assert.equal($("figure img").length, 1);
+  assert.equal(
+    $("a")
+      .filter((_, el) => $(el).text() === "Ouvrir la fiche dans AniPic")
+      .attr("href"),
+    `/#animal/${a}`,
+  );
+  const download = await app.inject({ url: $("a.download").attr("href") });
+  assert.equal(download.statusCode, 200);
+  assert.match(download.headers["content-type"], /image\/jpeg/);
+  assert.equal((await sharp(download.rawPayload).metadata()).format, "jpeg");
+  assert.equal(download.headers["cache-control"], "no-store");
+  assert.equal(download.headers["set-cookie"], undefined);
   assert.ok(!page.body.includes(sibling.id));
   assert.equal(
     (await app.inject({ url: `${share.path}/photo/${sibling.id}` })).statusCode,
+    404,
+  );
+  assert.equal(
+    (await app.inject({ url: `${share.path}/photo/${sibling.id}?download=1` }))
+      .statusCode,
     404,
   );
   assert.equal(
@@ -198,6 +233,11 @@ test("photo links cannot expose siblings, originals or SPA endpoints and stop wh
     );
     assert.equal((await app.inject({ url: media })).statusCode, 404, column);
     assert.equal(
+      (await app.inject({ url: `${media}?download=1` })).statusCode,
+      404,
+      column,
+    );
+    assert.equal(
       (
         await app.inject({
           method: "POST",
@@ -215,6 +255,20 @@ test("photo links cannot expose siblings, originals or SPA endpoints and stop wh
     );
   }
   assert.equal((await app.inject({ url: media })).statusCode, 200);
+  assert.equal(
+    (
+      await app.inject({
+        method: "DELETE",
+        url: `/api/shares/${share.id}`,
+        headers: admin.headers,
+      })
+    ).statusCode,
+    200,
+  );
+  assert.equal(
+    (await app.inject({ url: `${media}?download=1` })).statusCode,
+    404,
+  );
 });
 
 test("tokens are hashed at rest, lists and account exports omit tokens; only the creator or an admin can revoke", async (t) => {
@@ -289,7 +343,13 @@ test("expiration, creator removal and the animal trash block existing pages and 
     media = `${share.path}/photo/${p.id}`;
   assert.equal((await app.inject({ url: media })).statusCode, 200);
   const blocked = async () => {
-    for (const url of [share.path, media, `${share.path}/source-photo`])
+    for (const url of [
+      share.path,
+      media,
+      `${media}?download=1`,
+      `${share.path}/source-photo`,
+      `${share.path}/source-photo?download=1`,
+    ])
       assert.equal((await app.inject({ url })).statusCode, 404, url);
   };
   db.prepare("UPDATE public_shares SET expires_at=? WHERE id=?").run(
@@ -340,10 +400,21 @@ test("a shared SPA card loads its reference image without opening the regular AP
   saveSettings(db, { accessPinEnabled: true });
   const html = await app.inject({ url: share.path });
   assert.match(html.body, new RegExp(`${share.path}/source-photo`));
+  const downloaded = await app.inject({
+    url: `${share.path}/source-photo?download=1`,
+  });
+  assert.match(downloaded.headers["content-type"], /image\/jpeg/);
+  assert.equal((await sharp(downloaded.rawPayload).metadata()).format, "jpeg");
   assert.equal(
     (await app.inject({ url: `${share.path}/source-photo` })).statusCode,
     200,
   );
+  assert.match(
+    downloaded.headers["content-disposition"],
+    /attachment; filename="portrait.jpg"/,
+  );
+  assert.equal(downloaded.headers["cache-control"], "no-store");
+  assert.equal(downloaded.headers["set-cookie"], undefined);
   assert.equal(
     (await app.inject({ url: `/api/animals/${a}/source-photo` })).statusCode,
     401,
@@ -357,6 +428,12 @@ test("a shared SPA card loads its reference image without opening the regular AP
   assert.equal(error.statusCode, 503, error.body);
   assert.match(error.headers["content-type"], /application\/json/);
   assert.equal(error.headers["cache-control"], "no-store");
+  const failedDownload = await app.inject({
+    url: `${share.path}/source-photo?download=1`,
+  });
+  assert.equal(failedDownload.statusCode, 503, failedDownload.body);
+  assert.match(failedDownload.headers["content-type"], /application\/json/);
+  assert.equal(failedDownload.headers["content-disposition"], undefined);
 });
 
 test("opening a share does not create a network login, a site pass or a device cookie", async (t) => {
@@ -398,16 +475,21 @@ test("an album photo can be shared only while its entire album ancestry is publi
     })
   ).json().id;
   const data = await sharp({
-    create: { width: 160, height: 240, channels: 3, background: "orange" },
+    create: {
+      width: 160,
+      height: 240,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    },
   })
-    .jpeg()
+    .png()
     .toBuffer();
   const p = await ingest(
     db,
     c,
     null,
     Readable.from(data),
-    "photo.jpg",
+    "photo.png",
     true,
     child,
   );
@@ -436,14 +518,31 @@ test("an album photo can be shared only while its entire album ancestry is publi
   const share = await create(app, owner.headers, "photo", p.id),
     media = `${share.path}/photo/${p.id}`;
   saveSettings(db, { accessPinEnabled: true });
-  assert.equal((await app.inject({ url: share.path })).statusCode, 200);
+  const page = await app.inject({ url: share.path });
+  assert.equal(page.statusCode, 200);
+  const $ = cheerio.load(page.body);
+  assert.equal(
+    $("a")
+      .filter((_, el) => $(el).text() === "Ouvrir AniPic")
+      .attr("href"),
+    "/#collections",
+  );
+  const downloaded = await app.inject({ url: $("a.download").attr("href") });
+  assert.equal(downloaded.statusCode, 200);
+  assert.match(downloaded.headers["content-type"], /image\/jpeg/);
+  assert.equal((await sharp(downloaded.rawPayload).metadata()).format, "jpeg");
+  const pixel = await sharp(downloaded.rawPayload)
+    .resize(1, 1)
+    .raw()
+    .toBuffer();
+  assert.deepEqual([...pixel], [255, 255, 255]);
   assert.equal((await app.inject({ url: media })).statusCode, 200);
   assert.equal(
     (await app.inject({ url: `/api/album-media/${p.id}` })).statusCode,
     401,
   );
   await publish(parent, false);
-  for (const url of [share.path, media])
+  for (const url of [share.path, media, `${media}?download=1`])
     assert.equal((await app.inject({ url })).statusCode, 404);
 });
 

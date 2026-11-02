@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { promises as fs } from "node:fs";
 import { z } from "zod";
+import sharp from "sharp";
 import { id, now, audit, settings } from "./db.mjs";
 import { hashToken } from "./auth.mjs";
 import { derivative } from "./storage.mjs";
@@ -28,7 +29,7 @@ const missing = () =>
     ),
     { statusCode: 404 },
   );
-const css = `:root{color-scheme:light;font-family:system-ui,sans-serif;color:#24231f;background:#f6f3ed}*{box-sizing:border-box}body{margin:0}main{max-width:1020px;margin:auto;padding:28px 20px 48px}.brand{font-size:24px;font-weight:850;margin-bottom:32px}.brand span{color:#b7521b}.tag{font-size:13px;color:#6b533e;letter-spacing:.03em}h1{font-size:clamp(30px,6vw,54px);line-height:1.1;margin:12px 0 20px}h1:after{content:'.';color:#bd5d25}p{line-height:1.7;white-space:pre-line;overflow-wrap:anywhere}.facts{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0}.facts span{border:1px solid #ddd3c4;border-radius:20px;padding:8px 14px;font-size:14px}.gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:18px;margin:28px 0}figure{margin:0;padding:12px;background:white;border-radius:20px;box-shadow:0 8px 30px #3021120c}figure:first-child{grid-column:1/-1}img{display:block;width:100%;max-height:72vh;object-fit:contain;border-radius:12px;background:#f2eee8}figcaption{padding:12px 4px 2px;line-height:1.5;overflow-wrap:anywhere}a{color:#914317;text-underline-offset:3px}.download{display:inline-block;margin:12px 4px 4px}footer{margin-top:36px;border-top:1px solid #ddd3c4;padding-top:18px;color:#756c62;font-size:13px}.notice{background:white;border-radius:20px;padding:24px}@media(max-width:440px){main{padding:20px 16px}.brand{margin-bottom:24px}}`;
+const css = `:root{color-scheme:light;font-family:system-ui,sans-serif;color:#24231f;background:#f6f3ed}*{box-sizing:border-box}body{margin:0}main{max-width:1020px;margin:auto;padding:28px 20px 48px}.brand{font-size:24px;font-weight:850;margin-bottom:32px}.brand span{color:#b7521b}.app-entry{margin:0 0 28px}.open-app{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:11px 18px;border-radius:999px;background:#a94e1c;color:white;font-size:15px;font-weight:700;text-decoration:none}.open-app:hover{background:#873d15}.open-app:focus-visible{outline:3px solid #24231f;outline-offset:4px}.tag{font-size:13px;color:#6b533e;letter-spacing:.03em}h1{font-size:clamp(30px,6vw,54px);line-height:1.1;margin:12px 0 20px}h1:after{content:'.';color:#bd5d25}p{line-height:1.7;white-space:pre-line;overflow-wrap:anywhere}.facts{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0}.facts span{border:1px solid #ddd3c4;border-radius:20px;padding:8px 14px;font-size:14px}.gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:18px;margin:28px 0}figure{margin:0;padding:12px;background:white;border-radius:20px;box-shadow:0 8px 30px #3021120c}figure:first-child{grid-column:1/-1}img{display:block;width:100%;max-height:72vh;object-fit:contain;border-radius:12px;background:#f2eee8}figcaption{padding:12px 4px 2px;line-height:1.5;overflow-wrap:anywhere}a{color:#914317;text-underline-offset:3px}.download{display:inline-block;margin:12px 4px 4px}footer{margin-top:36px;border-top:1px solid #ddd3c4;padding-top:18px;color:#756c62;font-size:13px}.notice{background:white;border-radius:20px;padding:24px}@media(max-width:440px){main{padding:20px 16px}.brand{margin-bottom:24px}}`;
 
 function headers(reply) {
   return reply
@@ -42,6 +43,20 @@ function headers(reply) {
 }
 function page(title, body, image = "", url = "") {
   return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><meta name="referrer" content="no-referrer"><title>${escape(title)} · AniPic</title><meta property="og:title" content="${escape(title)}"><meta property="og:type" content="website">${image ? `<meta property="og:image" content="${escape(image)}">` : ""}${url ? `<meta property="og:url" content="${escape(url)}">` : ""}<style>${css}</style></head><body><main><div class="brand">AniPic<span>.</span></div>${body}</main></body></html>`;
+}
+
+async function sendPhoto(reply, data, download) {
+  if (download === "1") {
+    const jpeg = await sharp(data)
+      .flatten({ background: "#ffffff" })
+      .jpeg({ quality: 90 })
+      .toBuffer();
+    return reply
+      .header("Content-Disposition", 'attachment; filename="portrait.jpg"')
+      .type("image/jpeg")
+      .send(jpeg);
+  }
+  return reply.type("image/webp").send(data);
 }
 
 export async function registerPublicShares(app, { db, c, authorized }) {
@@ -205,7 +220,7 @@ export async function registerPublicShares(app, { db, c, authorized }) {
       const gallery = images
         .map(
           (item, i) =>
-            `<figure><a href="${escape(item.src)}" aria-label="Ouvrir la photo de ${escape(a.name)}"><img src="${escape(item.src)}" alt="${escape(item.caption)}" ${i ? 'loading="lazy"' : 'fetchpriority="high"'}></a><figcaption>${escape(item.caption)}</figcaption><a class="download" href="${escape(item.src)}" download="portrait.webp">Télécharger la photo</a></figure>`,
+            `<figure><a href="${escape(item.src)}" aria-label="Ouvrir la photo de ${escape(a.name)}"><img src="${escape(item.src)}" alt="${escape(item.caption)}" ${i ? 'loading="lazy"' : 'fetchpriority="high"'}></a><figcaption>${escape(item.caption)}</figcaption><a class="download" href="${escape(item.src)}?download=1" download="portrait.jpg">Télécharger la photo (JPG)</a></figure>`,
         )
         .join("");
       const source = (() => {
@@ -222,7 +237,10 @@ export async function registerPublicShares(app, { db, c, authorized }) {
       const until = new Date(share.expires_at).toLocaleDateString("fr-FR", {
         timeZone: "Europe/Paris",
       });
-      const body = `<div class="tag">${escape(refuge)} · ${p ? "Photo partagée" : "Fiche partagée"}</div><h1>${escape(a.name)}</h1>${
+      const appLink = p?.collection_id
+        ? '<p class="app-entry"><a class="open-app" href="/#collections">Ouvrir AniPic</a></p>'
+        : `<p class="app-entry"><a class="open-app" href="/#animal/${encodeURIComponent(a.id)}">Ouvrir la fiche dans AniPic</a></p>`;
+      const body = `${appLink}<div class="tag">${escape(refuge)} · ${p ? "Photo partagée" : "Fiche partagée"}</div><h1>${escape(a.name)}</h1>${
         p
           ? ""
           : `<div class="facts">${facts
@@ -272,7 +290,7 @@ export async function registerPublicShares(app, { db, c, authorized }) {
         cfg.cacheMB * 1024 ** 2,
       );
       const data = await fs.readFile(file);
-      return reply.type("image/webp").send(data);
+      return await sendPhoto(reply, data, req.query.download);
     } catch {
       return reply.code(404).send({ error: "Photo partagée indisponible." });
     }
@@ -288,7 +306,7 @@ export async function registerPublicShares(app, { db, c, authorized }) {
     }
     try {
       const data = await sourcePhotoBuffer(db, c, share.target_id, 1280);
-      return reply.type("image/webp").send(data);
+      return await sendPhoto(reply, data, req.query.download);
     } catch {
       return reply
         .code(503)
