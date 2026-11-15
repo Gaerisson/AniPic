@@ -421,6 +421,34 @@ export function SourceSettings({ values: v, change, notify }) {
         </div>
       </section>
       <SyncScheduleSettings values={v} change={change} />
+      <section className="panel sync-simple-mode">
+        <h2>Configuration rapide</h2>
+        <Button
+          variant="secondary"
+          onClick={() =>
+            change({
+              archiveMissing: true,
+              sourceMissingOutcome: "automatic",
+              missingThreshold: 2,
+              sourceAbsenceIntervalHours: 0.5,
+              sourceShortPresenceHours: 2,
+              syncScheduleMode: "cron",
+              syncCron: "0 23 * * *",
+              syncTimeZone: "Europe/Paris",
+              sourceAttempts: 3,
+            })
+          }
+        >
+          Appliquer le profil quotidien · 23 h, adoptions automatiques
+        </Button>
+        <p className="fineprint">
+          Chaque jour à 23 h, heure de Paris, AniPic actualise les fiches SPA.
+          Après deux inventaires fiables confirmant l’absence, l’adoption est
+          confirmée automatiquement. Une présence observée de moins de deux
+          heures exige toujours la confirmation de l’équipe, sans compter
+          d’adoption auparavant. Enregistrez ensuite les paramètres.
+        </p>
+      </section>
       <section className="panel">
         <h2>Collecte et protections</h2>
         <div className="form-row">
@@ -432,8 +460,8 @@ export function SourceSettings({ values: v, change, notify }) {
             "Au moins 2 listes identiques pour confirmer la stabilité.",
           )}
         </div>
-        <details className="settings-details" open>
-          <summary>Rythme et budgets</summary>
+        <details className="settings-details">
+          <summary>Rythme et budgets avancés</summary>
           <div className="form-row">
             {num("sourceDelayMs", "Délai entre requêtes (ms)", 1000, 10000)}
             {num("sourceTimeoutSeconds", "Timeout par requête (s)", 5, 30)}
@@ -479,30 +507,7 @@ export function SourceSettings({ values: v, change, notify }) {
           </p>
         </details>
         <details className="settings-details">
-          <summary>Absences et adoptions automatiques</summary>
-          <Button
-            variant="secondary"
-            onClick={() =>
-              change({
-                archiveMissing: true,
-                sourceMissingOutcome: "adopted",
-                missingThreshold: 2,
-                sourceAbsenceIntervalHours: 0.5,
-                syncScheduleMode: "interval",
-                syncIntervalHours: 0.25,
-                sourceAttempts: 3,
-              })
-            }
-          >
-            Appliquer le profil rapide · 2 confirmations / 30 min
-          </Button>
-          <p className="fineprint">
-            Ce profil règle la synchronisation interne toutes les 15 minutes,
-            conserve 3 passages par collecte et archive automatiquement après 2
-            confirmations espacées de 30 minutes. Enregistrez ensuite les
-            paramètres. Les agents retrouvent les adoptions déduites dans «
-            Adoptions à confirmer ».
-          </p>
+          <summary>Absences et suivi des adoptions</summary>
           {num(
             "missingThreshold",
             "Inventaires complets avant archivage",
@@ -549,7 +554,7 @@ export function SourceSettings({ values: v, change, notify }) {
               value={
                 !v.archiveMissing
                   ? "keep"
-                  : ["adopted", "automatic", "after24h"].includes(
+                  : ["adopted", "automatic", "after24h", "manual"].includes(
                         v.sourceMissingOutcome,
                       )
                     ? v.sourceMissingOutcome
@@ -562,6 +567,7 @@ export function SourceSettings({ values: v, change, notify }) {
                     "adopted",
                     "automatic",
                     "after24h",
+                    "manual",
                   ].includes(e.target.value)
                     ? e.target.value
                     : "unconfirmed",
@@ -572,17 +578,47 @@ export function SourceSettings({ values: v, change, notify }) {
               <option value="archive">
                 Archiver sans compter une adoption
               </option>
-              <option value="adopted">
-                Compter l’adoption et demander la validation de l’équipe
-              </option>
               <option value="automatic">
                 Confirmer automatiquement l’adoption
+              </option>
+              <option value="manual">
+                Demander une confirmation obligatoire, sans compter avant
+              </option>
+              <option value="adopted">
+                Compter l’adoption et demander la validation de l’équipe
               </option>
               <option value="after24h">
                 Demander à l’équipe, puis confirmer après 24 h sans réponse
               </option>
             </select>
           </label>
+          <label>
+            Confirmation obligatoire si présence observée inférieure à (h)
+            <input
+              type="number"
+              min="0"
+              max="168"
+              step="0.25"
+              value={v.sourceShortPresenceHours ?? 2}
+              onChange={(e) =>
+                change("sourceShortPresenceHours", Number(e.target.value))
+              }
+            />
+            <small>
+              2 h par défaut. 0 désactive cette exception pour les futurs
+              départs.
+            </small>
+          </label>
+          <p className="fineprint">
+            La durée observée va de la première à la dernière observation SPA de
+            l’épisode, avant les confirmations d’absence. Une seule observation
+            vaut zéro heure : la durée réelle de publication reste inconnue. Un
+            passage quotidien peut manquer une fiche apparue puis retirée entre
+            deux collectes. Les anciennes fiches sans début connu ne sont pas
+            classées comme présences courtes. Les exceptions et les demandes de
+            confirmation obligatoire restent manuelles, même si ces réglages
+            changent ensuite.
+          </p>
           <p className="fineprint">
             Seuls les inventaires complets et fiables, espacés du délai
             configuré (15 minutes minimum), confirment les absences. Le mode 24
@@ -593,7 +629,9 @@ export function SourceSettings({ values: v, change, notify }) {
             reste mémorisé tant que l’animal est absent. S’il réapparaît, son
             statut et les statistiques sont corrigés. Les photos restent
             conservées. Une baisse suspecte, un inventaire incomplet ou ancien
-            suspendent ce traitement.
+            suspendent ce traitement. La fiche en attente reste accessible dans
+            les archives et dans le suivi des adoptions ; ses photos sont
+            conservées.
           </p>
         </details>
       </section>

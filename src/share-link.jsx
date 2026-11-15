@@ -100,6 +100,16 @@ export function ShareLink({ kind, targetId, notify, unavailable = false }) {
             <a href={link.url} target="_blank" rel="noopener noreferrer">
               Voir le partage
             </a>
+            {shareable && !unavailable && (
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(`Voici la ${label} partagée sur AniPic : ${link.url}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-link"
+              >
+                Préparer dans WhatsApp
+              </a>
+            )}
           </label>
         )}
         {error && <p role="alert">{error}</p>}

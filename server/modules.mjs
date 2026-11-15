@@ -13,18 +13,17 @@ export function moduleHook(db) {
   return async (req, reply) => {
     const key = apiModule(req.url);
     if (key && modulesConfig(db)[key] === false)
-      return reply
-        .code(503)
-        .send({
-          error: "Ce module est désactivé par l’administration.",
-          code: "MODULE_DISABLED",
-          module: key,
-        });
+      return reply.code(503).send({
+        error: "Ce module est désactivé par l’administration.",
+        code: "MODULE_DISABLED",
+        module: key,
+      });
   };
 }
 export async function registerModules(app, { db, authorized }) {
   const schema = z
     .object(Object.fromEntries(moduleCatalog.map((m) => [m.id, z.boolean()])))
+    .partial()
     .strict();
   app.get("/api/modules", async () => ({
     modules: modulesConfig(db),
@@ -47,11 +46,11 @@ export async function registerModules(app, { db, authorized }) {
         .strict()
         .parse(req.body);
       saveSettings(db, {
-        enabledModules: v.modules,
+        enabledModules: { ...modulesConfig(db), ...v.modules },
         publicPosters: v.publicPosters,
       });
       audit(db, req.user, "modules_updated", v);
-      return { ok: true, ...v };
+      return { ok: true, ...v, modules: modulesConfig(db) };
     },
   );
 }

@@ -80,6 +80,7 @@ import { assistantAvatarUrl, adminSettingsView } from "./assistant-avatar.mjs";
 import { photoPriority, photoPrioritySql } from "../shared/photo-priority.mjs";
 import { scheduledSyncDue } from "../shared/sync-schedule.mjs";
 import { registerPrivacy, privacyCleanup } from "./privacy.mjs";
+import { registerAudience, isAudienceRequest } from "./audience.mjs";
 import { registerWriting } from "./writing.mjs";
 import { registerAnnualStatistics } from "./annual-statistics.mjs";
 import { registerTeamPolls } from "./team-polls.mjs";
@@ -196,6 +197,10 @@ export async function createApp(overrides = {}) {
     throwFileSizeLimit: true,
   });
   app.addHook("onRequest", async (req, reply) => {
+    if (isAudienceRequest(req)) {
+      req.user = null;
+      return;
+    }
     req.user = getSession(db, req.cookies.anipic_session);
     if (req.user && !accountAllowsIP(db, req.user.id, req.ip)) req.user = null;
     if (req.url.startsWith("/api/") || req.url.startsWith("/media/"))
@@ -204,7 +209,7 @@ export async function createApp(overrides = {}) {
   app.addHook("onRequest", siteAccessHook(db, c));
   app.addHook("onRequest", moduleHook(db));
   app.addHook("onRequest", async (req, reply) =>
-    trackDevice(db, c, req, reply),
+    isAudienceRequest(req) ? undefined : trackDevice(db, c, req, reply),
   );
   app.addHook("preHandler", async (req, reply) => {
     if (mediaMaintenance(c) && !["GET", "HEAD", "OPTIONS"].includes(req.method))
@@ -214,12 +219,17 @@ export async function createApp(overrides = {}) {
       });
   });
   app.addHook("onResponse", async (req, reply) => {
+    if (isAudienceRequest(req)) return;
     if (!req.url.startsWith("/api/") || req.url.startsWith("/api/health"))
       return;
     if (
-      ["/api/visit", "/api/privacy", "/api/privacy/consent"].includes(
-        req.url.split("?")[0],
-      ) &&
+      [
+        "/api/visit",
+        "/api/privacy",
+        "/api/privacy/consent",
+        "/api/audience/pageview",
+        "/api/audience/preference",
+      ].includes(req.url.split("?")[0]) &&
       reply.statusCode < 400
     )
       return;
@@ -260,7 +270,7 @@ export async function createApp(overrides = {}) {
   app.setErrorHandler((error, req, reply) => {
     const status = error instanceof z.ZodError ? 400 : error.statusCode || 500;
     try {
-      recordError(db, req, error, status);
+      if (!isAudienceRequest(req)) recordError(db, req, error, status);
     } catch {
       /* Preserve original failure on a full/read-only DB. */
     }
@@ -281,6 +291,7 @@ export async function createApp(overrides = {}) {
   });
   await registerSiteAccess(app, { db, c, authorized });
   await registerPrivacy(app, { db, c, authorized });
+  await registerAudience(app, { db, c, authorized });
   await registerPublicShares(app, { db, c, authorized });
   await registerModules(app, { db, c, authorized });
   await registerDevices(app, { db, c, authorized });

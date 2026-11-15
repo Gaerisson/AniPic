@@ -1,4 +1,5 @@
 import { instant } from "../shared/instant.mjs";
+import { AudienceSummary } from "./audience.jsx";
 import { useState, useEffect } from "react";
 import {
   Globe,
@@ -91,6 +92,7 @@ function Breakdown({ title, icon: Icon, items, total, format = (v) => v }) {
 }
 export function Visitors({ onPrivacyChoices }) {
   const [data, setData] = useState(null),
+    [showDetails, setShowDetails] = useState(false),
     [days, setDays] = useState(7),
     [query, setQuery] = useState(""),
     [error, setError] = useState(""),
@@ -100,6 +102,11 @@ export function Visitors({ onPrivacyChoices }) {
     [expanded, setExpanded] = useState(null),
     [copied, setCopied] = useState(null);
   useEffect(() => {
+    if (!showDetails) {
+      setBusy(false);
+      setError("");
+      return;
+    }
     let active = true,
       loading = false;
     const controller = new AbortController();
@@ -134,7 +141,7 @@ export function Visitors({ onPrivacyChoices }) {
       window.removeEventListener("focus", load);
       document.removeEventListener("visibilitychange", load);
     };
-  }, [days, query, revision]);
+  }, [days, query, revision, showDetails]);
   useEffect(() => {
     setPage(0);
   }, [days, query]);
@@ -146,7 +153,9 @@ export function Visitors({ onPrivacyChoices }) {
       <div className="page-heading">
         <div>
           <div className="eyebrow">FRÉQUENTATION DU SITE</div>
-          <h1>Visiteurs</h1>
+          <h1>
+            Visiteurs<span className="heading-dot">.</span>
+          </h1>
         </div>
         <div className="heading-actions">
           <select
@@ -175,315 +184,333 @@ export function Visitors({ onPrivacyChoices }) {
           {error}
         </p>
       )}
-      {!data ? (
-        <Spinner />
-      ) : (
-        <>
-          <section className="panel visitor-collection">
-            <div>
-              <strong>
-                {!data.collection?.enabled
-                  ? "Statistiques désactivées sur ce site"
-                  : data.collection.globalPrivacyControl
-                    ? "Votre navigateur refuse le suivi (GPC)"
-                    : data.collection.consent !== "accepted"
-                      ? "Vos consultations ne sont pas enregistrées"
-                      : "Statistiques activées · votre navigateur a accepté"}
-              </strong>
-              <p>
-                {!data.collection?.enabled
-                  ? "La collecte doit être activée dans Mentions et confidentialité pour enregistrer de nouvelles consultations."
-                  : data.collection.globalPrivacyControl
-                    ? "Le signal de confidentialité de ce navigateur bloque la collecte, même si les cookies ont été acceptés."
-                    : data.collection.consent !== "accepted"
-                      ? "Les statistiques sont facultatives. Sans votre accord dans les choix de cookies, votre visite n’apparaît pas ici, même connecté à un compte."
-                      : "Les changements de page et les retours sur le site sont comptés, y compris pour les comptes connectés. Rester sur une page ne crée pas de nouvelles consultations."}
-              </p>
-              <small>
-                Consultations consenties uniquement · actualisation automatique
-                toutes les 15 s · dernière réponse :{" "}
-                {instant(data.generatedAt).toLocaleTimeString("fr-FR", {
-                  timeZone: "Europe/Paris",
-                })}
-              </small>
-            </div>
-            {data.collection?.enabled &&
-              !data.collection.globalPrivacyControl && (
-                <Button variant="secondary" onClick={onPrivacyChoices}>
-                  Mes choix de cookies
-                </Button>
-              )}
-          </section>
-          <div className="visitor-summary">
-            {[
-              [
-                Eye,
-                data.summary.pageviews,
-                "Pages vues",
-                "Consultations enregistrées",
-              ],
-              [
-                Users,
-                data.summary.sessions,
-                "Sessions",
-                "Sessions distinctes par onglet",
-              ],
-              [
-                Globe,
-                data.summary.addresses,
-                "Adresses IP",
-                "Adresses distinctes",
-              ],
-              [
-                Monitor,
-                data.summary.accounts,
-                "Comptes",
-                "Comptes connectés sur la période",
-              ],
-            ].map(([Icon, n, label, detail]) => (
-              <section className="panel visitor-metric" key={label}>
-                <div>
-                  <span className="visitor-metric-icon">
-                    <Icon size={20} />
-                  </span>
-                  <span>{label}</span>
-                </div>
-                <strong>{count(n)}</strong>
-                <small>{detail}</small>
-              </section>
-            ))}
-          </div>
-          <div className="visitor-overview-grid">
-            <section className="panel visitor-chart">
-              <div className="section-heading">
-                <div>
-                  <h2>Évolution des visites</h2>
-                  <small>
-                    {days === 1 ? "Aujourd’hui" : `${days} jours`} · heure de
-                    Paris
-                  </small>
-                </div>
-                <span className="visitor-live">
-                  <i />
-                  {data.summary.online || 0} session
-                  {data.summary.online === 1 ? "" : "s"} · 5 min
-                </span>
-              </div>
-              <div
-                className="visitor-bars"
-                role="img"
-                aria-label={data.daily
-                  .map((d) => `${d.day}: ${d.views} vues`)
-                  .join(", ")}
-              >
-                {data.daily.map((d) => (
-                  <div
-                    key={d.day}
-                    title={`${d.views} vues · ${d.sessions} sessions`}
-                  >
-                    <strong>{d.views ? count(d.views) : ""}</strong>
-                    <div className="visitor-bar-track">
-                      <i
-                        style={{
-                          height: `${(d.views / max) * 100}%`,
-                          minHeight: d.views ? 4 : 2,
-                          opacity: d.views ? 1 : 0.15,
-                        }}
-                      />
-                    </div>
-                    <small>
-                      {new Date(d.day + "T12:00:00Z").toLocaleDateString(
-                        "fr-FR",
-                        {
-                          day: "2-digit",
-                          month: "2-digit",
-                          timeZone: "Europe/Paris",
-                        },
-                      )}
-                    </small>
-                  </div>
-                ))}
-              </div>
-              <div className="visitor-chart-legend">
-                <span>
-                  <i />
-                  Pages vues
-                </span>
+      <AudienceSummary days={days} revision={revision} />
+      <div className="visitor-detail-toggle">
+        <Button
+          variant="secondary"
+          aria-expanded={showDetails}
+          onClick={() => setShowDetails((v) => !v)}
+        >
+          {showDetails
+            ? "Masquer le suivi détaillé"
+            : "Voir les visites détaillées consenties"}
+        </Button>
+        <p className="muted">
+          Sessions, comptes et adresses IP : uniquement avec accord. Ces données
+          ne font pas partie du compteur anonyme.
+        </p>
+      </div>
+      {showDetails &&
+        (!data ? (
+          <Spinner />
+        ) : (
+          <>
+            <section className="panel visitor-collection">
+              <div>
+                <strong>
+                  {!data.collection?.enabled
+                    ? "Suivi détaillé désactivé sur ce site"
+                    : data.collection.globalPrivacyControl
+                      ? "Votre navigateur refuse le suivi (GPC)"
+                      : data.collection.consent !== "accepted"
+                        ? "Vos consultations ne sont pas enregistrées"
+                        : "Statistiques activées · votre navigateur a accepté"}
+                </strong>
+                <p>
+                  {!data.collection?.enabled
+                    ? "La collecte doit être activée dans Mentions et confidentialité pour enregistrer de nouvelles consultations."
+                    : data.collection.globalPrivacyControl
+                      ? "Le signal de confidentialité de ce navigateur bloque la collecte, même si les cookies ont été acceptés."
+                      : data.collection.consent !== "accepted"
+                        ? "Les statistiques sont facultatives. Sans votre accord dans les choix de cookies, votre visite n’apparaît pas ici, même connecté à un compte."
+                        : "Les changements de page et les retours sur le site sont comptés, y compris pour les comptes connectés. Rester sur une page ne crée pas de nouvelles consultations."}
+                </p>
                 <small>
-                  {data.generatedAt
-                    ? `Actualisé à ${new Date(data.generatedAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`
-                    : ""}
+                  Consultations consenties uniquement · actualisation
+                  automatique toutes les 15 s · dernière réponse :{" "}
+                  {instant(data.generatedAt).toLocaleTimeString("fr-FR", {
+                    timeZone: "Europe/Paris",
+                  })}
                 </small>
               </div>
+              {data.collection?.enabled &&
+                !data.collection.globalPrivacyControl && (
+                  <Button variant="secondary" onClick={onPrivacyChoices}>
+                    Mes choix de cookies
+                  </Button>
+                )}
             </section>
-            <section className="panel visitor-top-pages">
-              <div className="section-heading">
-                <h2>Pages consultées</h2>
-                <ArrowUpRight size={18} />
-              </div>
-              {data.pages.length ? (
-                data.pages.slice(0, 6).map((p, i) => (
-                  <div className="visitor-page-rank" key={p.path}>
-                    <span>{String(i + 1).padStart(2, "0")}</span>
-                    <div>
-                      <strong>{pageName(p.path)}</strong>
-                      <div className="visitor-meter">
+            <div className="visitor-summary">
+              {[
+                [
+                  Eye,
+                  data.summary.pageviews,
+                  "Pages vues",
+                  "Consultations enregistrées",
+                ],
+                [
+                  Users,
+                  data.summary.sessions,
+                  "Sessions",
+                  "Sessions distinctes par onglet",
+                ],
+                [
+                  Globe,
+                  data.summary.addresses,
+                  "Adresses IP",
+                  "Adresses distinctes",
+                ],
+                [
+                  Monitor,
+                  data.summary.accounts,
+                  "Comptes",
+                  "Comptes connectés sur la période",
+                ],
+              ].map(([Icon, n, label, detail]) => (
+                <section className="panel visitor-metric" key={label}>
+                  <div>
+                    <span className="visitor-metric-icon">
+                      <Icon size={20} />
+                    </span>
+                    <span>{label}</span>
+                  </div>
+                  <strong>{count(n)}</strong>
+                  <small>{detail}</small>
+                </section>
+              ))}
+            </div>
+            <div className="visitor-overview-grid">
+              <section className="panel visitor-chart">
+                <div className="section-heading">
+                  <div>
+                    <h2>Évolution des visites</h2>
+                    <small>
+                      {days === 1 ? "Aujourd’hui" : `${days} jours`} · heure de
+                      Paris
+                    </small>
+                  </div>
+                  <span className="visitor-live">
+                    <i />
+                    {data.summary.online || 0} session
+                    {data.summary.online === 1 ? "" : "s"} · 5 min
+                  </span>
+                </div>
+                <div
+                  className="visitor-bars"
+                  role="img"
+                  aria-label={data.daily
+                    .map((d) => `${d.day}: ${d.views} vues`)
+                    .join(", ")}
+                >
+                  {data.daily.map((d) => (
+                    <div
+                      key={d.day}
+                      title={`${d.views} vues · ${d.sessions} sessions`}
+                    >
+                      <strong>{d.views ? count(d.views) : ""}</strong>
+                      <div className="visitor-bar-track">
                         <i
                           style={{
-                            width: `${(p.views / Math.max(1, data.pages[0].views)) * 100}%`,
+                            height: `${(d.views / max) * 100}%`,
+                            minHeight: d.views ? 4 : 2,
+                            opacity: d.views ? 1 : 0.15,
                           }}
                         />
                       </div>
+                      <small>
+                        {new Date(d.day + "T12:00:00Z").toLocaleDateString(
+                          "fr-FR",
+                          {
+                            day: "2-digit",
+                            month: "2-digit",
+                            timeZone: "Europe/Paris",
+                          },
+                        )}
+                      </small>
                     </div>
-                    <b>{count(p.views)}</b>
-                  </div>
-                ))
-              ) : (
-                <p className="muted">Aucune consultation.</p>
-              )}
-            </section>
-          </div>
-          <div className="visitor-breakdown-grid">
-            <Breakdown
-              title="Appareils"
-              icon={Smartphone}
-              items={data.breakdowns?.devices || []}
-              total={total}
-            />
-            <Breakdown
-              title="Navigateurs"
-              icon={Monitor}
-              items={(data.breakdowns?.browsers || []).slice(0, 5)}
-              total={total}
-            />
-            <Breakdown
-              title="Pays"
-              icon={Globe}
-              items={data.breakdowns?.countries || []}
-              total={total}
-              format={countryName}
-            />
-          </div>
-          <section className="panel visitor-log">
-            <div className="section-heading">
-              <div>
-                <h2>Journal des consultations</h2>
-                <small>
-                  {data.rows.length}
-                  {data.rows.length === 500 ? " dernières" : ""} consultation
-                  {data.rows.length === 1 ? "" : "s"}
-                  {query ? " correspondantes" : ""}
-                </small>
-              </div>
-              <label className="visitor-search">
-                <Search size={16} />
-                <input
-                  aria-label="Rechercher un visiteur"
-                  placeholder="IP, compte ou page…"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
-                {busy && <Activity size={14} />}
-              </label>
-            </div>
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    {[
-                      "Date et heure",
-                      "Adresse IP",
-                      "Pays",
-                      "Compte",
-                      "Page",
-                      "Navigateur / appareil",
-                    ].map((x) => (
-                      <th key={x} scope="col">
-                        {x}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((r) => (
-                    <VisitRow
-                      key={r.id}
-                      r={r}
-                      expanded={expanded === r.id}
-                      expand={() =>
-                        setExpanded((v) => (v === r.id ? null : r.id))
-                      }
-                      copied={copied === r.id}
-                      copy={async () => {
-                        try {
-                          await copyText(r.ip);
-                          setCopied(r.id);
-                        } catch {
-                          setError("Copie indisponible sur ce navigateur.");
-                        }
-                      }}
-                    />
                   ))}
-                </tbody>
-              </table>
+                </div>
+                <div className="visitor-chart-legend">
+                  <span>
+                    <i />
+                    Pages vues
+                  </span>
+                  <small>
+                    {data.generatedAt
+                      ? `Actualisé à ${new Date(data.generatedAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}`
+                      : ""}
+                  </small>
+                </div>
+              </section>
+              <section className="panel visitor-top-pages">
+                <div className="section-heading">
+                  <h2>Pages consultées</h2>
+                  <ArrowUpRight size={18} />
+                </div>
+                {data.pages.length ? (
+                  data.pages.slice(0, 6).map((p, i) => (
+                    <div className="visitor-page-rank" key={p.path}>
+                      <span>{String(i + 1).padStart(2, "0")}</span>
+                      <div>
+                        <strong>{pageName(p.path)}</strong>
+                        <div className="visitor-meter">
+                          <i
+                            style={{
+                              width: `${(p.views / Math.max(1, data.pages[0].views)) * 100}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <b>{count(p.views)}</b>
+                    </div>
+                  ))
+                ) : (
+                  <p className="muted">Aucune consultation.</p>
+                )}
+              </section>
             </div>
-            {!rows.length && (
-              <div className="visitor-no-results">
-                <Search size={24} />
-                <p>
-                  Aucune consultation
-                  {query
-                    ? " ne correspond à cette recherche"
-                    : " enregistrée sur la période"}
-                  .
-                </p>
-              </div>
-            )}
-            <div className="visitor-log-footer">
-              <small>
-                Conservation : {data.retentionDays} jours · accès administrateur
-              </small>
-              <div>
-                <Button
-                  variant="quiet"
-                  icon={ChevronLeft}
-                  aria-label="Consultations précédentes"
-                  disabled={!page}
-                  onClick={() => setPage((v) => v - 1)}
-                />
-                <span>
-                  {data.rows.length
-                    ? `${page * 20 + 1}–${Math.min((page + 1) * 20, data.rows.length)} / ${data.rows.length}`
-                    : "0"}
-                </span>
-                <Button
-                  variant="quiet"
-                  icon={ChevronRight}
-                  aria-label="Consultations suivantes"
-                  disabled={(page + 1) * 20 >= data.rows.length}
-                  onClick={() => setPage((v) => v + 1)}
-                />
-              </div>
+            <div className="visitor-breakdown-grid">
+              <Breakdown
+                title="Appareils"
+                icon={Smartphone}
+                items={data.breakdowns?.devices || []}
+                total={total}
+              />
+              <Breakdown
+                title="Navigateurs"
+                icon={Monitor}
+                items={(data.breakdowns?.browsers || []).slice(0, 5)}
+                total={total}
+              />
+              <Breakdown
+                title="Pays"
+                icon={Globe}
+                items={data.breakdowns?.countries || []}
+                total={total}
+                format={countryName}
+              />
             </div>
-          </section>
-          <p className="visitor-privacy-note">
-            Géolocalisation locale indicative ·{" "}
-            <a href="https://db-ip.com" target="_blank" rel="noreferrer">
-              IP Geolocation by DB-IP
-            </a>
-            {data.geoip?.updatedAt
-              ? ` · base du ${new Date(data.geoip.updatedAt).toLocaleDateString("fr-FR")}`
-              : ""}
-          </p>
-          {data.countrySource === "unconfigured" && (
+            <section className="panel visitor-log">
+              <div className="section-heading">
+                <div>
+                  <h2>Journal des consultations</h2>
+                  <small>
+                    {data.rows.length}
+                    {data.rows.length === 500 ? " dernières" : ""} consultation
+                    {data.rows.length === 1 ? "" : "s"}
+                    {query ? " correspondantes" : ""}
+                  </small>
+                </div>
+                <label className="visitor-search">
+                  <Search size={16} />
+                  <input
+                    aria-label="Rechercher un visiteur"
+                    placeholder="IP, compte ou page…"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
+                  {busy && <Activity size={14} />}
+                </label>
+              </div>
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      {[
+                        "Date et heure",
+                        "Adresse IP",
+                        "Pays",
+                        "Compte",
+                        "Page",
+                        "Navigateur / appareil",
+                      ].map((x) => (
+                        <th key={x} scope="col">
+                          {x}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((r) => (
+                      <VisitRow
+                        key={r.id}
+                        r={r}
+                        expanded={expanded === r.id}
+                        expand={() =>
+                          setExpanded((v) => (v === r.id ? null : r.id))
+                        }
+                        copied={copied === r.id}
+                        copy={async () => {
+                          try {
+                            await copyText(r.ip);
+                            setCopied(r.id);
+                          } catch {
+                            setError("Copie indisponible sur ce navigateur.");
+                          }
+                        }}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {!rows.length && (
+                <div className="visitor-no-results">
+                  <Search size={24} />
+                  <p>
+                    Aucune consultation
+                    {query
+                      ? " ne correspond à cette recherche"
+                      : " enregistrée sur la période"}
+                    .
+                  </p>
+                </div>
+              )}
+              <div className="visitor-log-footer">
+                <small>
+                  Conservation : {data.retentionDays} jours · accès
+                  administrateur
+                </small>
+                <div>
+                  <Button
+                    variant="quiet"
+                    icon={ChevronLeft}
+                    aria-label="Consultations précédentes"
+                    disabled={!page}
+                    onClick={() => setPage((v) => v - 1)}
+                  />
+                  <span>
+                    {data.rows.length
+                      ? `${page * 20 + 1}–${Math.min((page + 1) * 20, data.rows.length)} / ${data.rows.length}`
+                      : "0"}
+                  </span>
+                  <Button
+                    variant="quiet"
+                    icon={ChevronRight}
+                    aria-label="Consultations suivantes"
+                    disabled={(page + 1) * 20 >= data.rows.length}
+                    onClick={() => setPage((v) => v + 1)}
+                  />
+                </div>
+              </div>
+            </section>
             <p className="visitor-privacy-note">
-              <Globe size={15} />
-              La localisation nécessite un proxy de confiance avec
-              VISITOR_COUNTRY_HEADER. Les adresses locales n’ont pas de pays.
+              Géolocalisation locale indicative ·{" "}
+              <a href="https://db-ip.com" target="_blank" rel="noreferrer">
+                IP Geolocation by DB-IP
+              </a>
+              {data.geoip?.updatedAt
+                ? ` · base du ${new Date(data.geoip.updatedAt).toLocaleDateString("fr-FR")}`
+                : ""}
             </p>
-          )}
-        </>
-      )}
+            {data.countrySource === "unconfigured" && (
+              <p className="visitor-privacy-note">
+                <Globe size={15} />
+                La localisation nécessite un proxy de confiance avec
+                VISITOR_COUNTRY_HEADER. Les adresses locales n’ont pas de pays.
+              </p>
+            )}
+          </>
+        ))}
     </div>
   );
 }

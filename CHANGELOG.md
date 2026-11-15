@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 3.18.0 — Un quotidien photo plus simple
+
+Tri avec compteur, grandes photos et comparaison des suggestions ; purge facultative des photos écartées après sauvegarde ; quotidien à heure fixe, exception de présence courte et synchronisation manuelle dans la barre supérieure. Filtres/photos locales plus lisibles, fiche allégée, planning compact et impression isolée. Relecture stable, résultats asynchrones protégés, modules étendus et demandes Google mises en avant. Compteurs anonymes locaux sans identification, partage préparé dans WhatsApp et étude des bots. [Notes de version](RELEASE_v3.18.0.md).
+
 ## 3.17.1 — Ouverture dans AniPic et photos JPG
 
 Les pages partagées proposent de retrouver la fiche dans AniPic ou d’ouvrir la section Albums, avec les règles d’accès habituelles du refuge. Le téléchargement d’une photo produit un véritable fichier JPG sans EXIF, y compris pour les références SPA ; la page continue d’afficher un aperçu WebP.

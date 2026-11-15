@@ -6,7 +6,8 @@ Ces pages et protections constituent une base technique : publier le code sur Gi
 
 ## Cookies et statistiques
 
-- La fréquentation facultative est **désactivée par défaut**, côté serveur. L’administrateur peut proposer cette mesure ; un bandeau demande alors le choix individuel.
+- Le **suivi détaillé** de fréquentation est **désactivé par défaut**, côté serveur. L’administrateur peut proposer cette mesure ; un bandeau demande alors le choix individuel.
+- Un [compteur anonyme distinct](AUDIENCE_ANONYME.md) additionne par défaut les consultations par date et rubrique, sans cookie de mesure, IP, compte ou identifiant de session. Ces seuls totaux restent locaux pendant 90 jours ; ce ne sont pas des visiteurs uniques. L’administration peut le désactiver et les visiteurs peuvent s’y opposer. GPC est respecté. Les requêtes de cette mesure, y compris rejetées, ne sont pas consignées avec des identifiants dans les journaux applicatifs.
 - Accepter et refuser sont accessibles au même niveau. Aucun refus ne supprime l’accès, le compte ou le PIN. **Cookies**, dans le pied de page, permet de changer de choix.
 - Le choix signé est conservé 180 jours. Un reçu sans IP ni compte, contenant la décision, sa version et sa date, permet d’en documenter la collecte ; il expire après 180 jours. Une valeur falsifiée ou expirée n’autorise rien.
 - `/api/visit` n’enregistre aucune visite sans activation administrative et consentement signé. `Sec-GPC: 1` est également respecté. Les visites consenties sont conservées au maximum 30 jours (durée abaissable dans les réglages). Leur GeoIP utilise la base locale configurée.

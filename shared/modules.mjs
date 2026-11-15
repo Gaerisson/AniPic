@@ -1,5 +1,33 @@
 export const moduleCatalog = Object.freeze([
   {
+    id: "register",
+    name: "Registre interne",
+    description: "Registre et imports internes de l’équipe",
+    pages: ["register"],
+    api: ["/api/internal-register"],
+  },
+  {
+    id: "photoPlanning",
+    name: "Planning photo",
+    description: "Séances, tâches photo et liste imprimable",
+    pages: ["todo", "print"],
+    api: ["/api/tasks", "/api/shoot-sheet"],
+  },
+  {
+    id: "inbox",
+    name: "Photos à trier",
+    description: "Import et attribution des photos à l’équipe",
+    pages: ["inbox"],
+    api: ["/api/inbox"],
+  },
+  {
+    id: "agenda",
+    name: "Agenda partagé",
+    description: "Événements et calendrier du refuge",
+    pages: ["agenda"],
+    api: ["/api/agenda"],
+  },
+  {
     id: "photoEditor",
     name: "Édition photo",
     description: "Retouche et atelier photo",

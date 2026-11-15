@@ -1,4 +1,4 @@
-# Déploiement AniPic 3.17.1
+# Déploiement AniPic 3.18.0
 
 ## Installer sur Debian avec Docker
 
@@ -33,10 +33,10 @@ sudo node scripts/prepare-storage.mjs --mount /mnt/nas --root /mnt/nas/anipic --
 Node.js 24 est nécessaire pour ce script. Sans Node sur l’hôte, construire d’abord l’image puis utiliser son runtime, en montant le parent NAS existant :
 
 ```sh
-docker build -t anipic:3.17.1 .
+docker build -t anipic:3.18.0 .
 docker run --rm --read-only --user 1000:1000 \
   --mount type=bind,src=/mnt/nas,dst=/mnt/nas \
-  --entrypoint node anipic:3.17.1 scripts/prepare-storage.mjs \
+  --entrypoint node anipic:3.18.0 scripts/prepare-storage.mjs \
   --mount /mnt/nas --root /mnt/nas/anipic --uid 1000 --gid 1000 --with-c8 --with-import
 ```
 
@@ -54,7 +54,7 @@ Choisir le mode adapté à la stack existante. `compose.yml` compile le dépôt 
 
 ### Image GitHub prête à télécharger
 
-Après la réussite du workflow de publication, utiliser `portainer-ghcr.yml` dans la **même stack**. Ce fichier référence `ghcr.io/gaerisson/anipic:3.17.1` avec `pull_policy: always` ; ici, **Re-pull image peut être activé**. Conserver toutes les variables NAS, UID/GID, port, origine et overrides C8/Import.
+Après la réussite du workflow de publication, utiliser `portainer-ghcr.yml` dans la **même stack**. Ce fichier référence `ghcr.io/gaerisson/anipic:3.18.0` avec `pull_policy: always` ; ici, **Re-pull image peut être activé**. Conserver toutes les variables NAS, UID/GID, port, origine et overrides C8/Import.
 
 ```sh
 docker compose -f portainer-ghcr.yml pull
@@ -80,8 +80,8 @@ Ne pas utiliser `portainer-stack.yml` pour une compilation automatique depuis Gi
 Après avoir récupéré les nouveaux fichiers du projet, construire l’image sur **le moteur Docker utilisé par Portainer**, depuis le répertoire contenant le Dockerfile :
 
 ```sh
-docker build -t anipic:3.17.1 .
-docker image inspect anipic:3.17.1 --format '{{.Id}}'
+docker build -t anipic:3.18.0 .
+docker image inspect anipic:3.18.0 --format '{{.Id}}'
 ```
 
 Redéployer ensuite la stack existante avec `portainer-stack.yml`, en conservant **Re-pull image désactivé**. Ce fichier garde `pull_policy: never` et exige que l’image existe déjà sur ce moteur. Si Portainer ne construit pas depuis Git, cette procédure permet de préparer l’image sur l’hôte puis de la déployer. Swarm nécessite aussi une image déjà construite, accessible à chacun des nœuds concernés ; un build Compose n’est pas un mécanisme de déploiement Swarm.
@@ -123,7 +123,6 @@ Les champs vides désactivent le service concerné. Choisir pour Token Harbor un
 
 Seuls les faits publics de la fiche sont transmis pour demander un brouillon : aucune note de séance, IP, photo privée ou donnée de compte. Relire le texte avant publication. Le bouton Facebook prépare un texte et un visuel ; il ne publie pas automatiquement sur un compte Facebook.
 
-
 ## Stockage et sauvegardes
 
 Les originaux sont immuables, identifiés par SHA-256 et dédupliqués. Les aperçus WebP de 320/640/1280 px sont générés à la demande, puis évincés sous un budget de cache (512 Mo par défaut). Ils ne figurent pas dans les ZIP ou les sauvegardes. Les conversions JPEG/PNG/WebP sont calculées à la demande sans stocker toutes les variantes.
@@ -139,9 +138,7 @@ npm run restore -- /chemin/sauvegarde.tar.gz /nouveau-dossier
 
 La destination de restauration doit être nouvelle. Elle contient `data/`, `media/` et le manifest ; les sessions sont révoquées. Arrêter l’instance avant de basculer sur ces nouveaux dossiers/volumes, puis récréer les marqueurs NAS. La sauvegarde contient des données privées et n’est pas chiffrée par Anipic : la conserver dans un stockage privé et organiser aussi une seconde copie hors du NAS. Prévoir de la place pour une copie temporaire si les liens physiques ne sont pas disponibles.
 
-
 La clé Mistral saisie dans l’interface reste dans le volume SQLite, dans le fichier privé `.mistral-key`. Elle est exclue des sauvegardes et des exports : la renseigner de nouveau après restauration. Les variables d’environnement conservent leur rôle habituel.
-
 
 ## PIN, compte agent du refuge et pages publiques
 
@@ -159,13 +156,11 @@ Pour actualiser la base, charger un fichier City Lite MMDB ou MMDB.GZ dans Param
 
 Créer une sauvegarde vérifiée, conserver l’ancienne image, puis reconstruire avec le nouveau code et redémarrer le service. Le schéma est migré automatiquement vers la version 21 sans reset de données. Garder les mêmes volumes. Vérifier /api/health, ouvrir la galerie et recharger les onglets déjà ouverts pour prendre les nouveaux fichiers frontaux. Une restauration de secours s’effectue toujours dans un nouveau dossier.
 
-
 ## Canva avec PIN global
 
 Configurer une URL de callback exacte, généralement `https://votre-domaine/api/canva/callback`, dans Canva et dans AniPic. La connexion exige une session utilisateur autorisée. Au départ OAuth, AniPic pose un cookie de retour HttpOnly, temporaire (10 minutes), SameSite=Lax et limité à `/api/canva/callback` ; les cookies de session/PIN habituels restent Strict. Au retour, seule cette route GET peut retrouver la session correspondante. Le rôle, l’utilisateur, la session exacte, l’IP si liée au réseau, le `state` à usage unique, PKCE et l’expiration sont toujours contrôlés. Une session expirée doit se reconnecter puis relancer Canva.
 
 En HTTPS, définir `COOKIE_SECURE=true` avec `APP_ORIGIN` et le frontal correctement configurés. Ne pas élargir les routes publiques ni désactiver le PIN pour contourner un échec OAuth. Les journaux excluent les codes et paramètres de callback.
-
 
 ## RAM du détourage dans Portainer
 
@@ -179,7 +174,6 @@ Les fichiers Compose limitent le conteneur à **2 Gio par défaut**, même si la
 Avec le nom de conteneur réellement affiché dans Portainer, `docker inspect NOM_CONTENEUR --format '{{.HostConfig.Memory}}'` doit indiquer `4294967296` pour 4 Gio. `docker stats --no-stream NOM_CONTENEUR` affiche la consommation et le plafond en cours.
 
 AniPic n’augmente pas la mémoire du NAS ou de la VM et ne désactive pas son contrôle pour lancer le modèle sans marge suffisante. Un modèle plus petit peut consommer moins tout en conservant une partie du fond : il n’est pas activé automatiquement au détriment de la qualité.
-
 
 ## Conservation des sauvegardes
 

@@ -14,6 +14,8 @@ Le menu **Liens fiche** ou **Liens photo** présente les liens actifs et leur ex
 
 Le dernier lien créé reste affiché dans ce menu, avec un champ sélectionnable et **Voir le partage** pour le prévisualiser. Si la copie automatique échoue, un champ de copie manuelle est également proposé près du bouton.
 
+**Préparer dans WhatsApp** ouvre l’application avec ce lien public prérempli. Vous choisissez le groupe ou le destinataire et confirmez l’envoi. Ce raccourci ne connecte aucun bot et n’envoie rien automatiquement ; voir [les possibilités WhatsApp](WHATSAPP.md).
+
 Recopier le lien dans la même vue réutilise celui qui vient d’être créé. Une nouvelle ouverture de la fiche peut créer un nouveau lien ; les précédents restent visibles dans ce menu jusqu’à leur expiration ou leur désactivation. Chaque compte peut avoir au plus vingt liens actifs par élément.
 
 ## Contenu accessible

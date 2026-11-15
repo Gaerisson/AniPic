@@ -50,6 +50,9 @@ const auto = {
   sourceMode: "spa",
   archiveMissing: true,
   sourceMissingOutcome: "adopted",
+  // These scenarios exercise the historical absence rule; short episodes have
+  // separate coverage in source-policy318.test.mjs.
+  sourceShortPresenceHours: 0,
   missingThreshold: 2,
   sourceAbsenceIntervalHours: 24,
   sourceMaxDropPercent: 100,

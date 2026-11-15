@@ -168,9 +168,7 @@ export function AnimalDetail({
   video,
   editPhoto,
   pushUndo,
-  undoAction,
-  undoLabel,
-  undoBusy,
+  modules = {},
 }) {
   const [animal, setAnimal] = useState(null),
     [index, setIndex] = useState(0),
@@ -281,17 +279,6 @@ export function AnimalDetail({
       className={"photo-modal " + (fullscreen ? "is-fullscreen" : "")}
       headerActions={
         <>
-          {canEdit && undoLabel && (
-            <Button
-              variant="secondary"
-              icon={Undo2}
-              disabled={undoBusy}
-              onClick={undoAction}
-              title={undoLabel}
-            >
-              Annuler · Ctrl+Z
-            </Button>
-          )}
           {photo && (
             <a
               className="button"
@@ -559,7 +546,10 @@ export function AnimalDetail({
               )}
               {photo && (
                 <div className="photo-downloads">
-                  <DownloadOptions photoId={photo.id} user={user} />
+                  <details className="download-settings">
+                    <summary>Format et taille du téléchargement</summary>
+                    <DownloadOptions photoId={photo.id} user={user} />
+                  </details>
                   {canEdit && photo && (
                     <ActionMenu label="Gérer cette photo">
                       <div>
@@ -723,16 +713,20 @@ export function AnimalDetail({
               )}
               <AnimalExtraFacts animal={animal} />
               {user && (
-                <AnimalCommunication
-                  animal={animal}
-                  photo={photo}
-                  selected={selected}
-                  open={open}
-                  notify={notify}
-                  reload={reload}
-                  canEdit={canEdit}
-                  onUpdate={load}
-                />
+                <details className="detail-disclosure">
+                  <summary>Communication et suivi de la fiche</summary>
+                  <AnimalCommunication
+                    modules={modules}
+                    animal={animal}
+                    photo={photo}
+                    selected={selected}
+                    open={open}
+                    notify={notify}
+                    reload={reload}
+                    canEdit={canEdit}
+                    onUpdate={load}
+                  />
+                </details>
               )}
               {canEdit && (
                 <div className="detail-actions detail-primary-actions">
@@ -751,32 +745,38 @@ export function AnimalDetail({
                   >
                     Préparer une publication
                   </Button>
-                  <Button
-                    variant="secondary"
-                    icon={Flag}
-                    onClick={() => open({ type: "task", animal })}
-                  >
-                    Demander une séance
-                  </Button>
                   <ActionMenu label="Autres actions">
-                    {photo && user?.role === "admin" && (
+                    {modules.photoPlanning !== false && (
                       <Button
                         variant="secondary"
-                        icon={Edit3}
-                        onClick={() =>
-                          editPhoto({
-                            photoId: photo.id,
-                            filename: photo.filename,
-                          })
-                        }
+                        icon={Flag}
+                        onClick={() => open({ type: "task", animal })}
                       >
-                        Retoucher cette photo
+                        Demander une séance
                       </Button>
                     )}
+                    {photo &&
+                      user?.role === "admin" &&
+                      modules.photoEditor !== false && (
+                        <Button
+                          variant="secondary"
+                          icon={Edit3}
+                          onClick={() =>
+                            editPhoto({
+                              photoId: photo.id,
+                              filename: photo.filename,
+                            })
+                          }
+                        >
+                          Retoucher cette photo
+                        </Button>
+                      )}
 
-                    <Button icon={Video} onClick={() => video(animal)}>
-                      Créer sa vidéo
-                    </Button>
+                    {modules.video !== false && (
+                      <Button icon={Video} onClick={() => video(animal)}>
+                        Créer sa vidéo
+                      </Button>
+                    )}
                     <Button
                       variant="secondary"
                       icon={Palette}
@@ -900,23 +900,27 @@ export function AnimalDetail({
               )}
               {canCreate && !canEdit && (
                 <div className="detail-actions detail-primary-actions">
-                  <Button icon={Video} onClick={() => video(animal)}>
-                    Créer sa vidéo
-                  </Button>
-                  {photo && user?.role === "volunteer" && (
-                    <Button
-                      variant="secondary"
-                      icon={Edit3}
-                      onClick={() =>
-                        editPhoto({
-                          photoId: photo.id,
-                          filename: photo.filename,
-                        })
-                      }
-                    >
-                      Retoucher une copie
+                  {modules.video !== false && (
+                    <Button icon={Video} onClick={() => video(animal)}>
+                      Créer sa vidéo
                     </Button>
                   )}
+                  {photo &&
+                    user?.role === "volunteer" &&
+                    modules.photoEditor !== false && (
+                      <Button
+                        variant="secondary"
+                        icon={Edit3}
+                        onClick={() =>
+                          editPhoto({
+                            photoId: photo.id,
+                            filename: photo.filename,
+                          })
+                        }
+                      >
+                        Retoucher une copie
+                      </Button>
+                    )}
                 </div>
               )}
             </div>

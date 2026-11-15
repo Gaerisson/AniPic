@@ -2,7 +2,8 @@ import { z } from "zod";
 import { randomBytes } from "node:crypto";
 import { signerFactory } from "@fastify/cookie";
 import { settings, saveSettings, audit, now, id } from "./db.mjs";
-export const privacyVersion = "2026-10-21";
+import { audienceStatus } from "./audience.mjs";
+export const privacyVersion = "2026-11-15";
 const cookieName = "anipic_privacy";
 const seconds = 180 * 86400;
 export const legalSchema = z
@@ -54,6 +55,7 @@ export async function registerPrivacy(app, { db, c, authorized }) {
   app.get("/api/privacy", async (req) => ({
     version: privacyVersion,
     legal: legalConfig(db),
+    audience: audienceStatus(db, req),
     consent: read(req),
     complete: complete(legalConfig(db)),
   }));

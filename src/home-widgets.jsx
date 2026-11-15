@@ -18,7 +18,20 @@ import { parisDate, agendaDateLabel } from "../shared/agenda.mjs";
 const Player = lazy(() =>
   import("./show-player.jsx").then((m) => ({ default: m.ShowPlayer })),
 );
-export function HomeWidgets({ widgets, user, overview, open, notify, reload }) {
+export function HomeWidgets({
+  widgets,
+  modules = {},
+  user,
+  overview,
+  open,
+  notify,
+  reload,
+}) {
+  const visibleWidgets = widgets.filter(
+    (key) =>
+      (key !== "agenda" || modules.agenda !== false) &&
+      (key !== "priorities" || modules.photoPlanning !== false),
+  );
   const [tasks, setTasks] = useState([]),
     [revision, setRevision] = useState(0),
     [deciding, setDeciding] = useState(""),
@@ -28,7 +41,7 @@ export function HomeWidgets({ widgets, user, overview, open, notify, reload }) {
     [agenda, setAgenda] = useState(null),
     [agendaError, setAgendaError] = useState("");
   useEffect(() => {
-    if (!widgets.includes("agenda") || !user) return;
+    if (!visibleWidgets.includes("agenda") || !user) return;
     let stop = false;
     const load = () => {
       const from = parisDate(),
@@ -57,13 +70,13 @@ export function HomeWidgets({ widgets, user, overview, open, notify, reload }) {
       clearInterval(timer);
       window.removeEventListener("focus", load);
     };
-  }, [widgets.includes("agenda"), user?.id]);
+  }, [visibleWidgets.includes("agenda"), user?.id]);
   useEffect(() => {
-    if (widgets.includes("priorities") && user)
+    if (visibleWidgets.includes("priorities") && user)
       api("/tasks")
         .then(setTasks)
         .catch(() => {});
-  }, [widgets.join("|"), user?.id]);
+  }, [visibleWidgets.join("|"), user?.id]);
   useEffect(() => {
     if (!widgets.includes("activity")) return;
     let active = true,
@@ -130,8 +143,17 @@ export function HomeWidgets({ widgets, user, overview, open, notify, reload }) {
   }, [widgets.includes("tv")]);
   return (
     <>
-      <a className="home-android-link panel" href="/android"><span className="home-app-icon"><img src="/anipic-icon.svg" alt=""/></span><span><strong>AniPic sur Android</strong><small>Le fil, les photos et votre planning, dans la poche.</small></span><span className="button secondary">Télécharger l’app ↗</span></a>
-      {widgets
+      <a className="home-android-link panel" href="/android">
+        <span className="home-app-icon">
+          <img src="/anipic-icon.svg" alt="" />
+        </span>
+        <span>
+          <strong>AniPic sur Android</strong>
+          <small>Le fil, les photos et votre planning, dans la poche.</small>
+        </span>
+        <span className="button secondary">Télécharger l’app ↗</span>
+      </a>
+      {visibleWidgets
         .filter((k) => !["photos", "clockWeather"].includes(k))
         .map((key) => (
           <section

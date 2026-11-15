@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { isUndoShortcut } from "../shared/undo-shortcut.mjs";
-export function useUndo(user, notify, reload) {
+export function useUndo(user, notify, reload, shortcutEnabled = true) {
   const [stack, setStack] = useState([]),
     [busy, setBusy] = useState(false),
     current = useRef([]),
@@ -47,7 +47,9 @@ export function useUndo(user, notify, reload) {
     setStack([]);
   }, [user?.id]);
   useEffect(() => {
+    if (!shortcutEnabled) return;
     const key = (e) => {
+      if (document.querySelector('[aria-modal="true"]')) return;
       if (isUndoShortcut(e)) {
         if (current.current.length) {
           e.preventDefault();
@@ -57,6 +59,6 @@ export function useUndo(user, notify, reload) {
     };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
-  }, []);
+  }, [shortcutEnabled]);
   return { push, run, busy, label: stack.at(-1)?.label };
 }

@@ -15,10 +15,12 @@ export function usePrivacy() {
     };
     refresh();
     window.addEventListener("focus", refresh);
+    window.addEventListener("anipic-privacy-changed", refresh);
     document.addEventListener("visibilitychange", refresh);
     return () => {
       active = false;
       window.removeEventListener("focus", refresh);
+      window.removeEventListener("anipic-privacy-changed", refresh);
       document.removeEventListener("visibilitychange", refresh);
     };
   }, []);
@@ -33,6 +35,11 @@ export function usePrivacy() {
       // An older refresh must never replace a choice just saved by the user.
       revision.current++;
       setData((d) => ({ ...d, consent: r.consent }));
+    },
+    chooseAudience: async (optOut) => {
+      await api("/audience/preference", { method: "POST", body: { optOut } });
+      revision.current++;
+      setData((d) => ({ ...d, audience: { ...d.audience, optedOut: optOut } }));
     },
   };
 }
@@ -59,15 +66,15 @@ export function CookieChoices({ privacy, onClose }) {
           Les cookies de connexion, de sécurité et vos préférences permettent de
           faire fonctionner AniPic.{" "}
           {privacy.data.legal.analyticsEnabled
-            ? "Les statistiques de fréquentation sont facultatives et désactivées sans votre accord."
-            : "Aucun suivi de fréquentation facultatif n’est activé."}
+            ? "Le suivi détaillé est facultatif et désactivé sans votre accord."
+            : "Aucun suivi détaillé de fréquentation n’est activé."}
         </p>
         <a href="#privacy">Lire la politique de confidentialité</a>
         {error && <p role="alert">{error}</p>}
       </div>
       <div className="privacy-actions">
         <Button variant="secondary" disabled={busy} onClick={() => save(false)}>
-          Refuser les statistiques
+          Refuser le suivi détaillé
         </Button>
         {privacy.data.legal.analyticsEnabled && (
           <Button
@@ -75,7 +82,7 @@ export function CookieChoices({ privacy, onClose }) {
             disabled={busy}
             onClick={() => save(true)}
           >
-            Accepter les statistiques
+            Accepter le suivi détaillé
           </Button>
         )}
         {onClose && (
@@ -84,6 +91,32 @@ export function CookieChoices({ privacy, onClose }) {
           </Button>
         )}
       </div>
+      {privacy.data.audience?.enabled && (
+        <div className="anonymous-choice">
+          <p>
+            Un compteur anonyme additionne les consultations par rubrique, sans
+            cookie de suivi ni identification.
+          </p>
+          <Button
+            variant="ghost"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                await privacy.chooseAudience(!privacy.data.audience.optedOut);
+              } catch (e) {
+                setError(e.message);
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            {privacy.data.audience.optedOut
+              ? "Autoriser le comptage anonyme"
+              : "Ne pas compter mes consultations"}
+          </Button>
+        </div>
+      )}
     </aside>
   );
 }
@@ -204,8 +237,10 @@ export function LegalPage({ kind = "privacy" }) {
               leur saisie est limitée aux besoins du refuge.
             </li>
             <li>
-              Statistiques de fréquentation : uniquement avec votre
-              consentement, retirable à tout moment dans « Cookies ».
+              Le suivi détaillé de fréquentation repose sur votre consentement,
+              retirable à tout moment dans « Cookies ». Un compteur séparé
+              additionne uniquement des totaux anonymes par jour et rubrique,
+              pour mesurer l’utilisation du site pour le seul refuge.
             </li>
             <li>
               Notifications : uniquement après activation de vos catégories et
@@ -214,6 +249,14 @@ export function LegalPage({ kind = "privacy" }) {
             </li>
           </ul>
           <h2>Quelles données, pour combien de temps ?</h2>
+          <p>
+            Le compteur anonyme ne conserve ni IP, compte, identifiant de
+            session, navigateur, recherche ou URL de partage. Il ne suit pas les
+            parcours et ne mesure pas des visiteurs uniques. Les totaux restent
+            sur ce serveur pendant 90 jours ; ils ne sont pas transmis à un
+            prestataire. Le signal GPC et votre opposition sont respectés.
+          </p>
+          {d.audience?.enabled && <AudienceOpposition data={d} update={setD} />}
           <p>
             Le compte contient votre nom, rôle, fournisseur de connexion et
             avatar éventuel. La connexion mémorisée dure 90 jours et se
@@ -291,6 +334,48 @@ export function LegalPage({ kind = "privacy" }) {
     </article>
   );
 }
+function AudienceOpposition({ data, update }) {
+  const [busy, setBusy] = useState(false),
+    [error, setError] = useState("");
+  return (
+    <div className="anonymous-choice">
+      <Button
+        variant="secondary"
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          try {
+            const optOut = !data.audience.optedOut;
+            await api("/audience/preference", {
+              method: "POST",
+              body: { optOut },
+            });
+            update((d) => ({
+              ...d,
+              audience: { ...d.audience, optedOut: optOut },
+            }));
+            window.dispatchEvent(new Event("anipic-privacy-changed"));
+          } catch (e) {
+            setError(e.message);
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        {data.audience.optedOut
+          ? "Reprendre le comptage anonyme"
+          : "Ne pas compter mes consultations"}
+      </Button>
+      <small>
+        {data.audience.optedOut
+          ? "Votre opposition est enregistrée dans un cookie de préférence sans identifiant."
+          : "Vous pouvez vous opposer à ce comptage sans changer votre accès au site."}
+      </small>
+      {error && <p role="alert">{error}</p>}
+    </div>
+  );
+}
+
 export function LegalSettings({ notify }) {
   const [v, setV] = useState(null),
     [busy, setBusy] = useState(false);

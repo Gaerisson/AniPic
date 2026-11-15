@@ -1,14 +1,22 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { CalendarClock } from "lucide-react";
-import { nextSyncDates } from "../shared/sync-schedule.mjs";
+import {
+  nextSyncDates,
+  cronFromDailyTime,
+  dailyTimeFromCron,
+} from "../shared/sync-schedule.mjs";
 export function SyncScheduleSettings({ values: v, change }) {
+  const [advanced, setAdvanced] = useState(false);
+  const dailyTime = dailyTimeFromCron(v.syncCron);
   const mode =
     v.syncScheduleMode === "interval" && !v.syncIntervalHours
       ? "manual"
-      : v.syncScheduleMode || "manual";
+      : v.syncScheduleMode === "cron" && dailyTime && !advanced
+        ? "daily"
+        : v.syncScheduleMode || "manual";
   const preview = useMemo(() => {
     try {
-      return { dates: nextSyncDates({ ...v, syncScheduleMode: mode }) };
+      return { dates: nextSyncDates(v) };
     } catch (e) {
       return { error: e.message };
     }
@@ -23,18 +31,24 @@ export function SyncScheduleSettings({ values: v, change }) {
           Planification
           <select
             value={mode}
-            onChange={(e) =>
+            onChange={(e) => {
+              const selected = e.target.value;
+              setAdvanced(selected === "cron");
               change({
-                syncScheduleMode: e.target.value,
-                ...(e.target.value === "interval"
+                syncScheduleMode: selected === "daily" ? "cron" : selected,
+                ...(selected === "daily"
+                  ? { syncCron: cronFromDailyTime(dailyTime || "23:00") }
+                  : {}),
+                ...(selected === "interval"
                   ? { syncIntervalHours: v.syncIntervalHours || 6 }
                   : {}),
-              })
-            }
+              });
+            }}
           >
             <option value="manual">Manuelle</option>
+            <option value="daily">Tous les jours à heure fixe</option>
             <option value="interval">À intervalle régulier</option>
-            <option value="cron">Calendrier cron</option>
+            <option value="cron">Calendrier avancé (cron)</option>
           </select>
         </label>
         {mode === "interval" && (
@@ -52,7 +66,21 @@ export function SyncScheduleSettings({ values: v, change }) {
             />
           </label>
         )}
-        {mode === "cron" && (
+        {mode === "daily" && (
+          <label>
+            Heure du passage quotidien
+            <input
+              type="time"
+              value={dailyTime || "23:00"}
+              required
+              onChange={(e) => {
+                if (e.target.value)
+                  change("syncCron", cronFromDailyTime(e.target.value));
+              }}
+            />
+          </label>
+        )}
+        {["daily", "cron"].includes(mode) && (
           <label>
             Fuseau horaire
             <input
@@ -106,7 +134,7 @@ export function SyncScheduleSettings({ values: v, change }) {
         mode !== "manual" && (
           <div className="schedule-preview">
             <strong>
-              {mode === "cron"
+              {["daily", "cron"].includes(mode)
                 ? "Prochains passages · aperçu sur 8 jours"
                 : "Cadence à partir de maintenant"}
             </strong>

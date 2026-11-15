@@ -1,4 +1,7 @@
-import { PhotoAssignmentDialog } from "./photo-assignment.jsx";
+import {
+  PhotoAssignmentDialog,
+  LargeAssignmentPhoto,
+} from "./photo-assignment.jsx";
 import { UploadPreviews } from "./upload-feedback.jsx";
 import { uploadWithProgress } from "./api.js";
 import { useState, useEffect, useRef } from "react";
@@ -20,6 +23,7 @@ import { api, bytes, speciesName, imageUrl } from "./api.js";
 import { Button, Empty, Spinner, Modal } from "./ui.jsx";
 import { AnimalStatus } from "./animal-status.jsx";
 import { SpaPhoto } from "./spa-photo.jsx";
+import "./inbox318.css";
 const supported = (name) => /\.(jpe?g|png|webp|avif)$/i.test(name);
 const preview = (id, width = 640) => `/api/inbox/${id}/preview?width=${width}`;
 async function droppedFiles(transfer) {
@@ -78,6 +82,7 @@ export function Inbox({
     [assign, setAssign] = useState(false),
     [zoom, setZoom] = useState(null),
     [drag, setDrag] = useState(false);
+  const [retentionDraft, setRetentionDraft] = useState(null);
   const [uploadFiles, setUploadFiles] = useState([]),
     [fileProgress, setFileProgress] = useState(0);
   const filesRef = useRef(),
@@ -100,6 +105,7 @@ export function Inbox({
   }, [canEdit, data?.importFolderConfigured]);
   useEffect(() => {
     setSelected([]);
+    setZoom(null);
     last.current = null;
   }, [folder, query, archived, page]);
   useEffect(() => {
@@ -121,6 +127,24 @@ export function Inbox({
       clearTimeout(timer);
     };
   }, [canEdit, folder, query, archived, page, revision, version]);
+  useEffect(() => {
+    if (!zoom) return;
+    const keydown = (event) => {
+      if (
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey ||
+        !["ArrowLeft", "ArrowRight"].includes(event.key)
+      )
+        return;
+      event.preventDefault();
+      const index = data.items.findIndex((p) => p.id === zoom.id);
+      const next = data.items[index + (event.key === "ArrowRight" ? 1 : -1)];
+      if (next) setZoom(next);
+    };
+    document.addEventListener("keydown", keydown);
+    return () => document.removeEventListener("keydown", keydown);
+  }, [zoom, data?.items]);
   if (!canEdit)
     return (
       <Empty
@@ -416,6 +440,102 @@ export function Inbox({
           </Button>
         )}
       </div>
+      {archived && (
+        <section
+          className="inbox-retention panel"
+          aria-label="Conservation des photos écartées"
+        >
+          <p>
+            {data?.retention?.days
+              ? `Les photos écartées restent restaurables pendant ${data.retention.days} jours. Au-delà, le nettoyage automatique retire les photos inutilisées après sauvegarde vérifiée.`
+              : "Les photos écartées restent restaurables sans limite de durée. La suppression automatique est désactivée."}
+          </p>
+          {data?.retention?.days > 0 && data.retention.scheduler === false && (
+            <p className="small-note">
+              Les tâches automatiques sont suspendues dans cet environnement :
+              aucun nettoyage planifié ne s’exécute.
+            </p>
+          )}
+          {data?.retention?.last?.error && (
+            <p role="status">{data.retention.last.error}</p>
+          )}
+          {user?.role === "admin" && data && (
+            <details>
+              <summary>Régler la suppression automatique</summary>
+              <p className="small-note">
+                Ce réglage s’applique aussi aux photos déjà écartées. Une
+                sauvegarde protégée est créée et vérifiée avant chaque
+                nettoyage. Les photos utilisées par des créations et les
+                originaux partagés restent protégés. Le dossier de dépôt n’est
+                jamais modifié. Vérification toutes les heures, au plus 200
+                photos par passage. Désactiver le module suspend les imports et
+                le nettoyage ; le délai de conservation continue de courir. À sa
+                réactivation, les photos dont le délai est dépassé pourront être
+                nettoyées au prochain passage.
+              </p>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={
+                    retentionDraft === "" ||
+                    (retentionDraft ?? data.retention.days) > 0
+                  }
+                  disabled={busy}
+                  onChange={(e) => setRetentionDraft(e.target.checked ? 30 : 0)}
+                />
+                Supprimer automatiquement les photos écartées inutilisées
+              </label>
+              {(retentionDraft === "" ||
+                (retentionDraft ?? data.retention.days) > 0) && (
+                <label className="inbox-retention-days">
+                  Après
+                  <input
+                    type="number"
+                    min="1"
+                    max="3650"
+                    value={retentionDraft ?? data.retention.days}
+                    disabled={busy}
+                    onChange={(e) =>
+                      setRetentionDraft(
+                        e.target.value === "" ? "" : Number(e.target.value),
+                      )
+                    }
+                  />{" "}
+                  jours
+                </label>
+              )}
+              <Button
+                variant="secondary"
+                disabled={
+                  busy ||
+                  retentionDraft === null ||
+                  !Number.isInteger(retentionDraft) ||
+                  retentionDraft < 0 ||
+                  retentionDraft > 3650
+                }
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    await api("/inbox/retention", {
+                      method: "PUT",
+                      body: { days: retentionDraft },
+                    });
+                    setRetentionDraft(null);
+                    refresh();
+                    notify("Conservation des photos écartées enregistrée.");
+                  } catch (e) {
+                    notify(e.message, "error");
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                Enregistrer la conservation
+              </Button>
+            </details>
+          )}
+        </section>
+      )}
       <div className="inbox-selection">
         <span>
           <strong>{data?.total || 0}</strong>{" "}
@@ -482,21 +602,29 @@ export function Inbox({
               className={`inbox-card ${selected.includes(photo.id) ? "selected" : ""}`}
               key={photo.id}
             >
-              <button
-                className="inbox-photo"
-                aria-label={`Sélectionner ${photo.filename}`}
-                aria-pressed={selected.includes(photo.id)}
-                onClick={(e) => toggle(photo, index, e)}
-              >
-                <img
-                  src={preview(photo.id)}
-                  alt={photo.filename}
-                  loading="lazy"
-                />
-                <span className="inbox-check">
+              <div className="inbox-picture">
+                <button
+                  className="inbox-photo"
+                  aria-label={`Agrandir ${photo.filename}`}
+                  onClick={() => setZoom(photo)}
+                >
+                  <img
+                    src={preview(photo.id)}
+                    alt={photo.filename}
+                    loading="lazy"
+                  />
+                </button>
+                <button
+                  type="button"
+                  className="inbox-select"
+                  aria-label={`${selected.includes(photo.id) ? "Désélectionner" : "Sélectionner"} ${photo.filename}`}
+                  aria-pressed={selected.includes(photo.id)}
+                  disabled={busy}
+                  onClick={(e) => toggle(photo, index, e)}
+                >
                   {selected.includes(photo.id) && <Check size={16} />}
-                </span>
-              </button>
+                </button>
+              </div>
               <div>
                 <strong title={photo.filename}>{photo.filename}</strong>
                 <small title={photo.folder}>
@@ -536,12 +664,69 @@ export function Inbox({
         </div>
       )}
       {zoom && (
-        <Modal title={zoom.filename} wide onClose={() => setZoom(null)}>
-          <img
+        <Modal
+          title={zoom.filename}
+          wide
+          className="inbox-large-view"
+          onClose={() => setZoom(null)}
+        >
+          <LargeAssignmentPhoto
+            key={zoom.id}
             className="inbox-zoom"
             src={preview(zoom.id, 1600)}
             alt={zoom.filename}
           />
+          <div className="inbox-view-controls">
+            <Button
+              variant="secondary"
+              disabled={data.items.findIndex((p) => p.id === zoom.id) <= 0}
+              onClick={() =>
+                setZoom(
+                  data.items[data.items.findIndex((p) => p.id === zoom.id) - 1],
+                )
+              }
+            >
+              Précédente
+            </Button>
+            <span aria-live="polite">
+              {data.items.findIndex((p) => p.id === zoom.id) + 1} /{" "}
+              {data.items.length}
+            </span>
+            <Button
+              variant="secondary"
+              disabled={
+                data.items.findIndex((p) => p.id === zoom.id) >=
+                data.items.length - 1
+              }
+              onClick={() =>
+                setZoom(
+                  data.items[data.items.findIndex((p) => p.id === zoom.id) + 1],
+                )
+              }
+            >
+              Suivante
+            </Button>
+            <Button
+              icon={Check}
+              variant={selected.includes(zoom.id) ? "primary" : "secondary"}
+              disabled={busy}
+              aria-pressed={selected.includes(zoom.id)}
+              onClick={(e) =>
+                toggle(
+                  zoom,
+                  data.items.findIndex((p) => p.id === zoom.id),
+                  e,
+                )
+              }
+            >
+              {selected.includes(zoom.id)
+                ? "Désélectionner cette photo"
+                : "Sélectionner cette photo"}
+            </Button>
+          </div>
+          <p className="small-note">
+            Flèches gauche/droite : parcourir cette page · Échap : fermer.
+          </p>
         </Modal>
       )}
       {assign && (

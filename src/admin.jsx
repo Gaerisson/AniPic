@@ -31,6 +31,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { api, bytes, date, speciesName } from "./api.js";
+import { dailyTimeFromCron } from "../shared/sync-schedule.mjs";
 import { Spinner, Empty, Button, Modal } from "./ui.jsx";
 import { ApiSettings, InterfaceSettings } from "./preferences.jsx";
 import { LegacyImport } from "./legacy.jsx";
@@ -400,7 +401,11 @@ const actionNames = {
   source_adoption_reversed: "Animal réapparu · adoption automatique corrigée",
   source_adoption_confirmed:
     "Adoption automatique confirmée par un statut source",
-  source_adoption_pending: "Départ archivé · adoption en attente pendant 24 h",
+  source_adoption_pending: "Départ archivé · adoption à confirmer",
+  inbox_retention_configured: "Conservation des photos écartées modifiée",
+  inbox_discarded_purged: "Photos écartées nettoyées après sauvegarde",
+  inbox_retention_failed: "Nettoyage des photos écartées interrompu",
+  anonymous_audience_updated: "Comptage anonyme modifié",
   adoption_review_auto_confirmed: "Adoption confirmée automatiquement",
   adoption_review_rejected: "Adoption annulée ou refusée par l’équipe",
   adoption_review_confirmed: "Adoption validée par l’équipe",
@@ -974,7 +979,12 @@ function Sync({ data, notify, reload }) {
               <span>Fréquence</span>
               <strong>
                 {data.settings.syncScheduleMode === "cron"
-                  ? data.settings.syncCron + " · " + data.settings.syncTimeZone
+                  ? (dailyTimeFromCron(data.settings.syncCron)
+                      ? "Chaque jour à " +
+                        dailyTimeFromCron(data.settings.syncCron)
+                      : data.settings.syncCron) +
+                    " · " +
+                    data.settings.syncTimeZone
                   : data.settings.syncScheduleMode !== "manual" &&
                       data.settings.syncIntervalHours
                     ? "Toutes les " + data.settings.syncIntervalHours + " h"
@@ -987,9 +997,12 @@ function Sync({ data, notify, reload }) {
                 {data.settings.archiveMissing
                   ? data.settings.missingThreshold +
                     " inventaires complets" +
-                    (data.settings.sourceMissingOutcome === "adopted"
-                      ? " · adoption automatique"
-                      : " · sans adoption")
+                    ({
+                      adopted: " · adoption comptée, à confirmer",
+                      automatic: " · adoption automatique",
+                      after24h: " · adoption après 24 h",
+                      manual: " · confirmation obligatoire",
+                    }[data.settings.sourceMissingOutcome] || " · sans adoption")
                   : "Désactivé"}
               </strong>
             </div>

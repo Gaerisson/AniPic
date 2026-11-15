@@ -251,6 +251,7 @@ export function Home({
   open,
   animations = true,
   ui = {},
+  modules = ui.enabledModules || {},
   user,
   overview,
   notify,
@@ -422,6 +423,7 @@ export function Home({
       )}
       <HomeWidgets
         widgets={widgets}
+        modules={modules}
         user={user}
         overview={overview}
         open={open}

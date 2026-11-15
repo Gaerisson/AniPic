@@ -662,6 +662,17 @@ html[data-theme] .shoot-sheet :is(h2, h3, h4, p, strong, small) {
   html[data-print-plan] body {
     background: white !important;
     color: black !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+  /* Follow only the ancestors of the document. New app notices, cookie
+     controls, mobile navigation and body portals stay outside the paper. */
+  html[data-print-plan] body > :not(#root),
+  html[data-print-plan] #root > :not(.app-shell),
+  html[data-print-plan] .app-shell > :not(main),
+  html[data-print-plan] .app-shell > main > :not(.content),
+  html[data-print-plan] .content > :not(.shoot-sheet) {
+    display: none !important;
   }
   html[data-print-plan] .sidebar,
   html[data-print-plan] .topbar,
@@ -670,6 +681,7 @@ html[data-theme] .shoot-sheet :is(h2, h3, h4, p, strong, small) {
   html[data-print-plan] .toast {
     display: none !important;
   }
+  html[data-print-plan] #root,
   html[data-print-plan] .app-shell,
   html[data-print-plan] main,
   html[data-print-plan] .content {
@@ -680,6 +692,11 @@ html[data-theme] .shoot-sheet :is(h2, h3, h4, p, strong, small) {
     padding: 0 !important;
     width: 100% !important;
     min-height: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    position: static !important;
+    transform: none !important;
+    animation: none !important;
   }
   html[data-print-plan] .shoot-sheet {
     box-shadow: none;

@@ -21,13 +21,13 @@ curl --fail --get 'https://www.la-spa.fr/app/wp-json/spa/v1/animals/search/' \
   --data-urlencode 'seed=1'
 ```
 
-| Paramètre | Valeur |
-| --- | --- |
-| `establishment` | Slug du refuge dans son URL SPA |
-| `species` | `chien`, `chat` ou `nac` |
-| `paged` | Numéro de page, à partir de 1 |
-| `seed` | Garder la même valeur pendant un passage paginé |
-| `api` | `1`, comme dans le connecteur actuel |
+| Paramètre       | Valeur                                          |
+| --------------- | ----------------------------------------------- |
+| `establishment` | Slug du refuge dans son URL SPA                 |
+| `species`       | `chien`, `chat` ou `nac`                        |
+| `paged`         | Numéro de page, à partir de 1                   |
+| `seed`          | Garder la même valeur pendant un passage paginé |
+| `api`           | `1`, comme dans le connecteur actuel            |
 
 Vérification HTTP réelle lors de cette correction : réponse JSON 200 pour les chiens de Morée, **31 résultats annoncés sur 2 pages**, dont 18 sur la première. Ces nombres décrivent ce relevé et peuvent changer. La réponse observée utilise **`results`**, **`nb_pages`** et **`total`**. Le connecteur accepte aussi les variantes historiques `animals` et `max_num_pages`.
 
@@ -36,22 +36,31 @@ Les fiches observées contiennent notamment `ID`, `name`, `description`, `full_u
 Exemple Node.js 24 pour lire une page :
 
 ```js
-const url = new URL('https://www.la-spa.fr/app/wp-json/spa/v1/animals/search/');
+const url = new URL("https://www.la-spa.fr/app/wp-json/spa/v1/animals/search/");
 url.search = new URLSearchParams({
-  api: '1', establishment: 'refuge-spa-de-moree-jean-leriche',
-  species: 'chien', paged: '1', seed: '1',
+  api: "1",
+  establishment: "refuge-spa-de-moree-jean-leriche",
+  species: "chien",
+  paged: "1",
+  seed: "1",
 });
 const response = await fetch(url, { signal: AbortSignal.timeout(30000) });
 if (!response.ok) throw new Error(`SPA HTTP ${response.status}`);
 const data = await response.json();
 const animals = data.results ?? data.animals;
-if (!Array.isArray(animals)) throw new Error('Format SPA inattendu');
-console.log(animals.map(a => ({
-  id: a.ID ?? a.id, nom: a.name, sexe: a.sex,
-  race: a.races_label, age: a.age_number,
-  photo: a.imageWebp || a.image, fiche: a.full_url,
-})));
-console.log('Pages :', data.nb_pages ?? data.max_num_pages);
+if (!Array.isArray(animals)) throw new Error("Format SPA inattendu");
+console.log(
+  animals.map((a) => ({
+    id: a.ID ?? a.id,
+    nom: a.name,
+    sexe: a.sex,
+    race: a.races_label,
+    age: a.age_number,
+    photo: a.imageWebp || a.image,
+    fiche: a.full_url,
+  })),
+);
+console.log("Pages :", data.nb_pages ?? data.max_num_pages);
 ```
 
 Pour un inventaire complet, parcourir toutes les pages pour chaque espèce avec un nombre de requêtes borné, une pause entre les pages et déduplication par ID. Ne pas interroger la SPA à chaque affichage de carte. Le collecteur AniPic possède déjà les budgets, répétitions de contrôle et garde-fous contre un inventaire partiel. Une erreur, une page vide ou une disparition ne confirme pas une adoption.
@@ -72,35 +81,44 @@ GET /api/animals/UUID_ANIPIC
 
 La liste renvoie `{ items, total, page, pages }`. `limit` est compris entre 1 et 60. Par défaut, la liste ne contient pas les animaux archivés ; `archive=1` sélectionne les archives.
 
-| Filtre | Valeurs principales |
-| --- | --- |
-| `species` | `all`, `dog`, `cat`, `other` |
-| `status` | `all`, `available`, `reserved`, `adopted`, `source_missing` |
-| `q` | Nom, texte, identifiant AniPic ou référence source |
-| `sos` | `all`, `yes`, `no` |
-| `cats`, `dogs`, `children` | `all`, `yes`, `no`, `conditional`, `unknown` |
-| `photos` | `all`, `with`, `without` : photos locales visibles par cet appelant |
-| `sort` | Par exemple `name`, `recent`, `photo_priority` |
-| `archive` | `0` ou `1` |
+| Filtre                     | Valeurs principales                                                 |
+| -------------------------- | ------------------------------------------------------------------- |
+| `species`                  | `all`, `dog`, `cat`, `other`                                        |
+| `status`                   | `all`, `available`, `reserved`, `adopted`, `source_missing`         |
+| `q`                        | Nom, texte, identifiant AniPic ou référence source                  |
+| `sos`                      | `all`, `yes`, `no`                                                  |
+| `cats`, `dogs`, `children` | `all`, `yes`, `no`, `conditional`, `unknown`                        |
+| `photos`                   | `all`, `with`, `without` : photos locales visibles par cet appelant |
+| `sort`                     | Par exemple `name`, `recent`, `photo_priority`                      |
+| `archive`                  | `0` ou `1`                                                          |
 
 Exemple sans authentification, si les règles d’accès de l’installation l’autorisent :
 
 ```js
-const base = 'https://anipic.exemple.fr';
+const base = "https://anipic.exemple.fr";
 async function read(path) {
-  const response = await fetch(base + path, { signal: AbortSignal.timeout(30000) });
+  const response = await fetch(base + path, {
+    signal: AbortSignal.timeout(30000),
+  });
   if (!response.ok) throw new Error(`AniPic HTTP ${response.status}`);
   return response.json();
 }
-const first = await read('/api/animals?species=dog&limit=60&page=1');
-console.log(first.items.map(a => ({
-  id: a.id, referenceSPA: a.source_id, nom: a.name,
-  race: a.breed, sexe: a.sex, statut: a.status,
-  ententes: a.compatibility, source: a.source_url,
-  photoLocale: a.cover_id ? `${base}/media/${a.cover_id}?w=1280` : null,
-  photoSPA: a.source_metadata?.thumbnail || null,
-  dernierePhoto: a.latest_photo_at,
-})));
+const first = await read("/api/animals?species=dog&limit=60&page=1");
+console.log(
+  first.items.map((a) => ({
+    id: a.id,
+    referenceSPA: a.source_id,
+    nom: a.name,
+    race: a.breed,
+    sexe: a.sex,
+    statut: a.status,
+    ententes: a.compatibility,
+    source: a.source_url,
+    photoLocale: a.cover_id ? `${base}/media/${a.cover_id}?w=1280` : null,
+    photoSPA: a.source_metadata?.thumbnail || null,
+    dernierePhoto: a.latest_photo_at,
+  })),
+);
 // Continuer avec page=2 jusqu’à first.pages pour lire toute la liste.
 const detail = first.items.length
   ? await read(`/api/animals/${first.items[0].id}`)
@@ -127,7 +145,7 @@ curl --fail --cookie anipic-cookies.txt \
   'https://anipic.exemple.fr/api/animals?species=dog&limit=60'
 ```
 
-Le compte doit exister : cet exemple ne le crée pas. La session de compte expire après 12 heures ; se reconnecter en cas d’expiration. Les restrictions IP du compte restent appliquées. Le PIN global est distinct : une session de compte valide permet l’accès, tandis qu’un navigateur seulement déverrouillé par PIN n’acquiert aucun rôle ni droit aux originaux. Sans compte ni autorisation PIN valide, une installation protégée renvoie `401` avec `code: "SITE_PIN_REQUIRED"`.
+Le compte doit exister : cet exemple ne le crée pas. La session de compte est mémorisée pour 90 jours, renouvelée pendant l’utilisation et révocable ; se reconnecter après expiration ou révocation. Les sessions automatiques de réseau ont leur propre durée de 12 heures. Les restrictions IP du compte restent appliquées. Le PIN global est distinct : une session de compte valide permet l’accès, tandis qu’un navigateur seulement déverrouillé par PIN n’acquiert aucun rôle ni droit aux originaux. Sans compte ni autorisation PIN valide, une installation protégée renvoie `401` avec `code: "SITE_PIN_REQUIRED"`.
 
 Pour une lecture publique protégée seulement par le PIN, `POST /api/gate/unlock` accepte `{"pin":"VOTRE_PIN"}` et renvoie un cookie à conserver. Ne pas exposer ce PIN dans du JavaScript public, une URL ou GitHub. L’autorisation est permanente côté AniPic, tant que le navigateur conserve son cookie ; changer le PIN la révoque.
 
@@ -150,6 +168,7 @@ GET /api/public/display
 - **Programme TV** : `/api/public/display` fournit la sélection et le programme configurés si l’écran du refuge est activé. Ce n’est pas un inventaire de tous les animaux : filtres, exclusions et rotation y sont appliqués.
 
 Les protections de PIN, de compte et de publication restent actives même sur les routes dont le nom contient `public`.
+
 ## Liste AniPic, présence source et CSV
 
 La liste applicative `GET /api/animals` accepte `limit=12..200` (entier), `page`, `sort=recent|oldest|name|name_desc|photos|few_photos|photo_priority|arrival|archive` et les filtres habituels. Le tri photo utilise la date d’ajout de la **dernière série locale visible** de chaque animal. Les références SPA n’ont pas de date de prise de vue vérifiée et ne sont pas présentées comme une nouvelle série locale.

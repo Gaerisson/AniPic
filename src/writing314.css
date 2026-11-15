@@ -277,3 +277,240 @@
   font-size: 0.82rem;
   color: var(--ink);
 }
+
+.writing314 .writing-layout {
+  grid-template-columns: 235px minmax(0, 1fr);
+  gap: 18px;
+  margin-top: 0;
+}
+.writing314 .writing-layout[hidden] {
+  display: none;
+}
+.writing314 .writing-main {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+.writing314 .writing-main > .writing-proposal {
+  margin: 0 !important;
+  padding: 22px !important;
+  min-width: 0;
+}
+.writing314 .writing-main > .writing-proposal > h2 {
+  margin: 10px 0 14px;
+}
+.writing314 .writing-main > .writing-proposal > p {
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+.writing314 .writing-main .writing-form > form {
+  padding: 22px !important;
+  gap: 16px;
+}
+.writing314 .writing-side {
+  padding: 14px !important;
+}
+.writing-picker-content {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.writing-picker-content > h2 {
+  font-size: 1rem;
+}
+.writing-picker-content > .button {
+  justify-content: flex-start;
+  padding: 9px 0;
+  font-size: 0.8rem;
+}
+.writing-list-count {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.writing314 .writing-animal-list {
+  max-height: min(58dvh, 560px);
+}
+.writing314 .writing-animal-list button {
+  padding: 9px 7px;
+  gap: 9px;
+}
+.writing314 .writing-animal-list :is(img, .spa-source-photo) {
+  width: 43px;
+  height: 51px;
+}
+.writing-picker-toggle {
+  display: none;
+}
+.writing-options {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 0;
+}
+.writing-options > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.83rem;
+  color: var(--ink);
+  list-style: none;
+}
+.writing-options > summary::-webkit-details-marker {
+  display: none;
+}
+.writing-options > summary span {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.writing-options[open] > summary > svg {
+  transform: rotate(180deg);
+}
+.writing-options > div {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+.writing-options label {
+  display: grid;
+  gap: 8px;
+}
+.writing-options .check {
+  display: flex;
+  align-items: center;
+}
+.writing-options .check input {
+  width: 17px;
+  height: 17px;
+  flex: none;
+}
+.writing314 .writing-form > form > .button {
+  justify-self: start;
+}
+.writing-correction-chips {
+  max-height: 95px;
+  overflow: auto;
+}
+.writing-review-complete {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 14px;
+  border-top: 1px solid var(--border);
+  color: var(--ink);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+.writing-review-complete svg {
+  flex: none;
+  color: var(--accent);
+}
+.writing-history {
+  display: grid;
+  gap: 16px;
+}
+.writing-history > article {
+  padding: 20px;
+}
+.writing-history > article > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.writing-history h2 {
+  margin: 0 0 5px;
+  font-size: 1.05rem;
+}
+.writing-history time {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.writing-history-text {
+  margin: 18px 0;
+}
+.writing-history-text > summary {
+  cursor: pointer;
+  font-size: 0.83rem;
+  color: var(--ink);
+}
+.writing-history .writing-preview {
+  white-space: pre-wrap;
+}
+.writing-history-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.writing314 :is(button, summary, .tiptap):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+@media (min-width: 1500px) {
+  .writing314 .writing-main.has-proposal:has(.writing-proposal .rich-writing) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+  .writing314
+    .writing-main.has-proposal
+    > .writing-proposal:has(.rich-writing) {
+    position: sticky;
+    top: 18px;
+  }
+}
+@media (max-width: 900px) {
+  .writing314 .writing-layout {
+    grid-template-columns: 205px minmax(0, 1fr);
+  }
+}
+@media (max-width: 700px) {
+  .writing314 .writing-layout {
+    grid-template-columns: 1fr;
+  }
+  .writing314 .writing-side {
+    padding: 12px !important;
+  }
+  .writing-picker-toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    padding: 2px;
+    text-align: left;
+    color: var(--ink);
+  }
+  .writing-picker-toggle small {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+  .writing-side:not(.picker-open) .writing-picker-content {
+    display: none;
+  }
+  .writing-side.picker-open .writing-picker-toggle > svg {
+    transform: rotate(180deg);
+  }
+  .writing314 .writing-animal-list {
+    max-height: 240px;
+  }
+  .writing314 .writing-main .writing-form > form,
+  .writing314 .writing-main > .writing-proposal {
+    padding: 16px !important;
+  }
+  .writing314 .writing-tabs {
+    overflow: auto;
+  }
+  .writing314 .writing-tabs > button {
+    flex: 0 0 auto;
+  }
+  .rich-writing > footer {
+    flex-wrap: wrap;
+  }
+}

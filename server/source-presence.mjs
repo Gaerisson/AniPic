@@ -1,4 +1,64 @@
 import { sourceWasDeleted } from "./permanent-animal.mjs";
+
+export function readSourceObservation(db, animalId) {
+  try {
+    return JSON.parse(
+      db
+        .prepare("SELECT value FROM settings WHERE key=?")
+        .get("sourceObservation:" + animalId)?.value || "null",
+    );
+  } catch {
+    return null;
+  }
+}
+function saveObservation(db, animalId, observation) {
+  db.prepare(
+    "INSERT INTO settings VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+  ).run("sourceObservation:" + animalId, JSON.stringify(observation));
+}
+// Legacy fiches have no known publication/episode start. Only a new fiche or a
+// return after an observed safe absence establishes a new observed episode.
+export function recordSourceObservation(db, animal, observedAt, isNew = false) {
+  const previous = readSourceObservation(db, animal.id);
+  const sameScope = previous?.scope === animal.source_scope;
+  if (sameScope && Date.parse(previous.lastSeenAt) >= Date.parse(observedAt))
+    return;
+  const returned = sameScope && previous.firstMissingAt;
+  saveObservation(db, animal.id, {
+    scope: animal.source_scope,
+    sourceId: animal.source_id,
+    firstSeenAt:
+      isNew || returned ? observedAt : sameScope ? previous.firstSeenAt : null,
+    lastSeenAt: observedAt,
+    firstMissingAt: null,
+    durationHours: null,
+  });
+}
+function freezeMissingObservations(db, snapshot) {
+  const present = new Set(snapshot.animals.map((a) => a.sourceId));
+  for (const row of db
+    .prepare(
+      "SELECT a.id,a.source_id,s.value FROM animals a JOIN settings s ON s.key='sourceObservation:'||a.id WHERE a.source_scope=? AND NOT EXISTS(SELECT 1 FROM settings t WHERE t.key='animalTrash:'||a.id)",
+    )
+    .all(snapshot.scope)) {
+    if (present.has(row.source_id)) continue;
+    const observation = JSON.parse(row.value);
+    if (
+      observation.scope !== snapshot.scope ||
+      observation.firstMissingAt ||
+      Date.parse(observation.lastSeenAt) > Date.parse(snapshot.fetchedAt)
+    )
+      continue;
+    const duration =
+      Date.parse(observation.lastSeenAt) - Date.parse(observation.firstSeenAt);
+    saveObservation(db, row.id, {
+      ...observation,
+      firstMissingAt: snapshot.fetchedAt,
+      durationHours:
+        Number.isFinite(duration) && duration >= 0 ? duration / 3600000 : null,
+    });
+  }
+}
 // Presence is distinct from adoption. Only a safe complete inventory may
 // establish an absence; partial/error responses never replace that inventory.
 export function inventoryComparison(db, snapshot) {
@@ -51,6 +111,7 @@ export function savePresence(db, snapshot, appliedAt) {
   db.prepare(
     "INSERT INTO settings VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
   ).run("sourcePresence:" + snapshot.scope, JSON.stringify(result));
+  freezeMissingObservations(db, snapshot);
   return inventoryComparison(db, snapshot);
 }
 export function readPresence(db, scope) {

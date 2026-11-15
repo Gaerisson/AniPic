@@ -1,5 +1,19 @@
 # Vérifications — AniPic
 
+## V3.18.0 — Parcours photo et administration (15 novembre 2026)
+
+Suite complète locale sous Node 24 : **364 tests réussis**, zéro échec, ignoré ou annulé, en 725,5 s. Les 39 cas ajoutés et les contrôles existants couvrent notamment la présence source courte et figée, les confirmations obligatoires persistantes, le retour d’un animal, les inventaires partiels/anciens, le quotidien heure/fuseau, le compteur du tri et ses permissions, les purges avec sauvegarde vérifiée et revalidation après attente, les références/blobs partagés, la pause du module, la stabilité des corrections et les réponses tardives.
+
+Les tests audience vérifient de vrais appels Fastify et les lignes effectivement stockées : catégories bornées, totaux anonymes sans identité, origine, opposition, GPC, rétention, accès administrateur, absence de connexion réseau/PIN et absence d’identifiants dans les journaux même pour les appels rejetés. Une régression de préférence protège le refus enregistré dans un autre onglet malgré un état chargé ancien. Le suivi d’un job de synchronisation disparu se termine sans annoncer un faux succès.
+
+Revue indépendante des changements transversaux : défaut de journalisation des requêtes anonymes rejetées, course d’opposition, suivi de job bloqué et raccourcis/widgets de modules désactivés repérés puis corrigés. Vérifications de rendu React côté serveur pour les gardes de modules ; aucun bouton retouche/vidéo/affiche ou lien/widget agenda/planning lorsque son module est coupé. Publié et Lightroom restent disponibles.
+
+Build web final 3.18.0 réussi (9,09 s, avertissement connu sur la taille de certains chunks), composition vidéo compilée, formatage et whitespace contrôlés. APK publique inchangée et vérifiée : AniPic-3.14.0.apk, 1 314 122 octets, SHA-256 `d922df707cb48d001302a09974a220cdf0937d327f853061f05f91d6cef23dd1`. Aucun changement de dépendances ou de version native.
+
+Le navigateur local est désactivé dans les réglages Work au moment du contrôle : aucun nouvel essai visuel, mobile ou aperçu PDF d’impression n’est revendiqué. Les règles d’impression isolent la feuille et ses ancêtres pour exclure le reste de l’application ; elles n’ont pas été validées sur une imprimante réelle. L’aperçu restauré répond en 3.18.0 sur localhost:3036, avec ses données conservées et ses planificateurs désactivés. La purge facultative reste désactivée au départ.
+
+La publication GitHub est explicitement autorisée et attend les contrôles complets CI du commit exact, notamment Android, l’image Docker et un MP4 réel. Aucun déploiement NAS/Portainer ni compte WhatsApp connecté. Les possibilités de bot groupe/commandes sont étudiées dans [WHATSAPP.md](docs/WHATSAPP.md) ; seul le partage préparé est livré. Voir les [réglages du quotidien](docs/FLUX_PHOTO.md) et le [comptage anonyme](docs/AUDIENCE_ANONYME.md).
+
 ## V3.17.1 — Ouverture dans AniPic et téléchargement JPG (2 novembre 2026)
 
 La page partagée propose **Ouvrir la fiche dans AniPic**, vers `/#animal/<id>` sur la même instance ; une photo d’album propose **Ouvrir AniPic**, vers la section réelle `/#collections`. Ces liens utilisent les droits habituels du site. Le destinataire conserve l’accès sans compte ni PIN à la page publique. **Télécharger la photo (JPG)** produit des octets JPEG et un en-tête de téléchargement `.jpg`, pour les photos d’animaux, d’albums et les références SPA. La version affichée reste WebP ; le JPG utilise le même aperçu borné et sans EXIF, avec un fond blanc pour la transparence.

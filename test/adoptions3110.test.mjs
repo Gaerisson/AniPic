@@ -261,6 +261,56 @@ test("pending deadline is retained across syncs; partial/old inventories, disabl
     );
   assert.equal(automaticAdoption(db, p.id).reviewDueAt, old.reviewDueAt);
 });
+test("mandatory reviews expose their reason to the team and use the existing confirmation and rejection API without prior statistics", async (t) => {
+  const { db, app } = await fixture(t),
+    auth = await login(app, "agent");
+  const p = deferred(db, "manual");
+  db.prepare("UPDATE animals SET status='source_missing' WHERE id=?").run(p.id);
+  const list = await app.inject({
+    url: "/api/adoption-reviews",
+    headers: auth.headers,
+  });
+  assert.equal(list.statusCode, 200);
+  const item = list.json().items.find((x) => x.id === p.id);
+  assert.equal(item.adoption_review.requiresConfirmation, true);
+  assert.equal(item.adoption_review.reason, "manual_policy");
+  assert.equal(item.adoption_review.dueAt, null);
+  assert.equal(count(db), 0);
+  const body = {
+    expectedAt: p.at,
+    expectedRevision: item.adoption_review.revision,
+  };
+  const confirmed = await app.inject({
+    method: "POST",
+    url: `/api/adoption-reviews/${p.id}/confirm`,
+    headers: auth.headers,
+    payload: body,
+  });
+  assert.equal(confirmed.statusCode, 200, confirmed.body);
+  assert.equal(count(db), 1);
+  assert.equal(
+    db.prepare("SELECT status FROM animals WHERE id=?").get(p.id).status,
+    "adopted",
+  );
+  const rejected = await app.inject({
+    method: "POST",
+    url: `/api/adoption-reviews/${p.id}/reject`,
+    headers: auth.headers,
+    payload: {
+      expectedAt: p.at,
+      expectedRevision: confirmed.json().review.revision,
+    },
+  });
+  assert.equal(rejected.statusCode, 200, rejected.body);
+  assert.equal(count(db), 0);
+  saveSettings(db, { sourceMissingOutcome: "automatic" });
+  inventory(db);
+  assert.equal(
+    transaction(db, () => settleDueAdoptions(db)),
+    0,
+  );
+  assert.equal(count(db), 0);
+});
 test("home coverage counts present animals per species and local visible photos, excluding archives, trash and SPA-only references", async (t) => {
   const { db, app, c } = await fixture(t),
     a = animal(db, "Portrait"),

@@ -1,0 +1,170 @@
+.inbox-card > .inbox-picture {
+  position: relative;
+  padding: 0;
+}
+.inbox-picture .inbox-photo {
+  cursor: zoom-in;
+}
+.inbox-picture .inbox-select {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--muted);
+  border-radius: 8px;
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: 0 2px 7px #0003;
+}
+.inbox-picture .inbox-select[aria-pressed="true"] {
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.inbox-select:focus-visible,
+.photo-assignment-dialog .assign-photo-strip > button:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+.inbox-view-controls,
+.assignment-comparison-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 14px;
+}
+.inbox-view-controls > span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.inbox-retention > p:first-child {
+  margin-top: 0;
+}
+.inbox-retention details {
+  margin-top: 12px;
+}
+.inbox-retention summary {
+  cursor: pointer;
+  font-weight: 650;
+}
+.inbox-retention .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0;
+}
+.inbox-retention-days {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 12px 14px 0;
+}
+.inbox-retention-days > input {
+  width: 90px;
+}
+.photo-assignment-dialog .assign-photo-strip > button {
+  display: block;
+  flex: 0 0 72px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3px;
+  background: var(--surface);
+  cursor: zoom-in;
+}
+.photo-assignment-dialog .assign-photo-strip > button > img {
+  display: block;
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+}
+.assignment-comparison:focus {
+  outline: none;
+}
+.assignment-comparison-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.assignment-comparison-pair > figure {
+  margin: 0;
+  min-width: 0;
+}
+.assignment-comparison-pair figcaption {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  min-height: 65px;
+  padding-bottom: 10px;
+  overflow-wrap: anywhere;
+}
+.assignment-comparison-pair figcaption > span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.assignment-comparison-image {
+  display: grid;
+  place-items: center;
+  height: min(52vh, 520px);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--raised);
+}
+.assignment-comparison-image > img,
+.assignment-comparison-image > .spa-source-photo.large,
+.assignment-comparison-image > .spa-source-photo.large > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 0;
+}
+.assignment-comparison-image > .spa-source-photo.large {
+  position: relative;
+}
+.assignment-comparison-image > p {
+  padding: 20px;
+  text-align: center;
+  color: var(--muted);
+}
+.assignment-photo-error {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  align-content: center;
+  min-height: 180px;
+  padding: 20px;
+  text-align: center;
+  color: var(--muted);
+}
+.assignment-photo-error > p {
+  margin: 0;
+}
+.assignment-comparison-actions {
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+@media (max-width: 650px) {
+  .assignment-comparison-pair {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+  .assignment-comparison-image {
+    height: 38vh;
+  }
+  .assignment-comparison-pair figcaption {
+    min-height: auto;
+  }
+  .assignment-comparison-actions .button {
+    flex: 1 1 100%;
+  }
+  .inbox-large-view .inbox-zoom {
+    height: 55vh;
+  }
+}

@@ -32,6 +32,7 @@ export const sourceDefaults = {
   sourceStaleHours: 24,
   sourceAbsenceIntervalHours: 24,
   sourceMissingOutcome: "unconfirmed",
+  sourceShortPresenceHours: 2,
 };
 const httpsURL = z
   .string()
@@ -91,8 +92,9 @@ export const sourceFields = {
   sourceStaleHours: z.number().int().min(1).max(48).default(24),
   sourceAbsenceIntervalHours: z.number().min(0.25).max(168).default(24),
   sourceMissingOutcome: z
-    .enum(["unconfirmed", "adopted", "automatic", "after24h"])
+    .enum(["unconfirmed", "adopted", "automatic", "after24h", "manual"])
     .default("unconfirmed"),
+  sourceShortPresenceHours: z.number().min(0).max(168).default(2),
 };
 export const interfaceDefaults = {
   posterLayout: posterLayoutDefaults,

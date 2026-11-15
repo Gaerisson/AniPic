@@ -13,7 +13,9 @@ export function ShootSheet({ user, notify, go }) {
     [date, setDate] = useState(() => new Date().toLocaleDateString("fr-CA")),
     [photographer, setPhotographer] = useState(""),
     [portraits, setPortraits] = useState(true),
-    [search, setSearch] = useState("");
+    [search, setSearch] = useState(""),
+    [error, setError] = useState(""),
+    [revision, setRevision] = useState(0);
   useEffect(() => {
     document.documentElement.dataset.printPlan = "true";
     return () => {
@@ -23,6 +25,9 @@ export function ShootSheet({ user, notify, go }) {
   useEffect(() => {
     if (!user) return;
     let active = true;
+    setData(null);
+    setSelected([]);
+    setError("");
     api(`/shoot-sheet?mode=${mode}&species=${species}`)
       .then((d) => {
         if (active) {
@@ -30,11 +35,13 @@ export function ShootSheet({ user, notify, go }) {
           setSelected(mode === "custom" ? [] : d.items.map((a) => a.id));
         }
       })
-      .catch((e) => notify(e.message, "error"));
+      .catch((e) => {
+        if (active) setError(e.message);
+      });
     return () => {
       active = false;
     };
-  }, [mode, species, user?.id]);
+  }, [mode, species, user?.id, revision]);
   if (!user)
     return (
       <Empty
@@ -110,6 +117,21 @@ export function ShootSheet({ user, notify, go }) {
           Imprimer / PDF · {items.length}
         </Button>
       </section>
+      {error && (
+        <div className="panel no-print" role="alert">
+          <p>{error}</p>
+          <Button variant="secondary" onClick={() => setRevision((v) => v + 1)}>
+            Réessayer
+          </Button>
+        </div>
+      )}
+      {data?.truncated && (
+        <p className="small-note no-print">
+          {data.total} animaux correspondent. La feuille est limitée aux{" "}
+          {data.items.length} premiers ; filtrez par espèce pour préparer les
+          suivants.
+        </p>
+      )}
       {data && (
         <details
           className="print-plan-picker no-print"
@@ -175,7 +197,7 @@ export function ShootSheet({ user, notify, go }) {
         </details>
       )}
       {!data ? (
-        <Spinner />
+        !error && <Spinner />
       ) : (
         <article className="shoot-sheet">
           <header>

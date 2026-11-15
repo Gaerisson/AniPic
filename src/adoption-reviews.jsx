@@ -93,7 +93,10 @@ export default function AdoptionReviews({
           une proposition ou annuler une décision à tout moment dans
           l’historique. Le refus conserve la fiche dans les archives, sans
           compter d’adoption. Les photos sont conservées. Un retour sur le site
-          SPA corrige le départ.
+          SPA corrige le départ. Les présences observées courtes et les demandes
+          de confirmation obligatoire attendent toujours votre décision, sans
+          adoption comptée auparavant ni confirmation automatique après un
+          délai.
         </span>
       </p>
       <label className="adoption-review-filter">
@@ -171,6 +174,15 @@ export default function AdoptionReviews({
                   <small>
                     {a.confirmations} inventaires complets concordants
                   </small>
+                  {a.adoption_review.requiresConfirmation && (
+                    <small>
+                      {a.adoption_review.reason === "short_presence"
+                        ? `Présence observée courte : ${Math.round((a.adoption_review.observedPresence?.durationHours || 0) * 60)} min. Confirmation obligatoire.`
+                        : "Confirmation obligatoire demandée par le refuge."}
+                      {a.adoption_review.state === "pending" &&
+                        " Adoption non comptée."}
+                    </small>
+                  )}
                 </div>
                 <div className="review-actions">
                   <AdoptionActions

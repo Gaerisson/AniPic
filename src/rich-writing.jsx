@@ -18,8 +18,10 @@ import {
   Copy,
 } from "lucide-react";
 import {
-  writingCorrections,
-  localWritingIssues,
+  createWritingReview,
+  updateWritingReview,
+  resolveWritingCorrection,
+  applyWritingCorrections,
 } from "../shared/writing-corrections.mjs";
 import { Button } from "./ui.jsx";
 import { copyText } from "./api.js";
@@ -106,15 +108,22 @@ export default function RichWriting({
   placeholder = "Écrivez ici…",
   label = "Éditeur de texte",
   maxLength = 8000,
+  checkText = true,
   notify = () => {},
 }) {
   const change = useRef(onChange),
-    latest = useRef(value);
+    review = useRef(null),
+    reviewProposal = useRef(proposed);
   change.current = onChange;
-  latest.current = value;
+  if (!review.current || reviewProposal.current !== proposed) {
+    review.current = createWritingReview(
+      value || "",
+      checkText ? proposed : value || "",
+    );
+    reviewProposal.current = proposed;
+  }
   const [revision, setRevision] = useState(0),
-    [active, setActive] = useState(null),
-    [ignored, setIgnored] = useState([]);
+    [active, setActive] = useState(null);
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ heading: { levels: [2, 3] }, link: false }),
@@ -133,6 +142,9 @@ export default function RichWriting({
     },
     onUpdate: ({ editor }) => {
       const text = publicText(editor);
+      review.current = checkText
+        ? updateWritingReview(review.current, text)
+        : { ...review.current, text };
       change.current?.(text);
       setRevision((v) => v + 1);
     },
@@ -140,23 +152,22 @@ export default function RichWriting({
   });
   const issues = useMemo(
     () =>
-      (proposed != null
-        ? writingCorrections(value || "", proposed)
-        : localWritingIssues(value || "")
-      ).filter(
-        (i) => !ignored.includes(i.from + ":" + i.before + ":" + i.after),
-      ),
-    [value, proposed, ignored],
+      checkText
+        ? review.current.issues.filter((i) => i.status === "pending")
+        : [],
+    [value, proposed, revision, checkText],
   );
   useEffect(() => {
-    setIgnored([]);
     setActive(null);
   }, [proposed]);
   useEffect(() => {
-    if (editor && publicText(editor) !== String(value || ""))
+    if (editor && publicText(editor) !== String(value || "")) {
+      review.current = updateWritingReview(review.current, String(value || ""));
       editor.commands.setContent(documentFromText(value), {
         emitUpdate: false,
       });
+      setRevision((v) => v + 1);
+    }
   }, [editor, value]);
   useEffect(() => {
     if (editor && !editor.isDestroyed)
@@ -165,6 +176,11 @@ export default function RichWriting({
   if (!editor) return null;
   const apply = (issue) => {
     const at = positions(editor.state.doc);
+    review.current = resolveWritingCorrection(
+      review.current,
+      issue.id,
+      "apply",
+    );
     editor
       .chain()
       .focus()
@@ -173,6 +189,20 @@ export default function RichWriting({
         issue.after ? { type: "text", text: issue.after } : [],
       )
       .run();
+    setActive(null);
+  };
+  const applyAll = () => {
+    const at = positions(editor.state.doc),
+      pending = [...issues].sort((a, b) => b.from - a.from);
+    review.current = applyWritingCorrections(review.current);
+    const chain = editor.chain().focus();
+    for (const issue of pending) {
+      chain.insertContentAt(
+        { from: at(issue.from), to: at(issue.to) },
+        issue.after ? { type: "text", text: issue.after } : [],
+      );
+    }
+    chain.run();
     setActive(null);
   };
   const mark = (issue) => {
@@ -255,28 +285,25 @@ export default function RichWriting({
           aria-label="Corrections proposées"
         >
           <header>
-            <strong>{issues.length} proposition(s) dans le texte</strong>
+            <strong aria-live="polite">
+              {issues.length} correction{issues.length > 1 ? "s" : ""} à
+              examiner
+            </strong>
             {proposed != null && (
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => {
-                  editor.commands.setContent(documentFromText(proposed));
-                  setActive(null);
-                }}
-              >
-                Tout appliquer
+              <Button type="button" variant="secondary" onClick={applyAll}>
+                Appliquer les {issues.length} restantes
               </Button>
             )}
           </header>
           <div className="writing-correction-chips">
-            {issues.slice(0, 40).map((i) => (
+            {issues.map((i, index) => (
               <button
                 type="button"
                 key={i.id}
                 aria-pressed={current?.id === i.id}
                 onClick={() => mark(i)}
               >
+                {index + 1}.{" "}
                 {i.before.trim().slice(0, 20) || "Ponctuation / ajout"}
               </button>
             ))}
@@ -297,10 +324,12 @@ export default function RichWriting({
                 type="button"
                 variant="secondary"
                 onClick={() => {
-                  setIgnored([
-                    ...ignored,
-                    current.from + ":" + current.before + ":" + current.after,
-                  ]);
+                  review.current = resolveWritingCorrection(
+                    review.current,
+                    current.id,
+                    "ignore",
+                  );
+                  setRevision((v) => v + 1);
                   setActive(null);
                 }}
               >
@@ -309,6 +338,12 @@ export default function RichWriting({
             </div>
           )}
         </section>
+      )}
+      {proposed != null && issues.length === 0 && (
+        <p className="writing-review-complete" role="status">
+          <Check size={16} /> Toutes les propositions ont été examinées. Vous
+          pouvez copier votre version.
+        </p>
       )}
       <footer>
         <span>

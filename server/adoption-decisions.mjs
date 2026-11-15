@@ -1,9 +1,9 @@
 import { z } from "zod";
 import { id, audit, now, transaction, feedEvent, settings } from "./db.mjs";
-import { readPresence } from "./source-presence.mjs";
+import { readPresence, readSourceObservation } from "./source-presence.mjs";
 import { recordAnimalChanges } from "./animal-history.mjs";
 
-export const adoptionPolicies = ["adopted", "automatic", "after24h"];
+export const adoptionPolicies = ["adopted", "automatic", "after24h", "manual"];
 const save = (db, animalId, p) =>
   db
     .prepare(
@@ -63,6 +63,9 @@ function privateReview(p) {
     by: p.review?.by || (p.review ? "team" : null),
     reviewedAt: p.review?.at || null,
     dueAt: p.reviewDueAt || null,
+    requiresConfirmation: p.requiresConfirmation === true,
+    reason: p.reason || null,
+    observedPresence: p.observedPresence || null,
     canConfirm: stateOf(p) !== "confirmed",
     canReject: stateOf(p) !== "rejected",
   };
@@ -105,7 +108,20 @@ export function pendingAdoptionCount(db) {
 }
 
 export function inferAdoption(db, animal, snapshot, cfg, at, confirmations) {
-  const deferred = cfg.sourceMissingOutcome === "after24h",
+  const observation = readSourceObservation(db, animal.id);
+  const observedPresence =
+    observation?.scope === snapshot.scope && observation.firstMissingAt
+      ? { ...observation }
+      : null;
+  const shortPresence = Boolean(
+    observedPresence &&
+    observedPresence.durationHours !== null &&
+    observedPresence.durationHours < cfg.sourceShortPresenceHours,
+  );
+  const requiresConfirmation =
+    shortPresence || cfg.sourceMissingOutcome === "manual";
+  const deferred =
+      requiresConfirmation || cfg.sourceMissingOutcome === "after24h",
     eventId = deferred ? null : id();
   if (eventId)
     db.prepare("INSERT INTO animal_status_events VALUES (?,?,?,?)").run(
@@ -124,10 +140,19 @@ export function inferAdoption(db, animal, snapshot, cfg, at, confirmations) {
     intervalHours: cfg.sourceAbsenceIntervalHours,
     previousStatus: animal.status,
     revision: id(),
-    ...(deferred
+    requiresConfirmation,
+    reason: shortPresence
+      ? "short_presence"
+      : requiresConfirmation
+        ? "manual_policy"
+        : "absence",
+    policy: cfg.sourceMissingOutcome,
+    observedPresence,
+    shortPresenceHours: cfg.sourceShortPresenceHours,
+    ...(cfg.sourceMissingOutcome === "after24h" && !requiresConfirmation
       ? { reviewDueAt: new Date(Date.parse(at) + 86400000).toISOString() }
       : {}),
-    ...(cfg.sourceMissingOutcome === "automatic"
+    ...(cfg.sourceMissingOutcome === "automatic" && !requiresConfirmation
       ? {
           review: {
             at,
@@ -145,6 +170,7 @@ export function inferAdoption(db, animal, snapshot, cfg, at, confirmations) {
     deferred ? "source_adoption_pending" : "source_adoption_automatic",
     { animalId: animal.id, name: animal.name, ...p },
   );
+  return p;
 }
 function confirm(db, animal, p, user, by, at, reason) {
   const before = { ...animal },
@@ -272,7 +298,13 @@ export function settleDueAdoptions(db, cfg = settings(db), clock = Date.now()) {
                 new Date(Date.parse(p.at) + 86400000).toISOString(),
             )
           : Date.parse(p.at);
-    if (clock < due || p.scope !== cfg.sourceScope) continue;
+    if (
+      p.requiresConfirmation ||
+      p.policy === "manual" ||
+      clock < due ||
+      p.scope !== cfg.sourceScope
+    )
+      continue;
     const inventory = readPresence(db, p.scope),
       fetched = Date.parse(inventory?.fetchedAt || "");
     if (

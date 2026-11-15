@@ -8,6 +8,7 @@ import { createHash } from "node:crypto";
 import { ingest, derivative } from "./storage.mjs";
 import { id, now, transaction, settings, saveSettings, audit } from "./db.mjs";
 import { assertStorage } from "./config.mjs";
+import { inboxRetentionDays, purgeDiscardedInbox } from "./inbox-retention.mjs";
 const UUID = z.string().uuid();
 const fail = (message, statusCode = 400) =>
   Object.assign(new Error(message), { statusCode });
@@ -39,6 +40,7 @@ export async function scanImports(db, c, userId = null) {
     if (depth > 6 || result.more || result.limitReached) return;
     const handle = await fs.opendir(directory);
     for await (const entry of handle) {
+      if (settings(db).enabledModules?.inbox === false) break;
       if (++visited > 10000) {
         result.limitReached = true;
         break;
@@ -126,6 +128,8 @@ export async function registerInbox(app, { db, c, authorized }) {
   let last = null,
     nextAt = 0,
     closing = false;
+  let purging = null,
+    nextPurgeAt = Date.now() + 3600000;
   async function scan(user) {
     if (scanning) throw fail("Une lecture du dossier est déjà en cours.", 409);
     scanning = true;
@@ -158,6 +162,8 @@ export async function registerInbox(app, { db, c, authorized }) {
           if (
             closing ||
             scanning ||
+            purging ||
+            settings(db).enabledModules?.inbox === false ||
             !c.importDir ||
             !settings(db).importAutoEnabled ||
             Date.now() < nextAt
@@ -166,9 +172,43 @@ export async function registerInbox(app, { db, c, authorized }) {
           await scan(null).catch(() => {});
         }, 15000);
   timer?.unref();
+  const retentionTimer =
+    c.scheduler === false
+      ? null
+      : setInterval(() => {
+          if (
+            closing ||
+            purging ||
+            scanning ||
+            settings(db).enabledModules?.inbox === false ||
+            Date.now() < nextPurgeAt ||
+            !inboxRetentionDays(db) ||
+            db.prepare("SELECT 1 FROM jobs WHERE state='running'").get()
+          )
+            return;
+          nextPurgeAt = Date.now() + 3600000;
+          purging = purgeDiscardedInbox(db, c)
+            .then((result) =>
+              saveSettings(db, {
+                inboxRetentionLastRun: { at: now(), ...result },
+              }),
+            )
+            .catch(() => {
+              const error =
+                "Nettoyage interrompu. Vérifiez le stockage et les sauvegardes ; les éléments non traités restent conservés.";
+              saveSettings(db, { inboxRetentionLastRun: { at: now(), error } });
+              audit(db, null, "inbox_retention_failed", { error });
+            })
+            .finally(() => {
+              purging = null;
+            });
+        }, 60000);
+  retentionTimer?.unref();
   app.addHook("preClose", async () => {
     closing = true;
     clearInterval(timer);
+    clearInterval(retentionTimer);
+    await purging;
     while (scanning) await new Promise((r) => setTimeout(r, 50));
   });
   app.get(
@@ -207,6 +247,41 @@ export async function registerInbox(app, { db, c, authorized }) {
       nextAt = Date.now() + input.intervalMinutes * 60000;
       audit(db, req.user, "import_automation_configured", input);
       return { ok: true };
+    },
+  );
+  app.get(
+    "/api/inbox/count",
+    { preHandler: authorized(["admin", "editor", "agent"]) },
+    async () => ({
+      count: db
+        .prepare(
+          "SELECT COUNT(*) n FROM inbox_photos WHERE archived_at IS NULL",
+        )
+        .get().n,
+    }),
+  );
+  const retention = () => ({
+    days: inboxRetentionDays(db),
+    scheduler: c.scheduler !== false,
+    last: settings(db).inboxRetentionLastRun || null,
+  });
+  app.get(
+    "/api/inbox/retention",
+    { preHandler: authorized(["admin"]) },
+    async () => retention(),
+  );
+  app.put(
+    "/api/inbox/retention",
+    { preHandler: authorized(["admin"]) },
+    async (req) => {
+      const input = z
+        .object({ days: z.number().int().min(0).max(3650) })
+        .strict()
+        .parse(req.body);
+      saveSettings(db, { inboxRetentionDays: input.days });
+      nextPurgeAt = Date.now() + 3600000;
+      audit(db, req.user, "inbox_retention_configured", input);
+      return retention();
     },
   );
   app.post(
@@ -339,6 +414,7 @@ export async function registerInbox(app, { db, c, authorized }) {
         )
         .all(),
       importFolderConfigured: !!c.importDir,
+      retention: retention(),
     };
   });
   app.post(

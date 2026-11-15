@@ -7,7 +7,11 @@ import * as cheerio from "cheerio";
 import { z } from "zod";
 import { recordAnimalChanges } from "./animal-history.mjs";
 import { sourceStatus } from "./source-status.mjs";
-import { savePresence, readPresence } from "./source-presence.mjs";
+import {
+  savePresence,
+  readPresence,
+  recordSourceObservation,
+} from "./source-presence.mjs";
 import {
   adoptionOrigin,
   inferAdoption,
@@ -454,7 +458,9 @@ export function applySnapshot(db, snapshot) {
           a.birthDate ?? null,
           a.description,
           a.sourceUrl ?? null,
-          seenAt,
+          Date.parse(old.source_seen_at) > Date.parse(seenAt)
+            ? old.source_seen_at
+            : seenAt,
           date,
           snapshot.scope,
           a.breed,
@@ -535,7 +541,14 @@ export function applySnapshot(db, snapshot) {
       const currentRow = db
         .prepare("SELECT * FROM animals WHERE source_id=?")
         .get(a.sourceId);
-      if (currentRow) recordAnimalChanges(db, old, currentRow, date);
+      if (currentRow) {
+        if (
+          Number.isFinite(fetched) &&
+          Math.abs(Date.now() - fetched) < cfg.sourceStaleHours * 3600000
+        )
+          recordSourceObservation(db, currentRow, snapshot.fetchedAt, !old);
+        recordAnimalChanges(db, old, currentRow, date);
+      }
     }
     if (
       snapshot.complete &&
@@ -547,7 +560,7 @@ export function applySnapshot(db, snapshot) {
       const seen = new Set(snapshot.animals.map((a) => a.sourceId));
       for (const a of db
         .prepare(
-          "SELECT id,source_id,missing_count FROM animals WHERE source_scope=? AND status NOT IN ('adopted','deceased','transferred') AND (archived_at IS NULL OR (? AND status='source_missing')) AND NOT EXISTS(SELECT 1 FROM settings s WHERE s.key='animalTrash:'||animals.id)",
+          "SELECT id,source_id,source_seen_at,missing_count FROM animals WHERE source_scope=? AND status NOT IN ('adopted','deceased','transferred') AND (archived_at IS NULL OR (? AND status='source_missing')) AND NOT EXISTS(SELECT 1 FROM settings s WHERE s.key='animalTrash:'||animals.id)",
         )
         .all(
           snapshot.scope,
@@ -556,7 +569,8 @@ export function applySnapshot(db, snapshot) {
               adoptionPolicies.includes(cfg.sourceMissingOutcome),
           ),
         )) {
-        if (seen.has(a.source_id)) continue;
+        if (seen.has(a.source_id) || Date.parse(a.source_seen_at) > fetched)
+          continue;
         // A pending deadline or a team refusal must survive subsequent absences.
         if (automaticAdoption(db, a.id)) continue;
         const count = a.missing_count + 1;
@@ -568,18 +582,14 @@ export function applySnapshot(db, snapshot) {
           const before = db
             .prepare("SELECT * FROM animals WHERE id=?")
             .get(a.id);
-          const outcome = ["adopted", "automatic"].includes(
-            cfg.sourceMissingOutcome,
-          )
-            ? "adopted"
-            : "source_missing";
+          const decision = adoptionPolicies.includes(cfg.sourceMissingOutcome)
+            ? inferAdoption(db, before, snapshot, cfg, date, count)
+            : null;
+          const outcome = decision?.eventId ? "adopted" : "source_missing";
           db.prepare(
             "UPDATE animals SET archived_at=COALESCE(archived_at,?),departed_at=COALESCE(departed_at,?),status=?,updated_at=? WHERE id=?",
           ).run(date, date, outcome, date, a.id);
-          if (adoptionPolicies.includes(cfg.sourceMissingOutcome)) {
-            inferAdoption(db, before, snapshot, cfg, date, count);
-            if (outcome === "adopted") autoAdopted++;
-          }
+          if (outcome === "adopted") autoAdopted++;
           recordAnimalChanges(
             db,
             before,

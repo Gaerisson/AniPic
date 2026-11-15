@@ -146,6 +146,7 @@ test("short absence confirmation delay still requires distinct inventories and n
   saveSettings(db, {
     archiveMissing: true,
     sourceMissingOutcome: "adopted",
+    sourceShortPresenceHours: 0,
     sourceAbsenceIntervalHours: 0.25,
     missingThreshold: 2,
   });

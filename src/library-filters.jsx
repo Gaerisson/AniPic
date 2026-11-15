@@ -102,9 +102,11 @@ export function LibraryFilters({
           value={photos}
           onChange={(e) => change("photos", e.target.value)}
         >
-          <option value="all">Avec ou sans photos</option>
-          <option value="with">Avec photos</option>
-          <option value="without">Sans photo</option>
+          <option value="all">Avec ou sans photos locales</option>
+          <option value="with">Avec photos du refuge</option>
+          <option value="without">
+            Sans photo du refuge (SPA seule comprise)
+          </option>
         </select>
       </label>
       {page !== "archives" && (

@@ -4,6 +4,8 @@ import {
   StartupScreen,
 } from "./app-feedback.jsx";
 import { WorkspaceTabs } from "./workspace-tabs.jsx";
+import { TopSync } from "./top-sync.jsx";
+import { useAnonymousAudience } from "./audience.jsx";
 import { workspaceParent } from "../shared/workspaces.mjs";
 import {
   missingInterfaceAsset,
@@ -207,7 +209,7 @@ const pages = {
     group: "team",
     roles: ["admin", "agent", "editor", "volunteer", "viewer"],
   },
-  modules: { name: "Modules", icon: Settings, group: "admin" },
+  modules: { name: "Fonctions", icon: Settings, group: "admin" },
   privacy: { name: "Confidentialité", icon: ShieldCheck, group: "info" },
   terms: { name: "Conditions d’utilisation", icon: Info, group: "info" },
   legal: { name: "Mentions légales", icon: Info, group: "info" },
@@ -289,6 +291,7 @@ function App() {
     [q, setQ] = useState(""),
     [mobile, setMobile] = useState(false),
     [connectionError, setConnectionError] = useState("");
+  useAnonymousAudience(modal?.type === "animal" ? "animal" : page, privacy);
   const appRuntime = useMobileApp();
   const [theme, setTheme] = useState(
     () => browserTheme() || (appRuntime.appMode ? "spa" : null),
@@ -417,6 +420,39 @@ function App() {
   const reload = useCallback(() => setVersion((v) => v + 1), []);
   const [pendingAdoptions, setPendingAdoptions] = useState(0);
   const [pendingVolunteers, setPendingVolunteers] = useState(0);
+  const [inboxCount, setInboxCount] = useState(0);
+  useEffect(() => {
+    if (
+      !["admin", "editor", "agent"].includes(user?.role) ||
+      modules.inbox === false
+    ) {
+      setInboxCount(0);
+      return;
+    }
+    let active = true,
+      loading = false;
+    const load = async () => {
+      if (document.hidden || loading) return;
+      loading = true;
+      try {
+        const d = await api("/inbox/count");
+        if (active) setInboxCount(d.count);
+      } catch {
+      } finally {
+        loading = false;
+      }
+    };
+    load();
+    const timer = setInterval(load, 15000);
+    window.addEventListener("focus", load);
+    document.addEventListener("visibilitychange", load);
+    return () => {
+      active = false;
+      clearInterval(timer);
+      window.removeEventListener("focus", load);
+      document.removeEventListener("visibilitychange", load);
+    };
+  }, [user?.id, user?.role, modules.inbox, version]);
   useEffect(() => {
     if (user?.role !== "admin") {
       setPendingVolunteers(0);
@@ -460,7 +496,7 @@ function App() {
       window.removeEventListener("focus", load);
     };
   }, [user?.id, version]);
-  const undo = useUndo(user, notify, reload);
+  const undo = useUndo(user, notify, reload, !modal);
   const [navOpen, setNavOpen] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem("anipic-nav") || "{}");
@@ -594,6 +630,7 @@ function App() {
   };
   const team = useTeamMessages(user, version, notify);
   const actions = {
+    modules,
     pushUndo: undo.push,
     undoAction: undo.run,
     undoLabel: undo.label,
@@ -929,6 +966,14 @@ function App() {
                       >
                         <item.icon {...iconProps} />
                         <span>{item.name}</span>
+                        {key === "inbox" && inboxCount > 0 && (
+                          <span
+                            className="nav-count"
+                            aria-label={`${inboxCount} photos à attribuer`}
+                          >
+                            {inboxCount}
+                          </span>
+                        )}
                         {key === "todo" && overview?.stats.openTasks > 0 && (
                           <span className="nav-count">
                             {overview.stats.openTasks}
@@ -1008,6 +1053,20 @@ function App() {
               <strong>{pages[page].name}</strong>
             </div>
             <div className="topbar-right">
+              <TopSync user={user} notify={notify} reload={reload} />
+              {user?.role === "admin" && pendingVolunteers > 0 && (
+                <button
+                  className="pending-google-button"
+                  onClick={() => go("users")}
+                  title="Examiner les inscriptions Google en attente"
+                >
+                  <Bell size={17} />
+                  <span>
+                    {pendingVolunteers} inscription
+                    {pendingVolunteers > 1 ? "s" : ""}
+                  </span>
+                </button>
+              )}
               {modules.assistant !== false && (
                 <QuickAssistant
                   pages={Object.fromEntries(
@@ -1068,7 +1127,7 @@ function App() {
                 onClose={cookiePanel ? () => setCookiePanel(false) : undefined}
               />
             )}
-            {undo.label && (
+            {undo.label && !modal && (
               <div className="undo-strip" role="status">
                 <span>{undo.label}</span>
                 <button type="button" onClick={undo.run} disabled={undo.busy}>
@@ -1105,6 +1164,8 @@ function App() {
               go={go}
               user={user}
               appMode={appRuntime.appMode}
+              modules={modules}
+              inboxCount={inboxCount}
             />
             {connectionError ? (
               <Empty
@@ -1543,3 +1604,4 @@ import "./mobile-app.css";
 import "./update3110.css";
 
 import "./features314.css";
+import "./usability318.css";

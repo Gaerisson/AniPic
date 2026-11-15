@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isAudienceRequest } from "./audience.mjs";
 import { randomBytes } from "node:crypto";
 import { settings, saveSettings, audit, now } from "./db.mjs";
 import {
@@ -93,6 +94,8 @@ export function siteAccessHook(db, c) {
     // or a site pass for its recipient. Its route validates the capability.
     if (["GET", "HEAD"].includes(req.method) && entryPath.startsWith("/s/"))
       return;
+    // Anonymous counters/preferences do not grant a PIN pass or network login.
+    if (isAudienceRequest(req)) return;
     // Keep valid pre-existing passes without asking for the PIN again. Upgrade
     // only unexpired legacy passes; revoked and expired tokens never revive.
     if (

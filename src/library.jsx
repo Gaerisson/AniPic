@@ -504,6 +504,42 @@ export function Library({
           </label>
         </div>
       </div>
+      <div
+        className="photo-filter-shortcuts"
+        aria-label="Filtrer les photos locales"
+      >
+        <strong>
+          <SlidersHorizontal size={18} /> Trouver les photos
+        </strong>
+        {[
+          ["all", "Tous les animaux"],
+          ["with", "Avec photos du refuge"],
+          ["without", "À photographier"],
+        ].map(([value, label]) => (
+          <button
+            type="button"
+            key={value}
+            className={photos === value ? "selected" : ""}
+            aria-pressed={photos === value}
+            onClick={() => {
+              setPhotos(value);
+              setNumber(1);
+            }}
+          >
+            {label}
+          </button>
+        ))}
+        <button
+          type="button"
+          className="all-filters-button"
+          aria-expanded={filtersOpen}
+          aria-controls="animal-filters"
+          onClick={() => setFiltersOpen((v) => !v)}
+        >
+          Tous les filtres{filterCount > 0 ? ` · ${filterCount}` : ""}
+          <ChevronDown size={15} />
+        </button>
+      </div>
       <div className="results-bar">
         <span>
           {loading ? (
@@ -710,7 +746,21 @@ export function Library({
                       {a.source_id || a.id.slice(0, 8)}
                     </small>
                   </td>
-                  <td>{a.photo_count}</td>
+                  <td>
+                    <span
+                      className={`local-photo-status ${a.photo_count ? "has-local" : "needs-local"}`}
+                    >
+                      <Camera size={14} />
+                      {a.photo_count
+                        ? `${a.photo_count} photo${a.photo_count > 1 ? "s" : ""} du refuge`
+                        : "À photographier"}
+                    </span>
+                    {!a.photo_count && a.source_metadata?.thumbnail && (
+                      <small className="photo-origin-note">
+                        Photo du site SPA
+                      </small>
+                    )}
+                  </td>
                   <td>
                     <AnimalStatus animal={a} />
                   </td>
@@ -805,7 +855,7 @@ export function AnimalCard({
   return (
     <article
       ref={ref}
-      className={`animal-card tilt-card ${!a.cover_id ? "no-photo" : ""} ${recent ? "recent-photo" : ""} ${recent && agePhoto < 2 ? "fresh-photo" : ""} ${flipped ? "flipped" : ""}`}
+      className={`animal-card tilt-card ${!a.photo_count ? "no-photo needs-local-portrait" : "has-local-portrait"} ${recent ? "recent-photo" : ""} ${recent && agePhoto < 2 ? "fresh-photo" : ""} ${flipped ? "flipped" : ""}`}
       onPointerMove={(e) => {
         if (!animations || e.pointerType !== "mouse") return;
         const bounds = ref.current.getBoundingClientRect();
@@ -953,6 +1003,16 @@ export function AnimalCard({
       </button>
       <div className="animal-card-body">
         <div>
+          <span
+            className={`local-photo-status ${a.photo_count ? "has-local" : "needs-local"}`}
+          >
+            <Camera size={13} />
+            {a.photo_count
+              ? "Photos du refuge"
+              : a.source_metadata?.thumbnail
+                ? "Photo SPA · à photographier"
+                : "À photographier"}
+          </span>
           <div className="animal-name-line">
             <NavLink
               href={"#animal/" + a.id}

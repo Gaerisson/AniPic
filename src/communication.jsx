@@ -25,6 +25,7 @@ export function AnimalCommunication({
   reload,
   canEdit,
   onUpdate,
+  modules = {},
 }) {
   const [busy, setBusy] = useState(false);
   return (
@@ -63,22 +64,23 @@ export function AnimalCommunication({
           </span>
         </label>
       )}
-      {(photo || animal.source_metadata?.thumbnail) && (
-        <Button
-          icon={Printer}
-          variant="secondary"
-          onClick={() =>
-            open({
-              type: "communication",
-              animalId: animal.id,
-              photoId: photo?.id || "spa",
-              photoIds: selected?.length ? selected : [photo?.id || "spa"],
-            })
-          }
-        >
-          Créer l’affiche de box
-        </Button>
-      )}
+      {modules.posters !== false &&
+        (photo || animal.source_metadata?.thumbnail) && (
+          <Button
+            icon={Printer}
+            variant="secondary"
+            onClick={() =>
+              open({
+                type: "communication",
+                animalId: animal.id,
+                photoId: photo?.id || "spa",
+                photoIds: selected?.length ? selected : [photo?.id || "spa"],
+              })
+            }
+          >
+            Créer l’affiche de box
+          </Button>
+        )}
       {canEdit && (
         <button
           className="text-link"

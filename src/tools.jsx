@@ -17,6 +17,7 @@ import {
   Printer,
   Trash2,
   LoaderCircle,
+  ChevronDown,
 } from "lucide-react";
 import { copyText, api, date, speciesName, imageUrl } from "./api.js";
 import { Button, Empty, Spinner, Modal } from "./ui.jsx";
@@ -108,7 +109,8 @@ export function ShootBoard({
     [showDone, setShowDone] = useState(false),
     [missing, setMissing] = useState([]),
     [missingPage, setMissingPage] = useState(1),
-    [missingPages, setMissingPages] = useState(1);
+    [missingPages, setMissingPages] = useState(1),
+    [missingTotal, setMissingTotal] = useState(0);
   useEffect(() => {
     if (!user) return;
     api("/tasks")
@@ -121,6 +123,7 @@ export function ShootBoard({
       .then((data) => {
         setMissing(data.items);
         setMissingPages(data.pages);
+        setMissingTotal(data.total ?? data.items.length);
       })
       .catch((e) => notify(e.message, "error"));
   }, [user?.id, version, missingPage]);
@@ -261,42 +264,16 @@ export function ShootBoard({
           text="Choisissez un animal ci-dessus pour préparer la prochaine séance."
         />
       ) : (
-        <div className="shoot-board">
+        <div className="shoot-board shoot-board-compact">
           {tasks
             .filter((t) => showDone || t.state !== "done")
             .map((task) => (
               <article
                 key={task.id}
-                className={"task-card priority-" + task.priority}
+                className={
+                  "task-card task-card-compact priority-" + task.priority
+                }
               >
-                {canEdit && (
-                  <button
-                    className="task-remove icon-button"
-                    aria-label={"Supprimer la demande pour " + task.animal_name}
-                    onClick={() => update(task, { deleted: true })}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                )}
-                <div className="task-top">
-                  <span className={"priority-pill " + task.priority}>
-                    {
-                      {
-                        urgent: "Urgente",
-                        high: "Haute",
-                        normal: "Normale",
-                        low: "Quand possible",
-                      }[task.priority]
-                    }
-                  </span>
-                  <span>
-                    {task.state === "done"
-                      ? "Terminée"
-                      : task.state === "progress"
-                        ? "En traitement"
-                        : "À faire"}
-                  </span>
-                </div>
                 <button
                   className="task-animal"
                   onClick={() => open({ type: "animal", id: task.animal_id })}
@@ -320,50 +297,90 @@ export function ShootBoard({
                     <small>{task.title}</small>
                   </strong>
                 </button>
-                <p>
-                  {task.note || "Une nouvelle série de portraits à préparer."}
-                </p>
-                <div className="task-bottom">
-                  <small>
+                <div className="task-row-details">
+                  {!canEdit && (
+                    <div className="task-top">
+                      <span className={"priority-pill " + task.priority}>
+                        {priorityLabels[task.priority]}
+                      </span>
+                      <span>
+                        {task.state === "done"
+                          ? "Terminée"
+                          : task.state === "progress"
+                            ? "En traitement"
+                            : "À faire"}
+                      </span>
+                    </div>
+                  )}
+                  {task.note && (
+                    <details className="task-note">
+                      <summary>
+                        <span>{task.note}</span>
+                        <ChevronDown size={14} />
+                      </summary>
+                      <p>{task.note}</p>
+                    </details>
+                  )}
+                  <small className="task-created">
                     {task.author || "Équipe"} · {date(task.created_at)}
                   </small>
-                  {canEdit && (
-                    <select
-                      aria-label={"État de la séance " + task.animal_name}
-                      value={task.state}
-                      onChange={(e) => update(task, { state: e.target.value })}
-                    >
-                      <option value="todo">À faire</option>
-                      <option value="progress">
-                        Photographié · en traitement
-                      </option>
-                      <option value="done">Terminée</option>
-                    </select>
-                  )}
                 </div>
                 {canEdit && (
-                  <select
-                    aria-label={"Priorité de " + task.animal_name}
-                    value={task.priority}
-                    onChange={(e) => update(task, { priority: e.target.value })}
-                  >
-                    <option value="urgent">Urgente</option>
-                    <option value="high">Haute</option>
-                    <option value="normal">Normale</option>
-                    <option value="low">Quand possible</option>
-                  </select>
+                  <div className="task-row-controls">
+                    <label>
+                      État
+                      <select
+                        aria-label={"État de la séance " + task.animal_name}
+                        value={task.state}
+                        onChange={(e) =>
+                          update(task, { state: e.target.value })
+                        }
+                      >
+                        <option value="todo">À faire</option>
+                        <option value="progress">
+                          Photographié · en traitement
+                        </option>
+                        <option value="done">Terminée</option>
+                      </select>
+                    </label>
+                    <label>
+                      Priorité
+                      <select
+                        aria-label={"Priorité de " + task.animal_name}
+                        value={task.priority}
+                        onChange={(e) =>
+                          update(task, { priority: e.target.value })
+                        }
+                      >
+                        <option value="urgent">Urgente</option>
+                        <option value="high">Haute</option>
+                        <option value="normal">Normale</option>
+                        <option value="low">Quand possible</option>
+                      </select>
+                    </label>
+                    <button
+                      className="task-remove icon-button"
+                      aria-label={
+                        "Supprimer la demande pour " + task.animal_name
+                      }
+                      title="Retirer la demande"
+                      onClick={() => update(task, { deleted: true })}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 )}
               </article>
             ))}
         </div>
       )}
-      <section className="panel section-gap missing-panel">
-        <div className="panel-heading">
-          <h2>Sans photo locale</h2>
+      <details className="panel section-gap missing-panel missing-panel-compact">
+        <summary className="panel-heading">
+          <strong>Sans photo locale · {missingTotal}</strong>
           <span>
-            {missingPage} / {Math.max(1, missingPages)}
+            Préparer une demande <ChevronDown size={16} />
           </span>
-        </div>
+        </summary>
         <div className="missing-grid">
           {missing.map((a) => (
             <button
@@ -414,7 +431,7 @@ export function ShootBoard({
             </Button>
           </div>
         )}
-      </section>
+      </details>
     </>
   );
 }

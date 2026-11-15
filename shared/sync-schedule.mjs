@@ -79,6 +79,20 @@ function matches(fields, formatter, date) {
 export function cronMatches(expression, zone, date = new Date()) {
   return matches(parseCron(expression), clock(zone), date);
 }
+export function cronFromDailyTime(time) {
+  if (typeof time !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time))
+    throw new Error("Choisissez une heure entre 00:00 et 23:59.");
+  const [hour, minute] = time.split(":").map(Number);
+  return `${minute} ${hour} * * *`;
+}
+export function dailyTimeFromCron(expression) {
+  if (typeof expression !== "string") return null;
+  const match = /^(\d{1,2})\s+(\d{1,2})\s+\*\s+\*\s+\*$/.exec(
+    expression.trim(),
+  );
+  if (!match || Number(match[1]) > 59 || Number(match[2]) > 23) return null;
+  return `${match[2].padStart(2, "0")}:${match[1].padStart(2, "0")}`;
+}
 export function syncDue(cfg, last, date = new Date()) {
   if (cfg.sourceMode === "disabled" || cfg.syncScheduleMode === "manual")
     return false;
