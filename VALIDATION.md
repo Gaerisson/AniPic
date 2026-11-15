@@ -1,5 +1,15 @@
 # Vérifications — AniPic
 
+## V3.18.1 — Contrôle visuel et filtres mobiles (15 novembre 2026)
+
+Le navigateur a été réactivé après la publication 3.18.0. Sur la démonstration restaurée : bouton **Synchroniser** visible en haut, compteur de deux photos à trier dans les deux navigations, ouverture d’une photo en 1200 × 826 et comparaison avec un portrait SPA en grand ; aucune attribution enregistrée. Fiche animal sans raccourci Ctrl+Z et avec options repliées ; planning compact contrôlé. L’émulation du mode impression montre uniquement la feuille, sans barre supérieure ni menus ; aucune impression papier ou validation de pagination PDF n’est revendiquée.
+
+Le contrôle à 320 et 390 px a révélé un ancien `flex: 1` mobile qui comprimait « Tous les compagnons » jusqu’à 63 px pour 141 px de contenu. Le correctif conserve la base naturelle des boutons et leur passage à la ligne. Après reconstruction et rechargement, les quatre libellés tiennent à 320 px ; le premier tient aussi à 390 px. Aucun débordement horizontal du document constaté.
+
+Build web 3.18.1 réussi en 33,22 s, avertissement habituel sur les chunks. Les 11 tests ciblés de publication, configuration de déploiement et APK passent sans échec/ignoré/annulé (55,4 s). APK et dépendances inchangées. L’aperçu répond en 3.18.1 sur localhost:3036 avec les données préservées. La CI du nouveau commit contrôle à nouveau la suite complète, web/vidéo, Android, Docker et MP4 avant publication.
+
+La 3.18.0 a déjà passé ses 364 tests complets sur GitHub (144,5 s), les builds, Android, Docker et un vrai MP4 1280 × 720 de deux secondes : [publication 43727498763](https://github.com/Gaerisson/AniPic/actions/runs/43727498763), commit `1a8a60aa9c8a14028803f0b7000fe5123715bb17`. Le tag, main et la release stable Latest correspondaient à ce commit lors de leur vérification. Image publique GHCR 3.18.0 vérifiée anonymement : `sha256:6a97fd828850fc4fea8584f6d7cccd64192ca715826b51661c6cb5ba4930b3a0`. Aucun déploiement NAS/Portainer et aucun bot WhatsApp connecté.
+
 ## V3.18.0 — Parcours photo et administration (15 novembre 2026)
 
 Suite complète locale sous Node 24 : **364 tests réussis**, zéro échec, ignoré ou annulé, en 725,5 s. Les 39 cas ajoutés et les contrôles existants couvrent notamment la présence source courte et figée, les confirmations obligatoires persistantes, le retour d’un animal, les inventaires partiels/anciens, le quotidien heure/fuseau, le compteur du tri et ses permissions, les purges avec sauvegarde vérifiée et revalidation après attente, les références/blobs partagés, la pause du module, la stabilité des corrections et les réponses tardives.

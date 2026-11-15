@@ -265,6 +265,9 @@
   }
 }
 @media screen and (max-width: 800px) {
+  .species-tabs button {
+    flex: 1 0 auto;
+  }
   .topbar {
     align-items: flex-start;
     flex-wrap: wrap;

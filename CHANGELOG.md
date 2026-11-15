@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 3.18.1 — Filtres lisibles sur mobile
+
+Le bouton « Tous les compagnons » garde la largeur de son libellé et les espèces passent à la ligne sur petit écran, sans chevauchement. Cette version conserve toutes les nouveautés de la [3.18.0](RELEASE_v3.18.0.md), dont le bouton **Synchroniser** dans la barre supérieure. [Notes de version](RELEASE_v3.18.1.md).
+
 ## 3.18.0 — Un quotidien photo plus simple
 
 Tri avec compteur, grandes photos et comparaison des suggestions ; purge facultative des photos écartées après sauvegarde ; quotidien à heure fixe, exception de présence courte et synchronisation manuelle dans la barre supérieure. Filtres/photos locales plus lisibles, fiche allégée, planning compact et impression isolée. Relecture stable, résultats asynchrones protégés, modules étendus et demandes Google mises en avant. Compteurs anonymes locaux sans identification, partage préparé dans WhatsApp et étude des bots. [Notes de version](RELEASE_v3.18.0.md).
