@@ -1,5 +1,17 @@
 # Vérifications — AniPic
 
+## V3.18.2 — Tri, téléchargement et retrait du dépôt (16 novembre 2026)
+
+L’utilisateur confirme explicitement le retrait des fichiers sur disque après attribution/mise à l’écart, en plus du retrait de la file AniPic. Le nettoyage contrôle le reçu, le contenu source et la copie conservée, reste borné au dépôt dédié, refuse les jonctions et dossiers internes, journalise les captures temporaires et conserve les exports modifiés/remplacés. Les erreurs de permissions sont signalées sans annuler l’attribution. Annulation et restauration restent possibles depuis la copie AniPic.
+
+**57 tests ciblés réussis**, aucun échec/ignoré/annulé (111,0 s) : téléchargement privé/JPG/CSRF/erreur JSON, import direct/doublons, nettoyages et reprise, file/assignations/annulations, rétention/sauvegarde, albums, collecte du dépôt, stockage/NAS simulé, publication/déploiement et APK. Les 17 tests de nettoyage couvrent notamment les remplacements avant/après capture, un exporteur gardant un ancien descripteur ouvert, copie AniPic endommagée, lecture seule/reprise, restauration interrompue et liens/jonctions. Les régressions de reprise et d’écriture tardive ont été observées en échec puis corrigées ; revue backend indépendante finale sans finding résiduel, ses 17 tests passent aussi. Une distinction supplémentaire conserve l’import manuel volontaire tout en évitant la réintroduction par le scanner automatique.
+
+Build web exact 3.18.2 réussi en 9,79 s (avertissement habituel sur les chunks), formatage et whitespace contrôlés. Dépendances et APK/native 3.14.0 inchangées. La CI du commit de publication doit ensuite revalider la suite complète, les builds web/vidéo, Android, les configurations Compose, Docker et un vrai MP4. La CLI Docker est absente sur ce PC ; aucun Docker local ni déploiement NAS n’est revendiqué.
+
+QA navigateur : badge local retiré, Photo SPA conservé, bouton de fiche à 14 px du contenu, commandes et aide séparées de 18 px. À 320/390 px, la hauteur intrinsèque de la photo garde les commandes/aide visibles sans débordement. Le téléchargement déclenché dans la démo fournit un vrai JPEG 1200 × 826 sans EXIF. Le message de retrait du dépôt et ses boutons sont contrôlés sur une instance temporaire séparée avec un export fictif ; les suppressions et incidents sont exercés dans les fixtures isolées. La démo restaurée est préservée.
+
+**Mise à jour de stack :** `compose.import.yml` passe le seul montage `/imports` en lecture/écriture ; C8 et la racine du conteneur restent en lecture seule. Une ancienne stack doit adapter son montage et les droits de l’UID/GID : changer seulement l’image ne modifie pas les permissions. La santé du dossier Import vérifie désormais son écriture, sans exiger le marqueur réservé aux volumes de photos/sauvegardes. Voir [DEPLOIEMENT.md](docs/DEPLOIEMENT.md) et [FLUX_PHOTO.md](docs/FLUX_PHOTO.md).
+
 ## V3.18.1 — Contrôle visuel et filtres mobiles (15 novembre 2026)
 
 Le navigateur a été réactivé après la publication 3.18.0. Sur la démonstration restaurée : bouton **Synchroniser** visible en haut, compteur de deux photos à trier dans les deux navigations, ouverture d’une photo en 1200 × 826 et comparaison avec un portrait SPA en grand ; aucune attribution enregistrée. Fiche animal sans raccourci Ctrl+Z et avec options repliées ; planning compact contrôlé. L’émulation du mode impression montre uniquement la feuille, sans barre supérieure ni menus ; aucune impression papier ou validation de pagination PDF n’est revendiquée.

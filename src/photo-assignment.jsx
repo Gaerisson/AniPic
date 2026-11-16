@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { sourceCleanupFeedback } from "./import-cleanup-notice.js";
 import {
   Camera,
   Search,
@@ -602,10 +603,13 @@ export function PhotoAssignmentDialog({
                         body: { token: result.undoToken },
                       }),
                   });
+                const cleanup = sourceCleanupFeedback(result);
                 notify(
-                  reassign
+                  (reassign
                     ? `${result.moved} photo(s) réattribuée(s) à ${chosen.name}. Ctrl+Z pour annuler.`
-                    : `${result.added} photo(s) attribuée(s) à ${chosen.name}${result.duplicates ? ` · ${result.duplicates} déjà présente(s)` : ""}.`,
+                    : `${result.added} photo(s) attribuée(s) à ${chosen.name}${result.duplicates ? ` · ${result.duplicates} déjà présente(s)` : ""}.`) +
+                    cleanup.message,
+                  cleanup.warning ? "error" : "success",
                 );
                 done(chosen);
               } catch (e) {

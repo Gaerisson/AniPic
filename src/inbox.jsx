@@ -3,6 +3,7 @@ import {
   LargeAssignmentPhoto,
 } from "./photo-assignment.jsx";
 import { UploadPreviews } from "./upload-feedback.jsx";
+import { sourceCleanupFeedback } from "./import-cleanup-notice.js";
 import { uploadWithProgress } from "./api.js";
 import { useState, useEffect, useRef } from "react";
 import {
@@ -18,8 +19,10 @@ import {
   ArrowRight,
   Lock,
   RefreshCw,
+  Download,
+  Trash2,
 } from "lucide-react";
-import { api, bytes, speciesName, imageUrl } from "./api.js";
+import { api, apiDownload, bytes, speciesName, imageUrl } from "./api.js";
 import { Button, Empty, Spinner, Modal } from "./ui.jsx";
 import { AnimalStatus } from "./animal-status.jsx";
 import { SpaPhoto } from "./spa-photo.jsx";
@@ -83,6 +86,7 @@ export function Inbox({
     [zoom, setZoom] = useState(null),
     [drag, setDrag] = useState(false);
   const [retentionDraft, setRetentionDraft] = useState(null);
+  const [downloading, setDownloading] = useState(false);
   const [uploadFiles, setUploadFiles] = useState([]),
     [fileProgress, setFileProgress] = useState(0);
   const filesRef = useRef(),
@@ -97,12 +101,19 @@ export function Inbox({
     reload();
   };
   useEffect(() => {
-    if (!canEdit || !data?.importFolderConfigured) return;
-    const timer = setInterval(() => {
+    if (!canEdit) return;
+    const update = () => {
       if (!document.hidden) setRevision((v) => v + 1);
-    }, 15000);
-    return () => clearInterval(timer);
-  }, [canEdit, data?.importFolderConfigured]);
+    };
+    const timer = setInterval(update, 15000);
+    window.addEventListener("focus", update);
+    document.addEventListener("visibilitychange", update);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", update);
+      document.removeEventListener("visibilitychange", update);
+    };
+  }, [canEdit]);
   useEffect(() => {
     setSelected([]);
     setZoom(null);
@@ -117,7 +128,22 @@ export function Inbox({
           `/inbox?page=${page}&folder=${encodeURIComponent(folder)}&q=${encodeURIComponent(query)}&archived=${Number(archived)}`,
         )
           .then((d) => {
-            if (alive) setData(d);
+            if (alive) {
+              setData(d);
+              setSelected((previous) =>
+                previous.filter((value) =>
+                  d.items.some((photo) => photo.id === value),
+                ),
+              );
+              setZoom((previous) =>
+                previous
+                  ? d.items.find((photo) => photo.id === previous.id) || null
+                  : null,
+              );
+              if (folder && !d.folders.some((entry) => entry.folder === folder))
+                setFolder("");
+              if (page > Math.max(1, d.pages)) setPage(Math.max(1, d.pages));
+            }
           })
           .catch((e) => notify(e.message, "error")),
       150,
@@ -236,16 +262,18 @@ export function Inbox({
   const archive = async () => {
     setBusy(true);
     try {
-      await api("/inbox/archive", {
+      const result = await api("/inbox/archive", {
         method: "POST",
         body: { photoIds: selected, archived: !archived },
       });
       setSelected([]);
       refresh();
+      const cleanup = sourceCleanupFeedback(result);
       notify(
-        archived
+        (archived
           ? "Photos remises à trier."
-          : "Photos écartées. Vous pouvez les restaurer.",
+          : "Photos écartées. Vous pouvez les restaurer.") + cleanup.message,
+        cleanup.warning ? "error" : "success",
       );
     } catch (e) {
       notify(e.message, "error");
@@ -425,8 +453,11 @@ export function Inbox({
               setBusy(true);
               try {
                 const result = await api("/inbox/scan", { method: "POST" });
+                const cleanup = sourceCleanupFeedback(result);
                 notify(
-                  `${result.added} photo(s) depuis le dossier de dépôt${result.more ? " · relancez pour la suite" : ""}${result.limitReached ? " · choisissez un sous-dossier plus petit" : ""}${result.errors.length ? " · " + result.errors.length + " fichier(s) illisible(s)" : ""}.`,
+                  `${result.added} photo(s) depuis le dossier de dépôt${result.more ? " · relancez pour la suite" : ""}${result.limitReached ? " · choisissez un sous-dossier plus petit" : ""}${result.errors.length ? " · " + result.errors.length + " fichier(s) illisible(s)" : ""}.` +
+                    cleanup.message,
+                  cleanup.warning ? "error" : "success",
                 );
               } catch (e) {
                 notify(e.message, "error");
@@ -439,7 +470,61 @@ export function Inbox({
             Lire le dossier de dépôt
           </Button>
         )}
+        {data?.importFolderConfigured && (
+          <Button
+            variant="secondary"
+            icon={Trash2}
+            loading={busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                const result = await api("/inbox/cleanup", { method: "POST" });
+                const cleanup = sourceCleanupFeedback(result);
+                notify(
+                  cleanup.message.trim() ||
+                    "Aucun fichier traité à retirer du dépôt.",
+                  cleanup.warning ? "error" : "success",
+                );
+              } catch (error) {
+                notify(error.message, "error");
+              } finally {
+                setBusy(false);
+                refresh();
+              }
+            }}
+          >
+            Nettoyer le dépôt
+          </Button>
+        )}
       </div>
+      {data?.importFolderConfigured && (
+        <section className="inbox-source-state" role="note">
+          <p>
+            Après attribution ou mise à l’écart, la copie du dossier de dépôt
+            est retirée. La photo reste conservée dans AniPic ; les fichiers
+            sources modifiés restent en place.
+          </p>
+          {!!(
+            data.sourceCleanup?.errors?.length || data.sourceCleanup?.pending
+          ) && (
+            <p role="alert">
+              {
+                sourceCleanupFeedback({ sourceCleanup: data.sourceCleanup })
+                  .message
+              }
+            </p>
+          )}
+          {!!data.sourceCleanup?.errors?.length && (
+            <ul>
+              {data.sourceCleanup.errors.map((error, index) => (
+                <li key={index}>
+                  <strong>{error.file || "Dépôt"}</strong> : {error.error}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
       {archived && (
         <section
           className="inbox-retention panel"
@@ -677,52 +762,84 @@ export function Inbox({
             alt={zoom.filename}
           />
           <div className="inbox-view-controls">
-            <Button
-              variant="secondary"
-              disabled={data.items.findIndex((p) => p.id === zoom.id) <= 0}
-              onClick={() =>
-                setZoom(
-                  data.items[data.items.findIndex((p) => p.id === zoom.id) - 1],
-                )
-              }
+            <div
+              className="inbox-view-navigation"
+              aria-label="Parcourir les photos"
             >
-              Précédente
-            </Button>
-            <span aria-live="polite">
-              {data.items.findIndex((p) => p.id === zoom.id) + 1} /{" "}
-              {data.items.length}
-            </span>
-            <Button
-              variant="secondary"
-              disabled={
-                data.items.findIndex((p) => p.id === zoom.id) >=
-                data.items.length - 1
-              }
-              onClick={() =>
-                setZoom(
-                  data.items[data.items.findIndex((p) => p.id === zoom.id) + 1],
-                )
-              }
-            >
-              Suivante
-            </Button>
-            <Button
-              icon={Check}
-              variant={selected.includes(zoom.id) ? "primary" : "secondary"}
-              disabled={busy}
-              aria-pressed={selected.includes(zoom.id)}
-              onClick={(e) =>
-                toggle(
-                  zoom,
-                  data.items.findIndex((p) => p.id === zoom.id),
-                  e,
-                )
-              }
-            >
-              {selected.includes(zoom.id)
-                ? "Désélectionner cette photo"
-                : "Sélectionner cette photo"}
-            </Button>
+              <Button
+                variant="secondary"
+                disabled={data.items.findIndex((p) => p.id === zoom.id) <= 0}
+                onClick={() =>
+                  setZoom(
+                    data.items[
+                      data.items.findIndex((p) => p.id === zoom.id) - 1
+                    ],
+                  )
+                }
+              >
+                Précédente
+              </Button>
+              <span aria-live="polite">
+                {data.items.findIndex((p) => p.id === zoom.id) + 1} /{" "}
+                {data.items.length}
+              </span>
+              <Button
+                variant="secondary"
+                disabled={
+                  data.items.findIndex((p) => p.id === zoom.id) >=
+                  data.items.length - 1
+                }
+                onClick={() =>
+                  setZoom(
+                    data.items[
+                      data.items.findIndex((p) => p.id === zoom.id) + 1
+                    ],
+                  )
+                }
+              >
+                Suivante
+              </Button>
+            </div>
+            <div className="inbox-view-actions">
+              <Button
+                icon={Download}
+                variant="secondary"
+                loading={downloading}
+                onClick={async () => {
+                  setDownloading(true);
+                  try {
+                    await apiDownload(
+                      `/inbox/${zoom.id}/download`,
+                      {},
+                      zoom.filename.replace(/\.[^.]+$/, "") + ".jpg",
+                    );
+                  } catch (e) {
+                    notify(e.message, "error");
+                  } finally {
+                    setDownloading(false);
+                  }
+                }}
+              >
+                Télécharger (JPG)
+              </Button>
+              <Button
+                icon={Check}
+                variant={selected.includes(zoom.id) ? "primary" : "secondary"}
+                disabled={busy}
+                aria-pressed={selected.includes(zoom.id)}
+                onClick={(e) =>
+                  toggle(
+                    zoom,
+                    data.items.findIndex((p) => p.id === zoom.id),
+                    e,
+                  )
+                }
+              >
+                {selected.includes(zoom.id)
+                  ? "Désélectionner cette photo"
+                  : "Sélectionner cette photo"}
+              </Button>
+            </div>
           </div>
           <p className="small-note">
             Flèches gauche/droite : parcourir cette page · Échap : fermer.

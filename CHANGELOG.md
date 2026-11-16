@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 3.18.2 — Un tri qui se termine vraiment
+
+Cartes allégées avec le seul badge Photo SPA, boutons espacés et grandes photos plus pratiques sur téléphone. Téléchargement JPG dans le tri, file actualisée après un import direct sur une fiche. Les exports traités sont aussi retirés du dossier de dépôt après vérification de la copie AniPic ; restauration, fichiers modifiés, permissions et reprise après interruption sont pris en compte. [Notes de version](RELEASE_v3.18.2.md).
+
 ## 3.18.1 — Filtres lisibles sur mobile
 
 Le bouton « Tous les compagnons » garde la largeur de son libellé et les espèces passent à la ligne sur petit écran, sans chevauchement. Cette version conserve toutes les nouveautés de la [3.18.0](RELEASE_v3.18.0.md), dont le bouton **Synchroniser** dans la barre supérieure. [Notes de version](RELEASE_v3.18.1.md).

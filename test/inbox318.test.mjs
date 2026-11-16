@@ -187,11 +187,12 @@ test("discard retention backs up eligible photos, protects creative references a
   const boundary = await add(db, c, "#224488"),
     recent = await add(db, c, "#ffaa55");
   const active = await add(db, c, "#ffffff");
-  await add(db, c, "#22aa88", animal(db));
   for (const p of [unique, shared, pinned, reviewed])
     db.prepare(
       "UPDATE inbox_photos SET archived_at='2029-11-01T00:00:00.000Z' WHERE id=?",
     ).run(p.id);
+  // Keep discarded history while the same blob is also used by an animal.
+  await add(db, c, "#22aa88", animal(db));
   db.prepare(
     "UPDATE inbox_photos SET archived_at='2029-12-02T00:00:00.000Z' WHERE id=?",
   ).run(boundary.id);

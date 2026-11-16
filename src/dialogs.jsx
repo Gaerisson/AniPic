@@ -1,4 +1,5 @@
 import { ActionMenu } from "./action-menu.jsx";
+import { sourceCleanupFeedback } from "./import-cleanup-notice.js";
 import { ShareLink } from "./share-link.jsx";
 import { hasAnimalInfo } from "../shared/animal-info.mjs";
 import { PhotoTrash } from "./photo-trash-lazy.jsx";
@@ -1167,8 +1168,11 @@ export function UploadForm({ animalId, close, notify, reload, open }) {
       );
       setProgress(100);
       const duplicates = result.items.filter((i) => i.duplicate).length;
+      const cleanup = sourceCleanupFeedback(result.items);
       notify(
-        `${result.items.length - duplicates} photo(s) ajoutée(s)${duplicates ? " · " + duplicates + " doublon(s) évité(s)" : ""}.`,
+        `${result.items.length - duplicates} photo(s) ajoutée(s)${duplicates ? " · " + duplicates + " doublon(s) évité(s)" : ""}.` +
+          cleanup.message,
+        cleanup.warning ? "error" : "success",
       );
       reload();
       open({ type: "animal", id: target });

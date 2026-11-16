@@ -82,7 +82,7 @@ function check(files, mode) {
   }
   if (files.includes("compose.c8.yml")) {
     assert.equal(mount("/broadcasts").read_only, true);
-    assert.equal(mount("/imports").read_only, true);
+    assert.equal(Boolean(mount("/imports").read_only), false);
     for (const [file, target, source] of [
       ["compose.c8.yml", "/broadcasts", env.ANIPIC_C8_PATH],
       ["compose.import.yml", "/imports", env.ANIPIC_IMPORT_PATH],

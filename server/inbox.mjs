@@ -6,9 +6,11 @@ import path from "node:path";
 import { promises as fs, createReadStream } from "node:fs";
 import { createHash } from "node:crypto";
 import { ingest, derivative } from "./storage.mjs";
+import { exportPhoto } from "./exports.mjs";
 import { id, now, transaction, settings, saveSettings, audit } from "./db.mjs";
 import { assertStorage } from "./config.mjs";
 import { inboxRetentionDays, purgeDiscardedInbox } from "./inbox-retention.mjs";
+import { cleanupProcessedImports } from "./import-cleanup.mjs";
 const UUID = z.string().uuid();
 const fail = (message, statusCode = 400) =>
   Object.assign(new Error(message), { statusCode });
@@ -85,11 +87,15 @@ export async function scanImports(db, c, userId = null) {
       }
       processed++;
       try {
+        const importedHash = createHash("sha256");
+        const source = createReadStream(resolved).on("data", (chunk) =>
+          importedHash.update(chunk),
+        );
         const photo = await ingest(
           db,
           c,
           null,
-          createReadStream(resolved),
+          source,
           entry.name,
           false,
           null,
@@ -98,14 +104,12 @@ export async function scanImports(db, c, userId = null) {
               path.dirname(relative) === "." ? "" : path.dirname(relative),
             ),
             userId,
+            skipAssigned: true,
           },
         );
-        const blob = db
-          .prepare("SELECT hash FROM inbox_photos WHERE id=?")
-          .get(photo.id);
         db.prepare(
           "INSERT INTO import_receipts VALUES (?,?,?,?,?) ON CONFLICT(source_key) DO UPDATE SET size=excluded.size,mtime_ms=excluded.mtime_ms,hash=excluded.hash,imported_at=excluded.imported_at",
-        ).run(key, stat.size, stat.mtimeMs, blob.hash, now());
+        ).run(key, stat.size, stat.mtimeMs, importedHash.digest("hex"), now());
         result[photo.duplicate ? "duplicates" : "added"]++;
       } catch (e) {
         if (result.errors.length < 10)
@@ -119,6 +123,7 @@ export async function scanImports(db, c, userId = null) {
     }
   }
   await walk(base);
+  result.sourceCleanup = await cleanupProcessedImports(db, c);
   return result;
 }
 
@@ -224,6 +229,7 @@ export async function registerInbox(app, { db, c, authorized }) {
         running: scanning,
         scheduler: c.scheduler !== false,
         last: last || cfg.importLastScan || null,
+        sourceCleanup: cfg.importCleanupLast || null,
         nextAt: nextAt ? new Date(nextAt).toISOString() : null,
       };
     },
@@ -414,6 +420,7 @@ export async function registerInbox(app, { db, c, authorized }) {
         )
         .all(),
       importFolderConfigured: !!c.importDir,
+      sourceCleanup: settings(db).importCleanupLast || null,
       retention: retention(),
     };
   });
@@ -474,6 +481,39 @@ export async function registerInbox(app, { db, c, authorized }) {
       return reply.type("image/webp").send(createReadStream(file));
     },
   );
+  app.post(
+    "/api/inbox/:id/download",
+    {
+      preHandler: authorized(),
+      config: { rateLimit: { max: 60, timeWindow: "1 minute" } },
+    },
+    async (req, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const photo = db
+        .prepare("SELECT * FROM inbox_photos WHERE id=?")
+        .get(UUID.parse(req.params.id));
+      if (!photo) throw fail("Photo introuvable.", 404);
+      let jpeg;
+      try {
+        jpeg = await exportPhoto(c, photo, { format: "jpeg", size: "large" });
+      } catch {
+        throw fail(
+          "Cette photo est temporairement indisponible. Réessayez le téléchargement.",
+          503,
+        );
+      }
+      const name =
+        (photo.filename.replace(/\.[^.]+$/, "") || "photo").slice(0, 150) +
+        ".jpg";
+      return reply
+        .header(
+          "Content-Disposition",
+          `attachment; filename*=UTF-8''${encodeURIComponent(name).replace(/[!'()*]/g, (char) => "%" + char.charCodeAt(0).toString(16).toUpperCase())}`,
+        )
+        .type("image/jpeg")
+        .send(jpeg);
+    },
+  );
   app.post("/api/inbox/archive", { preHandler: authorized() }, async (req) => {
     const input = z
       .object({
@@ -494,8 +534,28 @@ export async function registerInbox(app, { db, c, authorized }) {
     audit(db, req.user, input.archived ? "inbox_archived" : "inbox_restored", {
       count: input.photoIds.length,
     });
-    return { count: input.photoIds.length };
+    const sourceCleanup =
+      input.archived && c.importDir
+        ? await cleanupProcessedImports(db, c, null, req.user)
+        : undefined;
+    return {
+      count: input.photoIds.length,
+      ...(sourceCleanup ? { sourceCleanup } : {}),
+    };
   });
+  app.post(
+    "/api/inbox/cleanup",
+    {
+      preHandler: authorized(),
+      config: { rateLimit: { max: 3, timeWindow: "1 minute" } },
+    },
+    async (req) => {
+      if (!c.importDir) throw fail("Aucun dossier de dépôt configuré.");
+      return {
+        sourceCleanup: await cleanupProcessedImports(db, c, null, req.user),
+      };
+    },
+  );
   app.post(
     "/api/inbox/scan",
     {

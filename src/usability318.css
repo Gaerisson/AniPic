@@ -117,6 +117,16 @@
     font-weight: 750;
     line-height: 1.35;
     margin-bottom: 6px;
+    align-self: flex-start;
+  }
+  .animal-card-body {
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .animal-card-body .card-arrow {
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
   }
   .local-photo-status.has-local {
     background: #317b6321;

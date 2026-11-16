@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { FolderSync, Save, RefreshCw } from "lucide-react";
 import { api, date } from "./api.js";
 import { Button, Spinner } from "./ui.jsx";
+import { sourceCleanupFeedback } from "./import-cleanup-notice.js";
 export function ImportAutomation({ notify }) {
   const [data, setData] = useState(null),
     [busy, setBusy] = useState(false),
@@ -33,7 +34,9 @@ export function ImportAutomation({ notify }) {
       <p>
         Publiez vos JPEG dans le dossier de dépôt. Anipic les ajoute à « Photos
         à trier » et suggère l’animal d’après le nom du dossier ou son
-        identifiant.
+        identifiant. Après attribution ou mise à l’écart, les fichiers du dépôt
+        sont retirés ; leur copie dans AniPic reste disponible pour restaurer ou
+        télécharger la photo.
       </p>
       <div className="workbench-form-grid">
         <label className="checkbox-label">
@@ -77,8 +80,9 @@ export function ImportAutomation({ notify }) {
       {!data.configured && (
         <p className="fineprint">
           Docker : renseignez ANIPIC_IMPORT_PATH et activez compose.import.yml.
-          Installation directe : IMPORT_DIR. Le dossier source est lu sans
-          déplacement ni suppression des fichiers.
+          Installation directe : IMPORT_DIR. Choisissez un dossier d’exports
+          dédié et autorisez son écriture pour retirer les fichiers déjà
+          traités.
         </p>
       )}
       {!data.scheduler && (
@@ -123,6 +127,22 @@ export function ImportAutomation({ notify }) {
           {data.last.error ||
             `${data.last.added} ajout(s), ${data.last.duplicates} déjà importée(s)`}
         </small>
+      )}
+      {data.sourceCleanup && (
+        <p
+          role={
+            sourceCleanupFeedback({ sourceCleanup: data.sourceCleanup }).warning
+              ? "alert"
+              : "status"
+          }
+          className="fineprint"
+        >
+          Dernier nettoyage :{" "}
+          {new Date(data.sourceCleanup.at).toLocaleString("fr-FR")} ·{" "}
+          {sourceCleanupFeedback({
+            sourceCleanup: data.sourceCleanup,
+          }).message.trim() || "Aucun fichier traité à retirer."}
+        </p>
       )}
     </section>
   );

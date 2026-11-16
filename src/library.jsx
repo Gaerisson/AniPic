@@ -752,14 +752,11 @@ export function Library({
                     >
                       <Camera size={14} />
                       {a.photo_count
-                        ? `${a.photo_count} photo${a.photo_count > 1 ? "s" : ""} du refuge`
-                        : "À photographier"}
+                        ? `${a.photo_count} photo${a.photo_count > 1 ? "s" : ""}`
+                        : a.source_metadata?.thumbnail
+                          ? "Photo SPA"
+                          : "À photographier"}
                     </span>
-                    {!a.photo_count && a.source_metadata?.thumbnail && (
-                      <small className="photo-origin-note">
-                        Photo du site SPA
-                      </small>
-                    )}
                   </td>
                   <td>
                     <AnimalStatus animal={a} />
@@ -1003,16 +1000,11 @@ export function AnimalCard({
       </button>
       <div className="animal-card-body">
         <div>
-          <span
-            className={`local-photo-status ${a.photo_count ? "has-local" : "needs-local"}`}
-          >
-            <Camera size={13} />
-            {a.photo_count
-              ? "Photos du refuge"
-              : a.source_metadata?.thumbnail
-                ? "Photo SPA · à photographier"
-                : "À photographier"}
-          </span>
+          {!a.photo_count && a.source_metadata?.thumbnail && (
+            <span className="local-photo-status needs-local">
+              <Camera size={13} /> Photo SPA
+            </span>
+          )}
           <div className="animal-name-line">
             <NavLink
               href={"#animal/" + a.id}

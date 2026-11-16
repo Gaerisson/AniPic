@@ -38,12 +38,52 @@
   align-items: center;
   margin-top: 14px;
 }
-.inbox-view-controls > span {
+.inbox-view-navigation > span {
   color: var(--muted);
   font-size: 12px;
 }
+.inbox-large-view .inbox-zoom {
+  height: auto;
+  max-height: min(58vh, 640px);
+}
+.inbox-large-view .inbox-view-controls {
+  justify-content: space-between;
+  gap: 16px 24px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+.inbox-view-navigation,
+.inbox-view-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.inbox-view-actions {
+  justify-content: flex-end;
+}
+.inbox-large-view .small-note {
+  display: block;
+  margin: 18px 0 0;
+  line-height: 1.6;
+}
 .inbox-retention > p:first-child {
   margin-top: 0;
+}
+.inbox-source-state {
+  margin-block: 16px;
+  line-height: 1.7;
+  font-size: 13px;
+  color: var(--muted);
+}
+.inbox-source-state p {
+  margin: 0;
+}
+.inbox-source-state [role="alert"] {
+  margin-top: 10px;
+  color: var(--accent);
 }
 .inbox-retention details {
   margin-top: 12px;
@@ -151,6 +191,14 @@
   margin-bottom: 6px;
 }
 @media (max-width: 650px) {
+  .inbox-view-navigation,
+  .inbox-view-actions {
+    width: 100%;
+    justify-content: center;
+  }
+  .inbox-view-actions > .button {
+    flex: 1 1 180px;
+  }
   .assignment-comparison-pair {
     grid-template-columns: minmax(0, 1fr);
     gap: 20px;
@@ -165,6 +213,6 @@
     flex: 1 1 100%;
   }
   .inbox-large-view .inbox-zoom {
-    height: 55vh;
+    max-height: 45vh;
   }
 }

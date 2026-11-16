@@ -177,7 +177,7 @@ test("discarded inbox photos are recoverable and inbox originals survive backup/
     restored.close();
   }
 });
-test("read-only export folder retains named directories, skips unfinished files and receipts prevent reimport after assignment", async (t) => {
+test("export folder retains pending named files, skips unfinished files and removes processed sources without reimport", async (t) => {
   const { app, db, c, base } = await fixture(t),
     { user } = await login(app);
   c.importDir = path.join(base, "exports");
@@ -200,7 +200,8 @@ test("read-only export folder retains named directories, skips unfinished files 
   assert.equal((await scanImports(db, c, user.id)).added, 0);
   assert.equal(db.prepare("SELECT COUNT(*) n FROM inbox_photos").get().n, 0);
   assert.equal(db.prepare("SELECT COUNT(*) n FROM import_receipts").get().n, 1);
-  assert.equal((await fs.stat(file)).mtimeMs, old.getTime());
+  await assert.rejects(fs.access(file), { code: "ENOENT" });
+  await fs.access(recent);
 });
 test("printable session list merges requests and missing photos, excludes departed animals and preserves homonym IDs", async (t) => {
   const { app, db, c } = await fixture(t),

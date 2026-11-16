@@ -8,6 +8,7 @@ import { createHash, randomUUID } from "node:crypto";
 import sharp from "sharp";
 import { id, now, transaction } from "./db.mjs";
 import { assertStorage } from "./config.mjs";
+import { cleanupProcessedImports } from "./import-cleanup.mjs";
 const ALLOWED = new Set(["jpeg", "png", "webp", "avif"]);
 sharp.concurrency(1);
 sharp.cache({ memory: 32, files: 0, items: 128 });
@@ -110,21 +111,41 @@ export async function ingest(
             : "SELECT id,deleted_at FROM photos WHERE animal_id=? AND hash=?",
       )
       .get(...(inbox ? [digest] : [albumId || animalId, digest]));
+    if (inbox?.skipAssigned && !duplicate) {
+      const assigned = db
+        .prepare("SELECT id FROM photos WHERE hash=? LIMIT 1")
+        .get(digest);
+      if (assigned)
+        return { id: assigned.id, duplicate: true, alreadyAssigned: true };
+    }
     if (duplicate) {
       if (albumId)
         db.prepare("UPDATE album_photos SET deleted_at=NULL WHERE id=?").run(
           duplicate.id,
         );
-      else if (!inbox && duplicate.deleted_at)
+      else if (!inbox)
         transaction(db, () => {
+          if (duplicate.deleted_at) {
+            db.prepare(
+              "UPDATE photos SET deleted_at=NULL,archived_at=NULL,hidden=MAX(hidden,?),created_at=? WHERE id=?",
+            ).run(Number(hidden), now(), duplicate.id);
+            db.prepare(
+              "UPDATE animals SET cover_id=COALESCE(cover_id,?),updated_at=? WHERE id=?",
+            ).run(duplicate.id, now(), animalId);
+          }
           db.prepare(
-            "UPDATE photos SET deleted_at=NULL,archived_at=NULL,hidden=MAX(hidden,?),created_at=? WHERE id=?",
-          ).run(Number(hidden), now(), duplicate.id);
-          db.prepare(
-            "UPDATE animals SET cover_id=COALESCE(cover_id,?),updated_at=? WHERE id=?",
-          ).run(duplicate.id, now(), animalId);
+            "DELETE FROM inbox_photos WHERE hash=? AND archived_at IS NULL",
+          ).run(digest);
         });
-      return { id: duplicate.id, duplicate: true };
+      const sourceCleanup =
+        c.importDir && !inbox && !albumId
+          ? await cleanupProcessedImports(db, c, [digest])
+          : undefined;
+      return {
+        id: duplicate.id,
+        duplicate: true,
+        ...(sourceCleanup ? { sourceCleanup } : {}),
+      };
     }
     transaction(db, () => {
       db.prepare("INSERT OR IGNORE INTO blobs VALUES (?,?,?,?,?,?)").run(
@@ -157,9 +178,20 @@ export async function ingest(
         db.prepare(
           "UPDATE animals SET cover_id=COALESCE(cover_id,?),updated_at=? WHERE id=?",
         ).run(photoId, now(), animalId);
+        db.prepare(
+          "DELETE FROM inbox_photos WHERE hash=? AND archived_at IS NULL",
+        ).run(digest);
       }
     });
-    return { id: photoId, duplicate: false };
+    const sourceCleanup =
+      c.importDir && !inbox && !albumId
+        ? await cleanupProcessedImports(db, c, [digest])
+        : undefined;
+    return {
+      id: photoId,
+      duplicate: false,
+      ...(sourceCleanup ? { sourceCleanup } : {}),
+    };
   } finally {
     await fs.unlink(tmp).catch(() => {});
     finishWrite();

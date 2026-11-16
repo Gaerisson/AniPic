@@ -2,6 +2,7 @@ import { z } from "zod";
 import { id, now, transaction, audit } from "./db.mjs";
 import { assertStorage } from "./config.mjs";
 import { registerAssignmentSuggestions } from "./assignment-suggestions.mjs";
+import { cleanupProcessedImports } from "./import-cleanup.mjs";
 
 const uuid = z.string().uuid();
 const photoIds = z
@@ -261,7 +262,10 @@ export async function registerPhotoAssignments(app, { db, c, authorized }) {
       });
       return { result: assigned.result, undo };
     });
-    return { ...result, ...undo };
+    const sourceCleanup = c.importDir
+      ? await cleanupProcessedImports(db, c, null, req.user)
+      : undefined;
+    return { ...result, ...undo, ...(sourceCleanup ? { sourceCleanup } : {}) };
   });
   app.post(
     "/api/photos/reassign",

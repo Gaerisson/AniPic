@@ -7,6 +7,7 @@ services:
       - type: bind
         source: "${ANIPIC_IMPORT_PATH:?Définir ANIPIC_IMPORT_PATH vers vos exports Lightroom/Photoshop}"
         target: /imports
-        read_only: true
+        # Les exports traités sont retirés après vérification de leur copie AniPic.
+        read_only: false
         bind:
           create_host_path: false

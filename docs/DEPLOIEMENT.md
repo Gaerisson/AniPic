@@ -1,4 +1,4 @@
-# Déploiement AniPic 3.18.1
+# Déploiement AniPic 3.18.2
 
 ## Installer sur Debian avec Docker
 
@@ -33,10 +33,10 @@ sudo node scripts/prepare-storage.mjs --mount /mnt/nas --root /mnt/nas/anipic --
 Node.js 24 est nécessaire pour ce script. Sans Node sur l’hôte, construire d’abord l’image puis utiliser son runtime, en montant le parent NAS existant :
 
 ```sh
-docker build -t anipic:3.18.1 .
+docker build -t anipic:3.18.2 .
 docker run --rm --read-only --user 1000:1000 \
   --mount type=bind,src=/mnt/nas,dst=/mnt/nas \
-  --entrypoint node anipic:3.18.1 scripts/prepare-storage.mjs \
+  --entrypoint node anipic:3.18.2 scripts/prepare-storage.mjs \
   --mount /mnt/nas --root /mnt/nas/anipic --uid 1000 --gid 1000 --with-c8 --with-import
 ```
 
@@ -44,7 +44,9 @@ Le script accepte un point de montage NFS/NFS4/CIFS/SMB3 vérifié via `/proc/se
 
 `photos` et `backups` sont créés sous la racine choisie. `C8` et `Import` sont facultatifs : retirer leurs options si inutiles. Reporter les variables affichées dans `.env` ou Portainer. Les dossiers doivent être **sur le même hôte que le moteur**, pas sur le PC qui affiche Portainer. Pour des chemins existants en dehors de cette racine, conserver les montages habituels et faire vérifier leurs permissions/marqueurs par l’administrateur du NAS.
 
-Les volumes Compose gardent `create_host_path: false` et `REQUIRE_STORAGE_MARKER=true`. En production, AniPic ne crée pas ses racines NAS à la place de dossiers absents. Le panneau **Stockage → État des dossiers** expose photos/sauvegardes/C8/Import ; **Tester l’accès** ajoute un essai d’écriture temporaire pour les deux dossiers modifiables. C8 et Import restent montés en lecture seule dans l’application. Le journal et `docker compose logs anipic` aident au diagnostic.
+Les volumes Compose gardent `create_host_path: false` et `REQUIRE_STORAGE_MARKER=true`. En production, AniPic ne crée pas ses racines NAS à la place de dossiers absents. Le panneau **Stockage → État des dossiers** expose photos/sauvegardes/C8/Import ; **Tester l’accès** ajoute un essai d’écriture temporaire pour photos, sauvegardes et Import. C8 reste en lecture seule. Depuis la 3.18.2, `compose.import.yml` autorise l’écriture dans le seul dossier Import pour retirer les exports traités, après vérification de la copie conservée dans AniPic. Le dépôt doit être un dossier dédié, distinct des dossiers internes AniPic. Le journal et `docker compose logs anipic` aident au diagnostic.
+
+Pour une stack existante, reporter aussi ce changement sur le montage `/imports` : `read_only: false` (ou remplacer `/imports:ro` par `/imports:rw`) et donner l’accès en écriture à l’UID/GID du conteneur sur ce dossier. Changer uniquement l’image conserve les anciens droits du montage : si le dépôt reste en lecture seule, l’import et l’attribution réussissent, les fichiers sources sont conservés et AniPic signale le nettoyage à relancer. **Photos à trier → Nettoyer le dépôt** permet de reprendre après correction des permissions. Les volumes de photos/sauvegardes et le montage C8 restent ceux de la stack existante.
 
 Cette préparation est couverte par des simulations de montage absent, permissions refusées et coupure pendant l’initialisation ; elle doit aussi être essayée sur votre NAS. [Contrôles avant release](CONTROLES_RELEASE.md).
 
@@ -54,7 +56,7 @@ Choisir le mode adapté à la stack existante. `compose.yml` compile le dépôt 
 
 ### Image GitHub prête à télécharger
 
-Après la réussite du workflow de publication, utiliser `portainer-ghcr.yml` dans la **même stack**. Ce fichier référence `ghcr.io/gaerisson/anipic:3.18.1` avec `pull_policy: always` ; ici, **Re-pull image peut être activé**. Conserver toutes les variables NAS, UID/GID, port, origine et overrides C8/Import.
+Après la réussite du workflow de publication, utiliser `portainer-ghcr.yml` dans la **même stack**. Ce fichier référence `ghcr.io/gaerisson/anipic:3.18.2` avec `pull_policy: always` ; ici, **Re-pull image peut être activé**. Conserver toutes les variables NAS, UID/GID, port, origine et overrides C8/Import.
 
 ```sh
 docker compose -f portainer-ghcr.yml pull
@@ -80,8 +82,8 @@ Ne pas utiliser `portainer-stack.yml` pour une compilation automatique depuis Gi
 Après avoir récupéré les nouveaux fichiers du projet, construire l’image sur **le moteur Docker utilisé par Portainer**, depuis le répertoire contenant le Dockerfile :
 
 ```sh
-docker build -t anipic:3.18.1 .
-docker image inspect anipic:3.18.1 --format '{{.Id}}'
+docker build -t anipic:3.18.2 .
+docker image inspect anipic:3.18.2 --format '{{.Id}}'
 ```
 
 Redéployer ensuite la stack existante avec `portainer-stack.yml`, en conservant **Re-pull image désactivé**. Ce fichier garde `pull_policy: never` et exige que l’image existe déjà sur ce moteur. Si Portainer ne construit pas depuis Git, cette procédure permet de préparer l’image sur l’hôte puis de la déployer. Swarm nécessite aussi une image déjà construite, accessible à chacun des nœuds concernés ; un build Compose n’est pas un mécanisme de déploiement Swarm.

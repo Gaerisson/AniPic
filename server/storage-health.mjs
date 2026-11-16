@@ -6,7 +6,7 @@ export async function storageHealth(c, { writeProbe = false } = {}) {
     ["media", "Photos", c.mediaDir, true],
     ["backup", "Sauvegardes", c.backupDir, true],
     ["c8", "C8", c.broadcastDir, false],
-    ["import", "Import", c.importDir, false],
+    ["import", "Import", c.importDir, true],
   ];
   return Promise.all(
     rows.map(async ([key, label, directory, writable]) => {
@@ -18,7 +18,7 @@ export async function storageHealth(c, { writeProbe = false } = {}) {
         const stat = await fs.stat(directory);
         if (!stat.isDirectory())
           throw Error("Le chemin ne désigne pas un dossier.");
-        if (writable && c.requireMarker) {
+        if (writable && key !== "import" && c.requireMarker) {
           const m = await fs.lstat(path.join(directory, ".anipic-volume"));
           if (!m.isFile() || m.isSymbolicLink())
             throw Error("Marqueur NAS invalide.");
